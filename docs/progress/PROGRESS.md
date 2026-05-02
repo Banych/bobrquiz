@@ -204,9 +204,13 @@ This document indexes all releases, completed work, and session notes. Use this 
 
 See [dev-notes.md](dev-notes.md) for the full execution log with timestamps.
 
-### 2026-03-14: R6 Phase 3.5 Step 1 — Quiz Reset ✅
-- `Quiz.reset()` + `QuizSessionAggregate.reset()` + `ResetQuizUseCase` + `POST /api/admin/quizzes/[quizId]/reset`
-- 6 new tests (3 domain, 3 use case), all passing; `yarn build` succeeds
+### 2026-05-02: R6 Phase 3.5 — Game Lifecycle & UX Fixes ✅
+- **Step 1**: Quiz reset — `Quiz.reset()`, `ResetQuizUseCase`, `POST /api/admin/quizzes/[quizId]/reset` (6 new tests)
+- **Step 2**: Host dashboard contextual buttons — finish/restart mutations, `POST /api/quiz/[quizId]/finish`, status-aware button set
+- **Step 3**: Player answer UI — MC/TF option buttons, text input for open questions
+- **Step 4**: Admin dashboard/live view buttons — "Open Dashboard" (all statuses) + "Open Live View" (Active) on detail page and quiz list
+- **Step 5**: Presence fix — heartbeat interval 30s→10s (race with 30s connected threshold), answer submission refreshes `lastSeenAt`
+- 403 tests passing, `yarn build` succeeds
 - Plan: [plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md](plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md)
 
 ### Previous (2026-03-08):
@@ -263,12 +267,12 @@ All R5 phases complete as of 2026-02-01. See [plan.md](../plan.md) for performan
 - [x] Host quiz selection page (`/host` landing)
 - [x] QR code generation for join codes
 
-**Phase 3.5: Game Lifecycle & UX Fixes** 🚧 In Progress
+**Phase 3.5: Game Lifecycle & UX Fixes** ✅
 - [x] Quiz reset: allow completed quiz → Pending for replay (`ResetQuizUseCase`)
-- [ ] Host dashboard: replace "Resume Quiz" with contextual buttons (Finish / Restart) per status
-- [ ] Player answer UI: render option buttons for MC/TF questions, text input for open questions
-- [ ] Admin quiz page: add "Start Hosting" / "Open Host View" shortcut button
-- [ ] Presence fix: active players stay `connected` instead of regressing to `away → disconnected`
+- [x] Host dashboard: replace "Resume Quiz" with contextual buttons (Finish / Restart) per status
+- [x] Player answer UI: render option buttons for MC/TF questions, text input for open questions
+- [x] Admin quiz page: add "Open Dashboard" / "Open Live View" buttons
+- [x] Presence fix: heartbeat interval reduced (30s→10s), answer submission refreshes `lastSeenAt`
 - **Plan:** [plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md](plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md)
 
 **Phase 4: Analytics & Observability**

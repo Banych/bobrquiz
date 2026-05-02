@@ -72,6 +72,36 @@ describe('SubmitAnswerUseCase', () => {
     expect(quizRepository.save).toHaveBeenCalledWith(quiz);
   });
 
+  it('should update player lastSeenAt on answer submission', async () => {
+    const question = new Question('q1', 'What is 2 + 2?', ['4'], 'text', 10);
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz1', 'Sample Quiz', [question], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+        scoringAlgorithm: 'FIXED',
+      }),
+      30
+    );
+    const player = new Player('p1', 'Player 1', 'quiz1');
+    // Set lastSeenAt to a stale timestamp
+    player.updateLastSeenAt(new Date('2020-01-01T00:00:00Z'));
+    quiz.addPlayer(player.id);
+    quiz.startQuiz();
+
+    quizRepository.findById.mockResolvedValue(quiz);
+    playerRepository.findById.mockResolvedValue(player);
+
+    const before = new Date();
+    await submitAnswerUseCase.execute(quiz.quizId, player.id, question.id, '4');
+
+    // lastSeenAt should have been refreshed to approximately now
+    expect(player.lastSeenAt).not.toBeNull();
+    expect(player.lastSeenAt!.getTime()).toBeGreaterThanOrEqual(
+      before.getTime()
+    );
+    expect(playerRepository.save).toHaveBeenCalledWith(player);
+  });
+
   it('should throw an error if the quiz is not active', async () => {
     const quiz = new QuizSessionAggregate(
       new Quiz('quiz1', 'Sample Quiz', [], {

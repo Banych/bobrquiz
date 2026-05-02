@@ -14,8 +14,9 @@ import type {
   PresenceState,
 } from '@infrastructure/realtime/presence-tracker';
 
-// Heartbeat interval for presence updates (30 seconds)
-const PRESENCE_HEARTBEAT_INTERVAL_MS = 30_000;
+// Heartbeat interval for presence updates (10 seconds)
+// Must be well below CONNECTED_THRESHOLD_MS (30s) to avoid race conditions
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 10_000;
 
 // Maximum number of consecutive failures before calling onConnectionError
 const MAX_RETRY_ATTEMPTS = 5;
