@@ -1,12 +1,15 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
 import { usePlayerSession } from '@hooks/use-player-session';
 import { useCountdownTimer } from '@hooks/use-countdown-timer';
 import { useRoundSummaryListener } from '@hooks/use-round-summary-listener';
 import { useReconnection } from '@hooks/use-reconnection';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { ScoringInfoBadge } from './scoring-info-badge';
 import { AnswersLockedIndicator } from './answers-locked-indicator';
 import { ConnectionStatusBanner } from './connection-status-banner';
@@ -148,6 +151,30 @@ export function PlayerSessionScreen({
     session.quiz.timer,
     currentRemaining,
   ]);
+
+  const currentQuestion = useMemo(() => {
+    if (!activeQuestionId) return null;
+    return (
+      session.quiz.questions.find((q) => q.id === activeQuestionId) ?? null
+    );
+  }, [activeQuestionId, session.quiz.questions]);
+
+  const isOptionQuestion =
+    currentQuestion?.type === 'multiple-choice' ||
+    currentQuestion?.type === 'true/false';
+
+  const questionOptions = useMemo(() => {
+    if (!isOptionQuestion || !currentQuestion) return [];
+    if (currentQuestion.options?.length) return currentQuestion.options;
+    if (currentQuestion.type === 'true/false') return ['True', 'False'];
+    return [];
+  }, [isOptionQuestion, currentQuestion]);
+
+  // Clear answer selection when the active question changes
+  useEffect(() => {
+    setAnswerValue('');
+    setSubmissionMessage(null);
+  }, [activeQuestionId]);
 
   const handleSubmit = async () => {
     if (!activeQuestionId) {
@@ -311,32 +338,63 @@ export function PlayerSessionScreen({
             ) : null}
           </header>
           <form className="space-y-4" onSubmit={handleFormSubmit}>
-            <div>
-              <label className="text-xs uppercase text-muted-foreground">
-                Your response
-              </label>
-              <input
-                type="text"
-                value={answerValue}
-                disabled={
-                  isSubmittingAnswer ||
-                  session.quiz.status !== 'Active' ||
-                  answersLocked ||
-                  isDisconnected
-                }
-                onChange={(event) => setAnswerValue(event.target.value)}
-                placeholder={
-                  isDisconnected
-                    ? 'Reconnecting…'
-                    : answersLocked
-                      ? 'Answers are locked'
-                      : waitingForQuestion
-                        ? 'Waiting for host…'
-                        : 'Type your answer'
-                }
-                className="mt-1 w-full rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
-              />
-            </div>
+            {isOptionQuestion ? (
+              <div>
+                <Label className="text-xs uppercase text-muted-foreground">
+                  Pick your answer
+                </Label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {questionOptions.map((option) => (
+                    <Button
+                      key={option}
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        isSubmittingAnswer ||
+                        session.quiz.status !== 'Active' ||
+                        answersLocked ||
+                        isDisconnected
+                      }
+                      onClick={() => setAnswerValue(option)}
+                      className={cn(
+                        'h-auto rounded-xl px-4 py-3 text-base',
+                        answerValue === option &&
+                          'border-primary bg-primary/10 font-semibold text-primary'
+                      )}
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label className="text-xs uppercase text-muted-foreground">
+                  Your response
+                </Label>
+                <Input
+                  type="text"
+                  value={answerValue}
+                  disabled={
+                    isSubmittingAnswer ||
+                    session.quiz.status !== 'Active' ||
+                    answersLocked ||
+                    isDisconnected
+                  }
+                  onChange={(event) => setAnswerValue(event.target.value)}
+                  placeholder={
+                    isDisconnected
+                      ? 'Reconnecting…'
+                      : answersLocked
+                        ? 'Answers are locked'
+                        : waitingForQuestion
+                          ? 'Waiting for host…'
+                          : 'Type your answer'
+                  }
+                  className="mt-1 h-auto rounded-xl px-4 py-3 text-base"
+                />
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full"

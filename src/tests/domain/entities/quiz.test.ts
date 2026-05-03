@@ -125,6 +125,40 @@ describe('Quiz', () => {
     expect(nextQuestion).toBeNull();
   });
 
+  it('should reset a completed quiz back to Pending', () => {
+    const quiz = new Quiz('q1', 'Test', [], {
+      timePerQuestion: 30,
+      allowSkipping: true,
+    });
+    quiz.startQuiz();
+    quiz.endQuiz();
+    quiz.reset();
+    expect(quiz.status).toBe(QuizStatus.Pending);
+    expect(quiz.startTime).toBeUndefined();
+    expect(quiz.endTime).toBeUndefined();
+    expect(quiz.currentQuestionIndex).toBe(0);
+  });
+
+  it('should reset an active quiz back to Pending', () => {
+    const quiz = new Quiz('q1', 'Test', [], {
+      timePerQuestion: 30,
+      allowSkipping: true,
+    });
+    quiz.startQuiz();
+    quiz.reset();
+    expect(quiz.status).toBe(QuizStatus.Pending);
+  });
+
+  it('should throw when resetting a quiz already in Pending status', () => {
+    const quiz = new Quiz('q1', 'Test', [], {
+      timePerQuestion: 30,
+      allowSkipping: true,
+    });
+    expect(() => quiz.reset()).toThrow(
+      'Quiz can only be reset if it is in Active or Completed status.'
+    );
+  });
+
   it('should submit an answer and update the answers map', () => {
     const question = new Question('q1', 'What is 2 + 2?', ['4'], 'text', 10);
     const quiz = new Quiz('quiz1', 'Math Quiz', [question], {

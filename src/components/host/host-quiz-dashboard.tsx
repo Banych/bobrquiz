@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { QuizDTO } from '@application/dtos/quiz.dto';
 import { useHostQuizState } from '@/hooks/use-host-quiz-state';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,10 @@ export function HostQuizDashboard({
     isSnapshottingLeaderboard,
     lockQuestion,
     isLockingQuestion,
+    finishQuiz,
+    isFinishingQuiz,
+    restartQuiz,
+    isRestartingQuiz,
     roundSummary,
     clearRoundSummary,
   } = useHostQuizState({
@@ -68,15 +73,15 @@ export function HostQuizDashboard({
     isAdvancingQuestion ||
     isResettingTimer ||
     isSnapshottingLeaderboard ||
-    isLockingQuestion;
+    isLockingQuestion ||
+    isFinishingQuiz ||
+    isRestartingQuiz;
   const canControlTimer = quiz.status === 'Active';
   const canAdvance = quiz.status === 'Active' && quiz.questions.length > 0;
   const canLockQuestion =
     quiz.status === 'Active' &&
     activeQuestion &&
     !activeQuestion.answersLockedAt;
-  const startButtonLabel =
-    quiz.status === 'Pending' ? 'Start quiz' : 'Resume quiz';
   const hasActiveTimer = typeof quiz.timer.remainingSeconds === 'number';
 
   return (
@@ -143,12 +148,37 @@ export function HostQuizDashboard({
             ) : null}
           </header>
           <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={isStartingQuiz}
-              onClick={() => runAction(() => startQuiz())}
-            >
-              {isStartingQuiz ? 'Starting…' : startButtonLabel}
-            </Button>
+            {quiz.status === 'Pending' && (
+              <Button
+                disabled={isStartingQuiz}
+                onClick={() => runAction(() => startQuiz())}
+              >
+                {isStartingQuiz ? 'Starting…' : 'Start quiz'}
+              </Button>
+            )}
+            {quiz.status === 'Active' && (
+              <>
+                <Button asChild variant="outline">
+                  <Link href={`/quiz/${quizId}/live`}>Open Live View</Link>
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={isFinishingQuiz}
+                  onClick={() => runAction(() => finishQuiz())}
+                >
+                  {isFinishingQuiz ? 'Finishing…' : 'Finish quiz'}
+                </Button>
+              </>
+            )}
+            {quiz.status === 'Completed' && (
+              <Button
+                variant="outline"
+                disabled={isRestartingQuiz}
+                onClick={() => runAction(() => restartQuiz())}
+              >
+                {isRestartingQuiz ? 'Restarting…' : 'Restart quiz'}
+              </Button>
+            )}
             <Button
               variant="secondary"
               disabled={!canAdvance || isAdvancingQuestion}

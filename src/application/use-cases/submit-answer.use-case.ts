@@ -32,6 +32,9 @@ export class SubmitAnswerUseCase {
     // QuizSessionAggregate.submitAnswer handles Answer creation and returns it
     const submittedAnswer = quiz.submitAnswer(playerId, questionId, answer);
 
+    // Refresh presence: answering proves the player is connected
+    player.updateLastSeenAt();
+
     await this.quizRepository.save(quiz);
     await this.playerRepository.save(player);
 

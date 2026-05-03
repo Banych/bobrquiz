@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Pencil, Trash2, MonitorPlay } from 'lucide-react';
+import { LayoutDashboard, Pencil, Trash2, MonitorPlay } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -120,6 +120,15 @@ export function QuizList() {
                 )}
               </TableCell>
               <TableCell className="text-right space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Open Dashboard"
+                  aria-label="Open dashboard"
+                  onClick={() => router.push(`/quiz/${quiz.id}`)}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                </Button>
                 {quiz.status === 'Pending' && (
                   <Button
                     variant="ghost"

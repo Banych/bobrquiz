@@ -1,6 +1,6 @@
 import { IQuizRepository } from '@domain/repositories/quiz-repository';
 
-export class EndQuizUseCase {
+export class ResetQuizUseCase {
   constructor(private readonly quizRepository: IQuizRepository) {}
 
   async execute(quizId: string): Promise<void> {
@@ -8,9 +8,7 @@ export class EndQuizUseCase {
     if (!quiz) {
       throw new Error('Quiz not found.');
     }
-
-    quiz.endQuiz();
-
+    quiz.reset();
     await this.quizRepository.save(quiz);
   }
 }

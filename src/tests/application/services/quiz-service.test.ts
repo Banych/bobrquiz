@@ -111,13 +111,11 @@ describe('QuizService', () => {
     expect(startQuizUseCase.execute).toHaveBeenCalledWith('quiz1');
   });
 
-  it('should end a quiz and return the leaderboard', async () => {
-    const leaderboard = [{ playerId: 'p1', score: 10 }];
-    endQuizUseCase.execute.mockResolvedValue(leaderboard);
+  it('should end a quiz', async () => {
+    endQuizUseCase.execute.mockResolvedValue(undefined);
 
-    const result = await quizService.endQuiz('quiz1');
+    await quizService.endQuiz('quiz1');
     expect(endQuizUseCase.execute).toHaveBeenCalledWith('quiz1');
-    expect(result).toEqual(leaderboard);
   });
 
   it('should fetch quiz details', async () => {

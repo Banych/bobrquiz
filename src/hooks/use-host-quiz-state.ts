@@ -115,6 +115,16 @@ export const useHostQuizState = ({
     },
   });
 
+  const finishQuizMutation = useMutation({
+    mutationFn: () => postQuizState<QuizDTO>(`/api/quiz/${quizId}/finish`),
+    onSuccess: applyState,
+  });
+
+  const restartQuizMutation = useMutation({
+    mutationFn: () => postQuizState<QuizDTO>(`/api/quiz/${quizId}/reset`),
+    onSuccess: applyState,
+  });
+
   const queryResult = useQuery({
     queryKey: hostQuizQueryKey(quizId),
     queryFn: () => fetchQuizState(quizId),
@@ -135,6 +145,10 @@ export const useHostQuizState = ({
     isSnapshottingLeaderboard: snapshotLeaderboardMutation.isPending,
     lockQuestion: lockQuestionMutation.mutateAsync,
     isLockingQuestion: lockQuestionMutation.isPending,
+    finishQuiz: finishQuizMutation.mutateAsync,
+    isFinishingQuiz: finishQuizMutation.isPending,
+    restartQuiz: restartQuizMutation.mutateAsync,
+    isRestartingQuiz: restartQuizMutation.isPending,
     roundSummary,
     clearRoundSummary: () => setRoundSummary(null),
   } as const;

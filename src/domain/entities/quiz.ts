@@ -135,6 +135,25 @@ export class Quiz {
     return scores;
   }
 
+  reset(): void {
+    if (
+      this.status !== QuizStatus.Active &&
+      this.status !== QuizStatus.Completed
+    ) {
+      throw new Error(
+        'Quiz can only be reset if it is in Active or Completed status.'
+      );
+    }
+    this.status = QuizStatus.Pending;
+    this.startTime = undefined;
+    this.endTime = undefined;
+    this.currentQuestionIndex = 0;
+    this.answers = new Map();
+    for (const question of this.questions) {
+      question.answersLockedAt = undefined;
+    }
+  }
+
   nextQuestion(): Question | null {
     if (this.currentQuestionIndex < this.questions.length - 1) {
       this.currentQuestionIndex++;

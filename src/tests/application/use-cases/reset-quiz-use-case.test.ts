@@ -1,12 +1,12 @@
-import { EndQuizUseCase } from '@application/use-cases/end-quiz.use-case';
+import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import { QuizSessionAggregate } from '@domain/aggregates/quiz-session-aggregate';
 import { Quiz, QuizStatus } from '@domain/entities/quiz';
 import { IQuizRepository } from '@domain/repositories/quiz-repository';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
 
-describe('EndQuizUseCase', () => {
+describe('ResetQuizUseCase', () => {
   let quizRepository: Mocked<IQuizRepository>;
-  let endQuizUseCase: EndQuizUseCase;
+  let resetQuizUseCase: ResetQuizUseCase;
 
   beforeEach(() => {
     quizRepository = {
@@ -18,10 +18,10 @@ describe('EndQuizUseCase', () => {
       updateLeaderboard: vi.fn(),
       delete: vi.fn(),
     } as unknown as Mocked<IQuizRepository>;
-    endQuizUseCase = new EndQuizUseCase(quizRepository);
+    resetQuizUseCase = new ResetQuizUseCase(quizRepository);
   });
 
-  it('should end the quiz and transition to Completed', async () => {
+  it('resets a completed quiz and saves it', async () => {
     const quiz = new QuizSessionAggregate(
       new Quiz('quiz1', 'Sample Quiz', [], {
         timePerQuestion: 30,
@@ -30,22 +30,38 @@ describe('EndQuizUseCase', () => {
       30
     );
     quiz.startQuiz();
+    quiz.endQuiz();
     quizRepository.findById.mockResolvedValue(quiz);
 
-    await endQuizUseCase.execute('quiz1');
+    await resetQuizUseCase.execute('quiz1');
 
     expect(quizRepository.findById).toHaveBeenCalledWith('quiz1');
-    expect(quiz.quizStatus).toBe(QuizStatus.Completed);
+    expect(quiz.quizStatus).toBe(QuizStatus.Pending);
     expect(quizRepository.save).toHaveBeenCalledWith(quiz);
   });
 
-  it('should throw an error if the quiz is not found', async () => {
+  it('throws "Quiz not found." when quiz does not exist', async () => {
     quizRepository.findById.mockResolvedValue(null);
 
-    await expect(endQuizUseCase.execute('invalidQuizId')).rejects.toThrow(
+    await expect(resetQuizUseCase.execute('missing')).rejects.toThrow(
       'Quiz not found.'
     );
-    expect(quizRepository.findById).toHaveBeenCalledWith('invalidQuizId');
+    expect(quizRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('propagates entity error for invalid state (already Pending)', async () => {
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz1', 'Sample Quiz', [], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+      }),
+      30
+    );
+    quizRepository.findById.mockResolvedValue(quiz);
+
+    await expect(resetQuizUseCase.execute('quiz1')).rejects.toThrow(
+      'Quiz can only be reset if it is in Active or Completed status.'
+    );
     expect(quizRepository.save).not.toHaveBeenCalled();
   });
 });

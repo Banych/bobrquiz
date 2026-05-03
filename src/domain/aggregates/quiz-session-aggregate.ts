@@ -117,6 +117,11 @@ export class QuizSessionAggregate {
     this.quiz.endQuiz();
   }
 
+  reset(): void {
+    this.quiz.reset();
+    this.timer = new Timer(this.quiz.settings.timePerQuestion);
+  }
+
   addPlayer(playerId: string): void {
     this.quiz.addPlayer(playerId);
   }

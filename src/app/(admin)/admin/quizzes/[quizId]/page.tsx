@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, MonitorPlay } from 'lucide-react';
 import Link from 'next/link';
 import type { QuizDTO } from '@application/dtos/quiz.dto';
 
@@ -62,6 +62,20 @@ export default function QuizDetailPage() {
             Manage questions for this quiz
           </p>
         </div>
+        <Button variant="default" asChild>
+          <Link href={`/quiz/${quizId}`}>
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Open Dashboard
+          </Link>
+        </Button>
+        {quiz.status === 'Active' && (
+          <Button variant="outline" asChild>
+            <Link href={`/quiz/${quizId}/live`}>
+              <MonitorPlay className="mr-2 h-4 w-4" />
+              Open Live View
+            </Link>
+          </Button>
+        )}
         <CreateQuestionDialog quizId={quizId} />
       </div>
 

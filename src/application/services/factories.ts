@@ -28,6 +28,7 @@ import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
+import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import { CreateQuestionUseCase } from '@application/use-cases/create-question.use-case';
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
@@ -182,6 +183,7 @@ export const getServices = (): ServiceContainer => {
   const updateQuizUseCase = new UpdateQuizUseCase(quizRepository);
   const deleteQuizUseCase = new DeleteQuizUseCase(quizRepository);
   const listAllQuizzesUseCase = new ListAllQuizzesUseCase(quizRepository);
+  const resetQuizUseCase = new ResetQuizUseCase(quizRepository);
 
   const quizService = new QuizService(
     startQuizUseCase,
@@ -195,7 +197,8 @@ export const getServices = (): ServiceContainer => {
     createQuizUseCase,
     updateQuizUseCase,
     deleteQuizUseCase,
-    listAllQuizzesUseCase
+    listAllQuizzesUseCase,
+    resetQuizUseCase
   );
 
   const submitAnswerUseCase = new SubmitAnswerUseCase(

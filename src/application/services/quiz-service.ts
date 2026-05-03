@@ -25,6 +25,7 @@ import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
+import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 
 export class QuizService {
   constructor(
@@ -40,17 +41,16 @@ export class QuizService {
     private readonly createQuizUseCase: CreateQuizUseCase,
     private readonly updateQuizUseCase: UpdateQuizUseCase,
     private readonly deleteQuizUseCase: DeleteQuizUseCase,
-    private readonly listAllQuizzesUseCase: ListAllQuizzesUseCase
+    private readonly listAllQuizzesUseCase: ListAllQuizzesUseCase,
+    private readonly resetQuizUseCase: ResetQuizUseCase
   ) {}
 
   async startQuiz(quizId: string): Promise<void> {
     await this.startQuizUseCase.execute(quizId);
   }
 
-  async endQuiz(
-    quizId: string
-  ): Promise<{ playerId: string; score: number }[]> {
-    return this.endQuizUseCase.execute(quizId);
+  async endQuiz(quizId: string): Promise<void> {
+    await this.endQuizUseCase.execute(quizId);
   }
 
   async getQuizDetails(quizId: string): Promise<QuizSessionAggregate | null> {
@@ -97,5 +97,9 @@ export class QuizService {
 
   async listAllQuizzes(): Promise<QuizListItemDTO[]> {
     return this.listAllQuizzesUseCase.execute();
+  }
+
+  async resetQuiz(quizId: string): Promise<void> {
+    await this.resetQuizUseCase.execute(quizId);
   }
 }
