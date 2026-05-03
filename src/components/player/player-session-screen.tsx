@@ -165,9 +165,9 @@ export function PlayerSessionScreen({
 
   const questionOptions = useMemo(() => {
     if (!isOptionQuestion || !currentQuestion) return [];
-    return currentQuestion.options?.length
-      ? currentQuestion.options
-      : ['True', 'False'];
+    if (currentQuestion.options?.length) return currentQuestion.options;
+    if (currentQuestion.type === 'true/false') return ['True', 'False'];
+    return [];
   }, [isOptionQuestion, currentQuestion]);
 
   // Clear answer selection when the active question changes

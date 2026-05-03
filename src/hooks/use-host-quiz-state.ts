@@ -121,19 +121,8 @@ export const useHostQuizState = ({
   });
 
   const restartQuizMutation = useMutation({
-    mutationFn: () =>
-      fetch(`/api/admin/quizzes/${quizId}/reset`, { method: 'POST' }).then(
-        async (res) => {
-          if (!res.ok) {
-            const { error } = (await res.json().catch(() => ({}))) as {
-              error?: string;
-            };
-            throw new Error(error ?? 'Failed to restart quiz.');
-          }
-        }
-      ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: hostQuizQueryKey(quizId) }),
+    mutationFn: () => postQuizState<QuizDTO>(`/api/quiz/${quizId}/reset`),
+    onSuccess: applyState,
   });
 
   const queryResult = useQuery({
