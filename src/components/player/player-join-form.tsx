@@ -41,6 +41,19 @@ export function PlayerJoinForm() {
     null
   );
   const [quizInfo, setQuizInfo] = useState<JoinResponse['quiz'] | null>(null);
+  const [showKickedMessage] = useState(
+    () => searchParams.get('kicked') === 'true'
+  );
+
+  // Clear the ?kicked=true param from the URL after mount so it won't
+  // re-appear on a manual page refresh.
+  useEffect(() => {
+    if (searchParams.get('kicked') === 'true') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('kicked');
+      window.history.replaceState(null, '', url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     try {
@@ -154,6 +167,15 @@ export function PlayerJoinForm() {
             </div>
           )}
         </header>
+
+        {showKickedMessage && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-sm text-amber-200"
+          >
+            You were removed from the game by the host.
+          </div>
+        )}
 
         <form
           onSubmit={handleJoin}
