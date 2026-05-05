@@ -1,6 +1,15 @@
 # Dev Progress Log
 
-## 2026-01-31 (R5 Phase 4.2 Connection Health ✅)
+## 2026-05-05 (Player Kick & Auto-Remove ✅)
+- **Soft removal via `Removed` status**: New `PlayerStatus.Removed` in domain + Prisma schema; `removeFromGame(reason)` method on Player entity
+- **RemovePlayerUseCase**: Application use case validates player + quiz ownership, calls domain method, saves. Rejoin support — `Removed` excluded from name-duplicate check in `AddPlayerUseCase`
+- **DELETE API**: `DELETE /api/quiz/[quizId]/player/[playerId]` with optional `reason` body field (defaults to `'kicked'`)
+- **Realtime**: `broadcastPlayerKicked()` sends `player:kicked` event on private `player:{quizId}:{playerId}` channel
+- **Player UI**: `usePlayerSession` listens for `player:kicked` → redirects to `/join?kicked=true`; join page shows amber "You were removed from the game by the host." banner
+- **Host UI**: `useHostQuizPlayers` exposes `kickPlayer(playerId)` + `isKicking`; auto-removes players disconnected >5min via polling loop with `Set` deduplication ref; `PlayerListWithStatus` shows Kick button per row
+- **Verified**: build ✅, lint ✅ (0 errors), 413 tests ✅, manual kick flow ✅
+
+
 - **Connection status monitoring complete**: Hosts can now see player connection health in real-time
 - Created `PresenceMonitor` service with connection thresholds (connected <30s, away 30-120s, disconnected >120s)
 - Built `GetPlayerConnectionStatusUseCase` orchestrating presence detection

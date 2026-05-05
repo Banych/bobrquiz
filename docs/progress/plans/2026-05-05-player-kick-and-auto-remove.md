@@ -1,7 +1,7 @@
 # Player Kick & Auto-Remove
 
 **Date Created:** 2026-05-05
-**Status:** 📋 Planning
+**Status:** ✅ Complete
 **Estimated Time:** ~4.5 hours
 **Branch:** fix/game-lifecycle-ux
 **Depends on:** R6 Phase 3.5 ✅
