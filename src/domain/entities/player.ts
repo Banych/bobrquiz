@@ -7,6 +7,7 @@ export enum PlayerStatus {
   Active = 'Active',
   Disconnected = 'Disconnected',
   Finished = 'Finished',
+  Removed = 'Removed',
 }
 
 export class Player {
@@ -41,6 +42,19 @@ export class Player {
 
   updateLastSeenAt(timestamp: Date = new Date()): void {
     this.lastSeenAt = timestamp;
+  }
+
+  /**
+   * Removes the player from the game. The reason is informational for the
+   * application layer (realtime events, audit); the domain entity does not
+   * store it — status alone is sufficient.
+   */
+  removeFromGame(reason: 'kicked' | 'timeout'): void {
+    if (this.status === PlayerStatus.Removed) {
+      throw new Error('Player has already been removed from the game.');
+    }
+    void reason;
+    this.status = PlayerStatus.Removed;
   }
 
   /**

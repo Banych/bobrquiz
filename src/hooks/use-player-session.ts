@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
 import type { QuizDTO } from '@application/dtos/quiz.dto';
@@ -64,6 +65,7 @@ export const usePlayerSession = ({
 }: UsePlayerSessionOptions) => {
   const realtimeClient = useRealtimeClient();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const queryKey = playerSessionQueryKey(quizId, playerId);
   const quizChannelName = `quiz:${quizId}`;
   const playerChannelName = `player:${quizId}:${playerId}`;
@@ -118,6 +120,19 @@ export const usePlayerSession = ({
 
     return unsubscribe;
   }, [playerChannelName, realtimeClient, queryClient, queryKey]);
+
+  // Subscribe to player kick events
+  useEffect(() => {
+    const unsubscribe = realtimeClient.subscribe<Record<string, never>>(
+      playerChannelName,
+      'player:kicked',
+      () => {
+        router.push('/join?kicked=true');
+      }
+    );
+
+    return unsubscribe;
+  }, [playerChannelName, realtimeClient, router]);
 
   const submitAnswerMutation = useMutation({
     mutationFn: ({

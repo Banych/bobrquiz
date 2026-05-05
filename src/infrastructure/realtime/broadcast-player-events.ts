@@ -1,5 +1,6 @@
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
 import { broadcastPool } from './broadcast-channel-pool';
+
 import { getSupabaseServerClient } from './supabase-server-client';
 
 /**
@@ -51,4 +52,15 @@ export const broadcastPlayerUpdate = async (
   session: PlayerSessionDTO
 ): Promise<void> => {
   await broadcastPlayerEvent(quizId, playerId, 'player:update', session);
+};
+
+/**
+ * Broadcasts a kick/removal notification to a specific player.
+ */
+export const broadcastPlayerKicked = async (
+  quizId: string,
+  playerId: string,
+  reason: 'kicked' | 'timeout'
+): Promise<void> => {
+  await broadcastPlayerEvent(quizId, playerId, 'player:kicked', { reason });
 };

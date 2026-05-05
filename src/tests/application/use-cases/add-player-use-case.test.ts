@@ -1,7 +1,7 @@
 import { AddPlayerUseCase } from '@application/use-cases/add-player.use-case';
 import { QuizSessionAggregate } from '@domain/aggregates/quiz-session-aggregate';
 import { Quiz } from '@domain/entities/quiz';
-import { Player } from '@domain/entities/player';
+import { Player, PlayerStatus } from '@domain/entities/player';
 import { IQuizRepository } from '@domain/repositories/quiz-repository';
 import { IPlayerRepository } from '@domain/repositories/player-repository';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
@@ -99,5 +99,28 @@ describe('AddPlayerUseCase', () => {
     ).rejects.toThrow('Player name already taken for this quiz.');
     expect(playerRepository.save).not.toHaveBeenCalled();
     expect(quizRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should allow rejoin when existing player with same name is Removed', async () => {
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz1', 'Sample Quiz', [], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+      }),
+      30
+    );
+    const removedPlayer = new Player('old-p', 'Player 1', 'quiz1');
+    removedPlayer.status = PlayerStatus.Removed;
+
+    quizRepository.findById.mockResolvedValue(quiz);
+    playerRepository.findById.mockResolvedValue(null);
+    playerRepository.findByQuizIdAndName.mockResolvedValue(removedPlayer);
+
+    await expect(
+      addPlayerUseCase.execute('quiz1', 'p2', 'Player 1')
+    ).resolves.toBeUndefined();
+    expect(playerRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'p2', name: 'Player 1' })
+    );
   });
 });

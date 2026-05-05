@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const PlayerStatusDTO = z.enum(['Active', 'Disconnected', 'Finished']);
+export const PlayerStatusDTO = z.enum([
+  'Active',
+  'Disconnected',
+  'Finished',
+  'Removed',
+]);
 
 export const ConnectionStatusDTO = z.enum([
   'connected',

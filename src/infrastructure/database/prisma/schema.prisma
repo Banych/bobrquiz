@@ -130,6 +130,7 @@ enum PlayerStatus {
   Active
   Disconnected
   Finished
+  Removed
 }
 
 enum QuestionType {

@@ -123,4 +123,27 @@ describe('Player', () => {
       expect(player.getConnectionStatusType(now)).toBe('disconnected');
     });
   });
+
+  describe('removeFromGame', () => {
+    it('should set status to Removed when called with kicked reason from Active', () => {
+      const player = new Player('1', 'John Doe', 'quiz-1');
+      player.removeFromGame('kicked');
+      expect(player.status).toBe(PlayerStatus.Removed);
+    });
+
+    it('should set status to Removed when called with timeout reason from Disconnected', () => {
+      const player = new Player('1', 'John Doe', 'quiz-1');
+      player.updateStatus(PlayerStatus.Disconnected);
+      player.removeFromGame('timeout');
+      expect(player.status).toBe(PlayerStatus.Removed);
+    });
+
+    it('should throw when player is already Removed', () => {
+      const player = new Player('1', 'John Doe', 'quiz-1');
+      player.removeFromGame('kicked');
+      expect(() => player.removeFromGame('kicked')).toThrow(
+        'Player has already been removed from the game.'
+      );
+    });
+  });
 });

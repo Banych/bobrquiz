@@ -6,6 +6,7 @@ import {
 import { mapPlayerToDTO } from '@application/mappers/player-mapper';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
+import { PlayerStatus } from '@domain/entities/player';
 
 /**
  * GetPlayerConnectionStatusUseCase
@@ -37,14 +38,17 @@ export class GetPlayerConnectionStatusUseCase {
       throw new Error(`Quiz with ID ${quizId} not found.`);
     }
 
-    // Fetch all players for this quiz
+    // Fetch all players for this quiz, excluding Removed ones
     const players = await this.playerRepository.listByQuizId(quizId);
-    if (players.length === 0) {
+    const activePlayers = players.filter(
+      (p) => p.status !== PlayerStatus.Removed
+    );
+    if (activePlayers.length === 0) {
       return [];
     }
 
     // Map to DTOs with connection status
-    const playerDTOs = players.map((player) =>
+    const playerDTOs = activePlayers.map((player) =>
       mapPlayerToDTO(player, {
         includeConnectionStatus: true,
         now,

@@ -1,6 +1,6 @@
 import { IPlayerRepository } from '@domain/repositories/player-repository';
 import { IQuizRepository } from '@domain/repositories/quiz-repository';
-import { Player } from '@domain/entities/player';
+import { Player, PlayerStatus } from '@domain/entities/player';
 
 export class AddPlayerUseCase {
   constructor(
@@ -27,7 +27,7 @@ export class AddPlayerUseCase {
       quizId,
       playerName
     );
-    if (duplicateName) {
+    if (duplicateName && duplicateName.status !== PlayerStatus.Removed) {
       throw new Error('Player name already taken for this quiz.');
     }
 

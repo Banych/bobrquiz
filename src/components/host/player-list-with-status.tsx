@@ -3,6 +3,7 @@
 import { useHostQuizPlayers } from '@/hooks/use-host-quiz-players';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface PlayerListWithStatusProps {
   quizId: string;
@@ -20,6 +21,8 @@ export function PlayerListWithStatus({
     data: players = [],
     isLoading,
     error,
+    kickPlayer,
+    isKicking,
   } = useHostQuizPlayers(quizId, {
     refetchInterval: pollInterval,
   });
@@ -79,7 +82,18 @@ export function PlayerListWithStatus({
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="font-medium">{player.name}</p>
-                <ConnectionStatusBadge status={player.connectionStatus} />
+                <div className="flex items-center gap-2">
+                  <ConnectionStatusBadge status={player.connectionStatus} />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isKicking}
+                    onClick={() => kickPlayer(player.playerId)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    Kick
+                  </Button>
+                </div>
               </div>
               {player.lastSeenAt && (
                 <p className="text-xs text-muted-foreground">
