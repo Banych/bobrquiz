@@ -11,6 +11,7 @@ import { UpdatePlayerStatusUseCase } from '@application/use-cases/update-player-
 import { UpdatePlayerPresenceUseCase } from '@application/use-cases/update-player-presence.use-case';
 import { GetPlayerSessionUseCase } from '@application/use-cases/get-player-session.use-case';
 import { GetPlayerConnectionStatusUseCase } from '@application/use-cases/get-player-connection-status.use-case';
+import { RemovePlayerUseCase } from '@application/use-cases/remove-player.use-case';
 import { PlayerService } from '@application/services/player-service';
 import { StartQuizUseCase } from '@application/use-cases/start-quiz.use-case';
 import { EndQuizUseCase } from '@application/use-cases/end-quiz.use-case';
@@ -140,6 +141,7 @@ export const getServices = (): ServiceContainer => {
     quizRepository,
     playerRepository
   );
+  const removePlayerUseCase = new RemovePlayerUseCase(playerRepository);
 
   const playerService = new PlayerService(
     addPlayerUseCase,
@@ -147,7 +149,8 @@ export const getServices = (): ServiceContainer => {
     updatePlayerPresenceUseCase,
     findPlayerByIdUseCase,
     listPlayersUseCase,
-    getPlayerSessionUseCase
+    getPlayerSessionUseCase,
+    removePlayerUseCase
   );
 
   const startQuizUseCase = new StartQuizUseCase(

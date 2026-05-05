@@ -1,7 +1,7 @@
 import { GetPlayerConnectionStatusUseCase } from '@application/use-cases/get-player-connection-status.use-case';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
-import { Player } from '@domain/entities/player';
+import { Player, PlayerStatus } from '@domain/entities/player';
 import { Quiz } from '@domain/entities/quiz';
 import { QuizSessionAggregate } from '@domain/aggregates/quiz-session-aggregate';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
@@ -227,6 +227,34 @@ describe('GetPlayerConnectionStatusUseCase', () => {
       expect(result[3].connectionStatus).toBe('away');
       expect(result[8].connectionStatus).toBe('away');
       expect(result[9].connectionStatus).toBe('disconnected');
+    });
+
+    it('should exclude Removed players from the result', async () => {
+      const quizId = 'quiz-1';
+      const quiz = new Quiz(quizId, 'Test Quiz', [], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+        scoringAlgorithm: 'FIXED',
+      });
+      const quizAggregate = new QuizSessionAggregate(quiz, 30);
+
+      const activePlayer = new Player('p1', 'Active Player', quizId);
+      activePlayer.lastSeenAt = new Date(baseTime.getTime() - 5_000);
+
+      const removedPlayer = new Player('p2', 'Removed Player', quizId);
+      removedPlayer.lastSeenAt = new Date(baseTime.getTime() - 5_000);
+      removedPlayer.status = PlayerStatus.Removed;
+
+      quizRepository.findById.mockResolvedValue(quizAggregate);
+      playerRepository.listByQuizId.mockResolvedValue([
+        activePlayer,
+        removedPlayer,
+      ]);
+
+      const result = await useCase.execute(quizId, baseTime);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].playerId).toBe('p1');
     });
   });
 });

@@ -6,6 +6,7 @@ import { UpdatePlayerStatusUseCase } from '@application/use-cases/update-player-
 import { UpdatePlayerPresenceUseCase } from '@application/use-cases/update-player-presence.use-case';
 import { ListQuizPlayersUseCase } from '@application/use-cases/list-quiz-players.use-case';
 import { GetPlayerSessionUseCase } from '@application/use-cases/get-player-session.use-case';
+import { RemovePlayerUseCase } from '@application/use-cases/remove-player.use-case';
 import { Player, PlayerStatus } from '@domain/entities/player';
 
 export class PlayerService {
@@ -15,7 +16,8 @@ export class PlayerService {
     private readonly updatePlayerPresenceUseCase: UpdatePlayerPresenceUseCase,
     private readonly findPlayerByIdUseCase: FindPlayerByIdUseCase,
     private readonly listQuizPlayersUseCase: ListQuizPlayersUseCase,
-    private readonly getPlayerSessionUseCase: GetPlayerSessionUseCase
+    private readonly getPlayerSessionUseCase: GetPlayerSessionUseCase,
+    private readonly removePlayerUseCase: RemovePlayerUseCase
   ) {}
 
   async addPlayer(
@@ -50,5 +52,17 @@ export class PlayerService {
 
   async updatePresence(playerId: string, timestamp?: Date): Promise<void> {
     await this.updatePlayerPresenceUseCase.execute({ playerId, timestamp });
+  }
+
+  async removePlayer(
+    playerId: string,
+    quizId: string,
+    reason: 'kicked' | 'timeout'
+  ): Promise<{
+    playerId: string;
+    quizId: string;
+    reason: 'kicked' | 'timeout';
+  }> {
+    return this.removePlayerUseCase.execute(playerId, quizId, reason);
   }
 }
