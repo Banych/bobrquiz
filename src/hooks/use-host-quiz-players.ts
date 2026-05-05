@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlayerConnectionStatusDTO } from '@application/dtos/player-connection-status.dto.ts';
 
 /**
@@ -8,6 +9,8 @@ import type { PlayerConnectionStatusDTO } from '@application/dtos/player-connect
  */
 export const playerConnectionStatusQueryKey = (quizId: string) =>
   ['quiz', quizId, 'players', 'status'] as const;
+
+const AUTO_REMOVE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Fetch player connection status from the API
@@ -63,8 +66,10 @@ export function useHostQuizPlayers(
   }
 ) {
   const { enabled = true, refetchInterval = 5000 } = options ?? {};
+  const queryClient = useQueryClient();
+  const autoRemovedRef = useRef<Set<string>>(new Set());
 
-  return useQuery({
+  const query = useQuery({
     queryKey: playerConnectionStatusQueryKey(quizId),
     queryFn: () => fetchPlayerConnectionStatus(quizId),
     enabled: enabled && !!quizId,
@@ -74,4 +79,78 @@ export function useHostQuizPlayers(
     retry: 2, // Retry twice on network failure
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
+
+  const removePlayerMutation = useMutation({
+    mutationFn: ({
+      playerId,
+      reason,
+    }: {
+      playerId: string;
+      reason: 'kicked' | 'timeout';
+    }) =>
+      fetch(`/api/quiz/${quizId}/player/${playerId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: playerConnectionStatusQueryKey(quizId),
+      });
+    },
+  });
+
+  const kickPlayerMutation = useMutation({
+    mutationFn: (playerId: string) =>
+      fetch(`/api/quiz/${quizId}/player/${playerId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'kicked' }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: playerConnectionStatusQueryKey(quizId),
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to kick player:', error);
+    },
+  });
+
+  // Auto-remove players disconnected for longer than AUTO_REMOVE_THRESHOLD_MS.
+  // Only query.data is a meaningful dep — mutations and the ref are stable.
+  useEffect(() => {
+    const players = query.data;
+    if (!players) return;
+
+    const now = Date.now();
+    for (const player of players) {
+      if (
+        player.connectionStatus === 'disconnected' &&
+        player.lastSeenAt !== null &&
+        !autoRemovedRef.current.has(player.playerId)
+      ) {
+        const lastSeenMs = new Date(player.lastSeenAt).getTime();
+        if (now - lastSeenMs > AUTO_REMOVE_THRESHOLD_MS) {
+          autoRemovedRef.current.add(player.playerId);
+          removePlayerMutation.mutate(
+            { playerId: player.playerId, reason: 'timeout' },
+            {
+              onError: () => {
+                // Allow retry on next polling cycle
+                autoRemovedRef.current.delete(player.playerId);
+              },
+            }
+          );
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.data]); // removePlayerMutation and autoRemovedRef are stable across renders
+
+  return {
+    ...query,
+    kickPlayer: (playerId: string) => kickPlayerMutation.mutate(playerId),
+    isKicking: kickPlayerMutation.isPending,
+  };
 }
