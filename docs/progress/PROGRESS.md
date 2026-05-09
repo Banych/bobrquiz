@@ -20,6 +20,24 @@ This document indexes all releases, completed work, and session notes. Use this 
 
 **Latest First** – Find detailed work notes by date:
 
+### 2026-05-09: Maintenance — Security Upgrades & Tooling ✅
+- **Focus**: Address 101 Dependabot security alerts, ESLint 10 migration, CI fixes, tooling improvements
+- **Deliverables**: 101→2 vulnerabilities fixed (Next 16.2.6, Prisma 7.8, ESLint 10, Vitest 4, Playwright 1.59), `.github/dependabot.yml` for automated updates, CI env fallbacks for Dependabot PRs, GitHub MCP package corrected, LF line ending enforcement, pg pool cap (EMAXCONN fix), Supavisor URL documented
+- **Status**: Complete — no regressions, lint clean, build passing
+- **File**: [sessions/2026-05-09-maintenance-security-tooling.md](sessions/2026-05-09-maintenance-security-tooling.md)
+
+### 2026-05-05: Player Kick & Auto-Remove ✅
+- **Focus**: Allow host to manually kick players; auto-remove players disconnected >5 minutes
+- **Deliverables**: `PlayerStatus.Removed` domain status + `removeFromGame()`, `RemovePlayerUseCase`, `DELETE /api/quiz/[quizId]/player/[playerId]`, `broadcastPlayerKicked()`, player redirect on kick with banner message, host kick button, auto-remove polling loop with `Set` dedup guard, rejoin support for removed players
+- **Status**: Complete — 413 tests passing, build passing, end-to-end manual verification
+- **File**: [sessions/2026-05-05-player-kick-auto-remove.md](sessions/2026-05-05-player-kick-auto-remove.md)
+
+### 2026-05-02: R6 Phase 3.5 — Game Lifecycle & UX Fixes ✅
+- **Focus**: Five post-Phase-3 bugs: quiz reset, host contextual buttons, player MC/TF UI, admin nav shortcuts, presence race condition
+- **Deliverables**: `Quiz.reset()` + `ResetQuizUseCase`, finish/restart mutations in `useHostQuizState`, player answer type switching, "Open Dashboard"/"Open Live View" admin links, heartbeat 30s→10s + `lastSeenAt` on answer submission
+- **Status**: Complete — 403 tests passing, build passing
+- **File**: [sessions/2026-05-02-r6-phase3.5-lifecycle-ux-fixes.md](sessions/2026-05-02-r6-phase3.5-lifecycle-ux-fixes.md)
+
 ### 2026-03-07: R6 Phase 2 — UI/UX Improvements ✅
 - **Focus**: Accessibility (a11y) fixes and responsive design for admin table
 - **Deliverables**: `aria-label` on icon-only buttons, `aria-live`/`role="status"` on dynamic messages, `role="timer"` on countdown, responsive admin quiz table (hidden columns at 375px), `role="alert"` on join form error (bonus), updated metadata description, admin email hidden on mobile
@@ -204,6 +222,27 @@ This document indexes all releases, completed work, and session notes. Use this 
 
 See [dev-notes.md](dev-notes.md) for the full execution log with timestamps.
 
+### 2026-05-09: Maintenance — Security Upgrades & Tooling
+- Security: 101→2 vulnerabilities (Next, Prisma, ESLint 10, Vitest 4, Playwright; yarn resolutions for transitive CVEs)
+- ESLint 10 flat config migration — removed FlatCompat bridge, disabled 2 false-positive rules for Next.js async patterns
+- `.github/dependabot.yml` added — weekly grouped updates for npm and GitHub Actions
+- CI: build job now uses env fallbacks so Dependabot PRs don't fail on missing secrets
+- Infrastructure: pg pool capped at `max: 2`; Supavisor port 6543 URL documented in `.env.example`
+- Tooling: GitHub MCP package corrected, `.gitattributes` LF enforcement, `.mcp.json` formatting
+- 10 routine Dependabot PRs merged (zod, tailwind, prettier, dotenv, tsx, tanstack, actions)
+- Session: [sessions/2026-05-09-maintenance-security-tooling.md](sessions/2026-05-09-maintenance-security-tooling.md)
+
+### 2026-05-05: Player Kick & Auto-Remove ✅
+- `PlayerStatus.Removed` + `Player.removeFromGame(reason)` domain method (soft delete, data preserved)
+- `RemovePlayerUseCase` — validates ownership, calls domain, saves; `AddPlayerUseCase` excludes `Removed` from name-conflict check (rejoin support)
+- `DELETE /api/quiz/[quizId]/player/[playerId]` with optional `reason` body
+- `broadcastPlayerKicked()` on private `player:{quizId}:{playerId}` channel
+- Player UI: `player:kicked` → redirect to `/join?kicked=true` with amber banner
+- Host UI: Kick button per row + auto-remove loop (5-min disconnected threshold, `Set` dedup guard)
+- `GetQuizStateUseCase` filters `Removed` players from `QuizDTO` (hotfix post-merge)
+- 413 tests passing, manual kick + rejoin verified
+- Session: [sessions/2026-05-05-player-kick-auto-remove.md](sessions/2026-05-05-player-kick-auto-remove.md)
+
 ### 2026-05-02: R6 Phase 3.5 — Game Lifecycle & UX Fixes ✅
 - **Step 1**: Quiz reset — `Quiz.reset()`, `ResetQuizUseCase`, `POST /api/admin/quizzes/[quizId]/reset` (6 new tests)
 - **Step 2**: Host dashboard contextual buttons — finish/restart mutations, `POST /api/quiz/[quizId]/finish`, status-aware button set
@@ -211,6 +250,7 @@ See [dev-notes.md](dev-notes.md) for the full execution log with timestamps.
 - **Step 4**: Admin dashboard/live view buttons — "Open Dashboard" (all statuses) + "Open Live View" (Active) on detail page and quiz list
 - **Step 5**: Presence fix — heartbeat interval 30s→10s (race with 30s connected threshold), answer submission refreshes `lastSeenAt`
 - 403 tests passing, `yarn build` succeeds
+- Session: [sessions/2026-05-02-r6-phase3.5-lifecycle-ux-fixes.md](sessions/2026-05-02-r6-phase3.5-lifecycle-ux-fixes.md)
 - Plan: [plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md](plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md)
 
 ### Previous (2026-03-08):
@@ -275,6 +315,13 @@ All R5 phases complete as of 2026-02-01. See [plan.md](../plan.md) for performan
 - [x] Presence fix: heartbeat interval reduced (30s→10s), answer submission refreshes `lastSeenAt`
 - **Plan:** [plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md](plans/2026-03-14-r6-phase3.5-lifecycle-ux-fixes.md)
 
+**Player Management (shipped 2026-05-05)** ✅
+- [x] Host kick button — removes any player at any time (lobby or active game)
+- [x] Auto-remove disconnected players after 5-minute threshold
+- [x] Kicked player receives realtime redirect + "removed from game" banner
+- [x] Removed players can rejoin using the same join code
+- **Plan:** [plans/2026-05-05-player-kick-and-auto-remove.md](plans/2026-05-05-player-kick-and-auto-remove.md)
+
 **Phase 4: Analytics & Observability**
 - [ ] PostHog analytics instrumentation
 - [ ] Structured logging with request IDs
@@ -310,6 +357,8 @@ See [file-ideas.md](file-ideas.md) for tracked follow-ups per file.
 - **Performance**: P95 latencies exceed targets; optimization path documented
 - **Testing**: E2E selector strict mode violations in some tests
 - **Security**: RLS not enabled on Prisma-managed tables (app uses server-side Prisma, not PostgREST)
+- **Dependencies**: 2 remaining Dependabot alerts with no available fix (transitive, low risk); Dependabot now runs weekly
+- **Infrastructure**: Supavisor (pgbouncer) URL on port 6543 is the correct production `DATABASE_URL` — see `.env.example`
 
 ---
 
