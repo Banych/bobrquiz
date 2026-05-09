@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -102,6 +103,7 @@ export const usePresence = ({
   >(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sendHeartbeatRef = useRef<() => Promise<void>>(async () => {});
   const joinedAtRef = useRef<string>(new Date().toISOString());
   const hasCalledErrorCallbackRef = useRef(false);
 
@@ -177,7 +179,7 @@ export const usePresence = ({
         const retryDelay = RETRY_DELAYS_MS[delayIndex];
 
         retryTimeoutRef.current = setTimeout(() => {
-          void sendHeartbeat();
+          void sendHeartbeatRef.current();
         }, retryDelay);
       }
     }
@@ -191,6 +193,11 @@ export const usePresence = ({
     onReconnected,
     onConnectionError,
   ]);
+
+  // Keep the ref up to date so the retry timeout always calls the latest version
+  useLayoutEffect(() => {
+    sendHeartbeatRef.current = sendHeartbeat;
+  });
 
   // Subscribe to presence and start heartbeat on mount
   useEffect(() => {
