@@ -10,6 +10,11 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({
   connectionString,
+  // Limit pool size per serverless function instance.
+  // In a serverless environment (Vercel), each lambda can open its own pool;
+  // keeping max low prevents exhausting Supabase's connection limit (200).
+  // The primary fix is using the Supavisor pooler URL (port 6543) in DATABASE_URL.
+  max: 2,
 });
 
 const globalForPrisma = globalThis as unknown as {
