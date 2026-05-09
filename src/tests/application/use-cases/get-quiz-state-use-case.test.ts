@@ -78,4 +78,32 @@ describe('GetQuizStateUseCase', () => {
       'Quiz with ID missing not found.'
     );
   });
+
+  it('excludes Removed players from the returned DTO', async () => {
+    const quiz = new Quiz('quiz-1', 'General Knowledge', [], {
+      allowSkipping: false,
+      timePerQuestion: 30,
+    });
+    const aggregate = new QuizSessionAggregate(quiz, 30);
+    aggregate.addPlayer('player-active');
+    aggregate.addPlayer('player-removed');
+
+    const activePlayer = new Player('player-active', 'Alice', 'quiz-1');
+    const removedPlayer = new Player('player-removed', 'Bob', 'quiz-1');
+    removedPlayer.removeFromGame('kicked');
+
+    quizRepository.findById.mockResolvedValue(aggregate);
+    playerRepository.findById
+      .mockResolvedValueOnce(activePlayer)
+      .mockResolvedValueOnce(removedPlayer);
+
+    const dto = await useCase.execute('quiz-1');
+
+    expect(dto.players).toHaveLength(1);
+    expect(dto.players[0]).toMatchObject({
+      id: 'player-active',
+      name: 'Alice',
+    });
+    expect(dto.players.find((p) => p.id === 'player-removed')).toBeUndefined();
+  });
 });
