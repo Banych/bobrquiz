@@ -378,8 +378,44 @@ The project uses three MCP servers configured in `.vscode/mcp.json` for enhanced
 
 **Note:** All MCP servers require Node 22 (use `nvm use` if switching versions). Environment variables like `POSTMAN_API_KEY` and `CONTEXT7_API_KEY` are prompted on first use. Claude Code uses a separate `.mcp.json` at the project root with `mcp__` tool naming (e.g. `mcp__supabase__get_logs`), while Copilot uses `.vscode/mcp.json` with `mcp_` naming (e.g. `mcp_supabase_get_logs`).
 
+### GitHub CLI (`gh`) — Preferred for All GitHub Interactions
+**Purpose:** Create PRs, manage issues, add comments (including `@dependabot` commands), check CI status.
+
+**Why prefer `gh` over `mcp_github_*` tools:** GitHub MCP tools require separate OAuth credentials that frequently fail with "Bad credentials". The `gh` CLI uses a persistent authenticated session that reliably works.
+
+**Install (Windows):** `winget install --id GitHub.cli`
+**Auth:** `gh auth login --git-protocol https --web`
+**After install, refresh PATH in existing terminals:**
+```powershell
+$env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+```
+
+**Common workflows:**
+```powershell
+# List open PRs / issues
+gh pr list --repo Banych/quiz-game
+gh issue list --repo Banych/quiz-game
+
+# View PR details and CI checks
+gh pr view 30 --repo Banych/quiz-game
+gh pr checks 30 --repo Banych/quiz-game
+
+# Create PR from current branch (branch must already be pushed)
+gh pr create --base master --title "feat: ..." --body "..."
+
+# Add a comment (e.g. trigger Dependabot rebase)
+gh pr comment 30 --repo Banych/quiz-game --body "@dependabot rebase"
+
+# Rebase ALL open Dependabot PRs at once
+gh pr list --repo Banych/quiz-game --author dependabot --json number --jq '.[].number' | ForEach-Object {
+  gh pr comment $_ --repo Banych/quiz-game --body "@dependabot rebase"
+}
+```
+
+**Full skill reference:** See `github-cli` skill in the superpowers skills folder for complete usage patterns, branch protection workflow, and troubleshooting.
+
 ### Git Operations (GitKraken MCP - Available but not in mcp.json)
-**Purpose:** Git version control operations via MCP tools
+**Purpose:** Git version control operations via MCP tools (alternative to terminal git commands)
 **Available Capabilities:**
 - **Staging & Committing:**
   - Add files to index or commit changes via `mcp_gitkraken_git_add_or_commit(directory, action: 'add'|'commit', files?, message?)`
@@ -390,25 +426,8 @@ The project uses three MCP servers configured in `.vscode/mcp.json` for enhanced
   - Stash working directory changes via `mcp_gitkraken_git_stash(directory, name?)`
 - **Branch Operations:**
   - Branch management tools available via `activate_git_branch_management_tools()` (includes branch, checkout, log, diff, status, worktree)
-- **PR & Issue Management:**
-  - Pull request and issue tools available via `activate_pull_request_and_issue_management_tools()` (search PRs, create PRs, get PR details, comments)
 
-**Usage pattern:**
-```
-# Commit changes after implementing feature
-mcp_gitkraken_git_add_or_commit(
-  directory: '/Users/vladislavbanykin/Documents/repos/quiz-game',
-  action: 'add',
-  files: ['src/components/admin/quiz-list.tsx', 'src/components/admin/edit-quiz-dialog.tsx']
-)
-mcp_gitkraken_git_add_or_commit(
-  directory: '/Users/vladislavbanykin/Documents/repos/quiz-game',
-  action: 'commit',
-  message: 'feat: implement quiz CRUD dialogs'
-)
-```
-
-**Note:** These tools are available in the agent toolbox but NOT currently configured in `.vscode/mcp.json`. Add GitKraken MCP server configuration if frequent git operations are needed.
+**Note:** These tools are available in the agent toolbox but NOT currently configured in `.vscode/mcp.json`. Prefer `gh` CLI or terminal `git` commands instead.
 
 ### Prisma Operations (Prisma MCP - Available but not in mcp.json)
 **Purpose:** Database schema management and Prisma operations via MCP tools
