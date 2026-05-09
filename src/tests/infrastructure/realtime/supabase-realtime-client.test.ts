@@ -70,7 +70,6 @@ class TestableRealtimeClient implements RealtimeClient {
     return this.closingChannels.has(channelName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async emit<TPayload = unknown>(): Promise<void> {
     // Not tested here
   }
