@@ -15,7 +15,6 @@ type RouteParams = {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { quizId, playerId } = await params;
     const body = await request.json().catch(() => ({}));
     const parsed = PresenceRequestSchema.safeParse(body);

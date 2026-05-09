@@ -78,9 +78,9 @@ export class LinearDecayStrategy implements ScoringStrategy {
 export class FixedPointsStrategy implements ScoringStrategy {
   calculate(
     basePoints: number,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     timeTaken: number,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     totalTime: number
   ): number {
     return basePoints;

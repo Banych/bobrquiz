@@ -43,7 +43,6 @@ class MockPresenceTracker implements IPresenceTracker {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async untrack(quizId: string): Promise<void> {
     // In real implementation, this would remove the current player
     // For mock, we just clear the state

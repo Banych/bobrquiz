@@ -5,9 +5,8 @@ import type { ReconnectionState } from '@hooks/use-reconnection';
 describe('ConnectionStatusBanner', () => {
   describe('Component Export', () => {
     it('should export ConnectionStatusBanner component', async () => {
-      const componentModule = await import(
-        '@components/player/connection-status-banner'
-      );
+      const componentModule =
+        await import('@components/player/connection-status-banner');
       expect(componentModule.ConnectionStatusBanner).toBeDefined();
       expect(typeof componentModule.ConnectionStatusBanner).toBe('function');
     });

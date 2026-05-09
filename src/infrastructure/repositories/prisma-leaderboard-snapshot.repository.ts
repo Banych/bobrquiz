@@ -15,9 +15,7 @@ const mapToDomain = (record: PrismaSnapshot): LeaderboardSnapshot => ({
   capturedAt: record.capturedAt,
 });
 
-export class PrismaLeaderboardSnapshotRepository
-  implements ILeaderboardSnapshotRepository
-{
+export class PrismaLeaderboardSnapshotRepository implements ILeaderboardSnapshotRepository {
   async saveSnapshots(
     quizId: string,
     questionIndex: number,
