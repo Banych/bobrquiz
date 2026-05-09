@@ -32,7 +32,6 @@
     ]
   },
   "enabledMcpjsonServers": [
-    "github",
     "supabase",
     "playwright",
     "context7"
