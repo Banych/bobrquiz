@@ -1,0 +1,55 @@
+version: 2
+updates:
+  # Keep npm/yarn dependencies up to date
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      # Group all Prisma packages together
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+      # Group all ESLint packages together
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@next/eslint-plugin-next"
+      # Group all Radix UI packages together
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      # Group all TanStack packages together
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      # Group all Vitest packages together
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "vite"
+          - "vite-*"
+      # Group all Supabase packages together
+      supabase:
+        patterns:
+          - "@supabase/*"
+    ignore:
+      # Avoid major bumps for framework packages without manual review
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # Keep GitHub Actions up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

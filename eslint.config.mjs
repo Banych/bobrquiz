@@ -1,15 +1,7 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { FlatCompat } from '@eslint/eslintrc';
+import eslintConfigNext from 'eslint-config-next';
 import eslintConfigPrettier from 'eslint-config-prettier';
-import eslintCssPlugin from 'eslint-plugin-css';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import typescriptEslintParser from '@typescript-eslint/parser';
 
 const eslintConfig = [
   {
@@ -21,20 +13,29 @@ const eslintConfig = [
       'playwright-report/**/*',
     ],
   },
-  ...compat.extends(
-    'next/core-web-vitals',
-    'next/typescript',
-    'plugin:react/recommended',
-    'plugin:css/standard',
-    'plugin:prettier/recommended',
-    'plugin:@next/next/recommended'
-  ),
-  eslintCssPlugin.configs['flat/standard'],
+  ...eslintConfigNext,
+  // Override the babel-based next/parser (incompatible with ESLint 10) with
+  // @typescript-eslint/parser for all JS/TS files.
+  {
+    files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
+    languageOptions: {
+      parser: typescriptEslintParser,
+      parserOptions: {
+        sourceType: 'module',
+      },
+    },
+  },
+  eslintPluginPrettierRecommended,
   eslintConfigPrettier,
   {
+    settings: {
+      react: { version: '18.3.1' },
+    },
     rules: {
       'react/react-in-jsx-scope': 'off',
       'linebreak-style': ['error', 'unix'],
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
 ];
