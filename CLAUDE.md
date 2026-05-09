@@ -174,6 +174,64 @@ This file is a condensed quick reference; the full guide has comprehensive examp
 
 See `.github/copilot-instructions.md` "Planning Workflow (Scrum Board Alternative)" for full details.
 
+## Documentation Practices
+
+Good documentation is written at the moment of decision, not reconstructed later. These practices apply to all work in this repo.
+
+### Decision Logging
+
+**Record the WHY, not just the WHAT.** The commit message records what changed; the session file must record why the alternative was rejected.
+
+Minimum decision entry format (use in plan files and session files):
+```
+**Decision: [short label]**
+[One sentence on what was chosen.] [One sentence on the alternative considered.] [One sentence on why this was preferred.]
+```
+
+**Always document when you:**
+- Choose soft delete over hard delete (data retention trade-off)
+- Pick a threshold value (timeout, interval, pool size) — explain the reasoning, not just the value
+- Disable a linter rule — name the false-positive pattern
+- Use a workaround for a framework quirk — name the quirk
+- Defer a feature — say what it's deferred *to* and why it was deprioritised now
+
+### What Goes Where
+
+| Artifact | When to create | What to put in it |
+|----------|---------------|-------------------|
+| **Plan file** (`docs/progress/plans/`) | Before starting any feature >5 steps or >2h | Steps with checkboxes, technical decisions, time estimates, success criteria |
+| **Session file** (`docs/progress/sessions/`) | After completing any significant session | What was built, key decisions with rationale, verification results, files changed |
+| **dev-notes.md** | Daily — append-only bullet log | One-liner per feature/fix, link to session file |
+| **PROGRESS.md** | After each session | Brief session entry in chronological list + execution log |
+| **Commit message** | Every commit | *What* changed and *why* (not how) |
+
+### When a Session File Is Required
+
+Create a session file whenever:
+- A feature plan was executed (session file = companion to plan file)
+- A significant bug was fixed with a non-obvious root cause
+- A maintenance or upgrade session touched many files
+- A decision was made that a future developer would need to understand
+
+Skip the session file for: single-file typo fixes, trivial dependency bumps, formatting-only changes.
+
+### The Decision Trail Habit
+
+Before closing a plan or session, ask: *"If I came back to this in 6 months, what would confuse me?"*
+
+Common things to capture:
+- Why a threshold is the value it is (e.g. "5 min auto-remove: matches the 120s disconnected threshold × 2.5, giving a visible grace period without requiring background jobs")
+- Why a pool cap is set where it is (e.g. "`max: 2` because serverless handles one request at a time; 2 allows parallel queries within a request without exhausting Supabase's per-connection limit")
+- What alternatives were rejected and why (e.g. "server-side auto-remove via cron was rejected because it requires background job infrastructure we don't have; host-side is acceptable since the host must be present for the game to run")
+
+### Maintenance Sessions
+
+Security and dependency upgrade sessions must record:
+- What drove the upgrade (CVE IDs or Dependabot alerts, not just "security")
+- What broke during the upgrade and how it was fixed
+- Any rules disabled or workarounds added, and why
+- What remains unresolved (e.g. transitive CVEs with no available fix)
+
 ## Key Patterns
 
 ### API Routes

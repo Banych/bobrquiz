@@ -1,5 +1,17 @@
 # Dev Progress Log
 
+## 2026-05-09 (Maintenance: Security, Tooling, CI ✅)
+- **Security**: 101 Dependabot vulnerabilities → 2; bumped Next 16.2.6, Prisma 7.8, ESLint 10, Vitest 4, Playwright 1.59; added `resolutions` in `package.json` for transitive CVEs (minimatch, brace-expansion, flatted, picomatch, vite, postcss, @hono/node-server, js-yaml)
+- **ESLint 10**: Removed `FlatCompat` bridge (circular JSON error); native `eslint-config-next` flat export; disabled `react-hooks/error-boundaries` (false positive on Next.js async server components) and `react-hooks/set-state-in-effect` (legitimate derived-state patterns); fixed `use-presence.tsx` to add `sendHeartbeatRef` to deps
+- **Dependabot**: Added `.github/dependabot.yml` — weekly grouped npm updates + weekly GitHub Actions updates
+- **CI**: Added env fallbacks (`|| ''`) in build job so Dependabot PRs don't fail on missing secrets; bumped `setup-node` v4→v5
+- **GitHub MCP**: Corrected package name in `.mcp.json`/`.vscode/mcp.json`/`.claude/settings.local.json` (was non-existent `@anthropic-ai/claude-code`, now `@modelcontextprotocol/server-github`)
+- **LF endings**: `.gitattributes` `* text=auto eol=lf` + VS Code `files.eol: \n`
+- **pg pool cap**: `max: 2` on `PrismaPg` adapter; `.env.example` documents Supavisor URL (port 6543) as the primary EMAXCONN fix
+- **Prettier 3.8.3**: Reformatted affected files after bump
+- **10 routine Dependabot PRs merged**: zod, tailwind-merge, @tailwindcss/postcss, dotenv, tsx, vite-tsconfig-paths, tanstack group, actions/checkout v6, actions/setup-node v6
+- Session: [sessions/2026-05-09-maintenance-security-tooling.md](sessions/2026-05-09-maintenance-security-tooling.md)
+
 ## 2026-05-05 (Player Kick & Auto-Remove ✅)
 - **Soft removal via `Removed` status**: New `PlayerStatus.Removed` in domain + Prisma schema; `removeFromGame(reason)` method on Player entity
 - **RemovePlayerUseCase**: Application use case validates player + quiz ownership, calls domain method, saves. Rejoin support — `Removed` excluded from name-duplicate check in `AddPlayerUseCase`
