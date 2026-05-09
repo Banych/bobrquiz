@@ -3,7 +3,7 @@
     "github": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@anthropic-ai/github-mcp-server"],
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
