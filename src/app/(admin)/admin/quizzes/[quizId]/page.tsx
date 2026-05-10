@@ -68,7 +68,7 @@ export default function QuizDetailPage() {
             Open Dashboard
           </Link>
         </Button>
-        {quiz.status === 'Active' && (
+        {(quiz.status === 'Active' || quiz.status === 'Pending') && (
           <Button variant="outline" asChild>
             <Link href={`/quiz/${quizId}/live`}>
               <MonitorPlay className="mr-2 h-4 w-4" />

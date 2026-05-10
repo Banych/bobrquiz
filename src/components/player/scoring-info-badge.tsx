@@ -53,12 +53,12 @@ export function ScoringInfoBadge({
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className={`inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm ${className}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-gray-700/90 backdrop-blur-sm ${className}`}
           >
             <Info className="h-3.5 w-3.5" />
             <span>{label}</span>
             {showDecayRate && (
-              <span className="ml-0.5 text-white/60">
+              <span className="ml-0.5 text-gray-600/60">
                 • {getDecayRateLabel(decayRate)}
               </span>
             )}
