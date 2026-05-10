@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LayoutDashboard, Pencil, Trash2, MonitorPlay } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ import { DeleteQuizDialog } from './delete-quiz-dialog';
 import type { QuizListItemDTO } from '@application/dtos/quiz-admin.dto';
 
 export function QuizList() {
-  const router = useRouter();
   const [editingQuiz, setEditingQuiz] = useState<QuizListItemDTO | null>(null);
   const [deletingQuiz, setDeletingQuiz] = useState<QuizListItemDTO | null>(
     null
@@ -125,9 +123,11 @@ export function QuizList() {
                   size="sm"
                   title="Open Dashboard"
                   aria-label="Open dashboard"
-                  onClick={() => router.push(`/quiz/${quiz.id}`)}
+                  asChild
                 >
-                  <LayoutDashboard className="h-4 w-4" />
+                  <Link href={`/quiz/${quiz.id}`}>
+                    <LayoutDashboard className="h-4 w-4" />
+                  </Link>
                 </Button>
                 {quiz.status === 'Pending' && (
                   <Button
@@ -146,9 +146,11 @@ export function QuizList() {
                     size="sm"
                     title="Open Lobby"
                     aria-label="Open lobby"
-                    onClick={() => router.push(`/quiz/${quiz.id}/live`)}
+                    asChild
                   >
-                    <MonitorPlay className="h-4 w-4" />
+                    <Link href={`/quiz/${quiz.id}/live`}>
+                      <MonitorPlay className="h-4 w-4" />
+                    </Link>
                   </Button>
                 )}
                 {quiz.status === 'Active' && (
@@ -157,9 +159,11 @@ export function QuizList() {
                     size="sm"
                     title="Open Live View"
                     aria-label="Open live view"
-                    onClick={() => router.push(`/quiz/${quiz.id}/live`)}
+                    asChild
                   >
-                    <MonitorPlay className="h-4 w-4" />
+                    <Link href={`/quiz/${quiz.id}/live`}>
+                      <MonitorPlay className="h-4 w-4" />
+                    </Link>
                   </Button>
                 )}
                 {quiz.status !== 'Active' && (
