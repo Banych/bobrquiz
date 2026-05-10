@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { MonitorPlay } from 'lucide-react';
 import type { QuizDTO } from '@application/dtos/quiz.dto';
 import { useHostQuizState } from '@/hooks/use-host-quiz-state';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,12 @@ export function HostQuizDashboard({
             >
               {quiz.status}
             </span>
+            <Button variant="outline" asChild>
+              <Link href={`/quiz/${quizId}/live`}>
+                <MonitorPlay className="mr-2 h-4 w-4" />
+                Live Lobby
+              </Link>
+            </Button>
             <Button
               variant="outline"
               onClick={() => refetch()}
