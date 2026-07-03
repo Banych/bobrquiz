@@ -252,7 +252,10 @@ export class PrismaQuizRepository implements IQuizRepository {
     const records = await prisma.quiz.findMany({
       include: {
         questions: true,
-        players: { select: { id: true } },
+        players: {
+          where: { status: { not: 'Removed' } },
+          select: { id: true },
+        },
         _count: {
           select: { questions: true, players: true },
         },
@@ -287,7 +290,10 @@ export class PrismaQuizRepository implements IQuizRepository {
       where: { id },
       include: {
         questions: true,
-        players: { select: { id: true } },
+        players: {
+          where: { status: { not: 'Removed' } },
+          select: { id: true },
+        },
       },
     });
 
