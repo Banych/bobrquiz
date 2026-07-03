@@ -75,6 +75,21 @@ describe('JoinSessionUseCase', () => {
     expect(quizRepository.findByJoinCode).toHaveBeenCalledWith('JOIN123');
   });
 
+  it('redacts question content and omits cross-player answers', async () => {
+    const aggregate = buildAggregate();
+    const player = new Player('player-1', 'Alice', 'quiz-123');
+
+    quizRepository.findByJoinCode.mockResolvedValue(aggregate);
+    playerRepository.findById.mockResolvedValue(player);
+
+    const result = await useCase.execute('JOIN123');
+
+    expect(result.answers).toBeUndefined();
+    // No question has been started yet, so the single question is redacted
+    expect(result.questions[0]?.text).toBe('');
+    expect(result.questions[0]?.options).toBeUndefined();
+  });
+
   it('throws when join code is missing', async () => {
     await expect(useCase.execute('')).rejects.toThrow('Join code is required.');
   });

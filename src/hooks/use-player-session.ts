@@ -93,7 +93,7 @@ export const usePlayerSession = ({
   useEffect(() => {
     const unsubscribe = realtimeClient.subscribe<QuizDTO>(
       quizChannelName,
-      'state:update',
+      'state:update:player',
       (updatedState) => {
         applyQuizState(updatedState);
       }

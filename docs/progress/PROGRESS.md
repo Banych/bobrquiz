@@ -20,6 +20,13 @@ This document indexes all releases, completed work, and session notes. Use this 
 
 **Latest First** – Find detailed work notes by date:
 
+### 2026-07-03: R6 Phase 5 — Security Hardening (Trimmed) ✅
+- **Focus**: Trimmed the original Phase 5 scope against evidence (Supabase security/performance advisors both clean), then fixed a real issue the advisors don't catch: player-facing quiz state leaked all questions' content and every player's raw answers via join response, polled session endpoint, and realtime broadcast
+- **Deliverables**: `mapQuizToPlayerFacingDTO` redaction mapper applied in `JoinSessionUseCase`/`GetPlayerSessionUseCase` and a new `state:update:player` broadcast event (host's `state:update` untouched); in-memory rate limiter (`src/lib/rate-limit.ts`) on join/add-player/answer endpoints
+- **Deferred** (no evidence of need): Redis caching, Edge Function heartbeat, DB indexing, deployment runbook — revisit at Phase 6 launch or if real load data shows a bottleneck
+- **Status**: Complete — 432 tests passing (+18 new), build passing, manual Playwright MCP verification
+- **File**: [plans/2026-07-03-r6-phase5-security-hardening.md](plans/2026-07-03-r6-phase5-security-hardening.md)
+
 ### 2026-05-09: Maintenance — Security Upgrades & Tooling ✅
 - **Focus**: Address 101 Dependabot security alerts, ESLint 10 migration, CI fixes, tooling improvements
 - **Deliverables**: 101→2 vulnerabilities fixed (Next 16.2.6, Prisma 7.8, ESLint 10, Vitest 4, Playwright 1.59), `.github/dependabot.yml` for automated updates, CI env fallbacks for Dependabot PRs, GitHub MCP package corrected, LF line ending enforcement, pg pool cap (EMAXCONN fix), Supavisor URL documented

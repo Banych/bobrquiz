@@ -76,6 +76,22 @@ describe('GetPlayerSessionUseCase', () => {
     expect(playerRepository.findById).toHaveBeenCalledWith('player-1');
   });
 
+  it('redacts question content and omits cross-player answers', async () => {
+    const aggregate = buildAggregate();
+    const player = new Player('player-1', 'Alice', 'quiz-1');
+
+    quizRepository.findById.mockResolvedValue(aggregate);
+    playerRepository.findById.mockImplementation(async (id) =>
+      id === 'player-1' ? player : null
+    );
+
+    const result = await useCase.execute('quiz-1', 'player-1');
+
+    expect(result.quiz.answers).toBeUndefined();
+    expect(result.quiz.questions[0]?.text).toBe('');
+    expect(result.quiz.questions[0]?.options).toBeUndefined();
+  });
+
   it('throws if quiz is missing', async () => {
     quizRepository.findById.mockResolvedValue(null);
 

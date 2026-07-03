@@ -1,5 +1,6 @@
 import type { PlayerSessionDTO as PlayerSessionDTOType } from '@application/dtos/player-session.dto';
 import { mapQuizToDTO } from '@application/mappers/quiz-mapper';
+import { mapQuizToPlayerFacingDTO } from '@application/mappers/player-quiz-mapper';
 import {
   mapPlayerToDTO,
   buildLeaderboardMeta,
@@ -34,7 +35,9 @@ export class GetPlayerSessionUseCase {
       Boolean(player)
     );
 
-    const quizDto = mapQuizToDTO(quizAggregate, hydratedPlayers);
+    const quizDto = mapQuizToPlayerFacingDTO(
+      mapQuizToDTO(quizAggregate, hydratedPlayers)
+    );
 
     const targetPlayer = hydratedPlayers.find(
       (player) => player.id === playerId

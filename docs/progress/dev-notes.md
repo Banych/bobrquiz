@@ -1,5 +1,14 @@
 # Dev Progress Log
 
+## 2026-07-03 (R6 Phase 5: Security Hardening, Trimmed ✅)
+- **Evidence first**: checked Supabase advisors before planning — RLS and performance both clean (zero lints), so speculative DB indexing/RLS rework was dropped; CORS also verified clean (no custom headers, Next.js same-origin default)
+- **Real finding**: `GetQuizStateUseCase`/`JoinSessionUseCase`/`GetPlayerSessionUseCase` all sent the *full* quiz DTO (every question's text/media/options, every player's raw answers) to players via join response, polled session endpoint, and the public `quiz:{quizId}` realtime broadcast — a genuine cheating vector, not hypothetical
+- **Fix**: new `mapQuizToPlayerFacingDTO` (`src/application/mappers/player-quiz-mapper.ts`) redacts non-active questions' content and strips `answers` entirely before the DTO reaches a player; applied in `JoinSessionUseCase` + `GetPlayerSessionUseCase`, and via a new `state:update:player` broadcast event (same `quiz:{quizId}` channel as the existing host-only `state:update`) — host (`useHostQuizState`) untouched, `usePlayerSession` repointed to the new event
+- **Rate limiting**: new in-memory fixed-window limiter (`src/lib/rate-limit.ts`) on `POST /api/session/join`, `/api/player/add` (10/60s), `/api/player/answer` (30/60s) — known limitation: per-instance only, revisit with Upstash if a real multi-instance prod deployment shows abuse
+- **Deferred** (no evidence of need yet): Redis caching, Edge Function heartbeat, DB indexing, deployment runbook/incident docs — revisit at actual launch (Phase 6) or if real load data surfaces a bottleneck
+- **Verified**: 432 tests passing (+18 new), build ✅, lint clean, manual Playwright MCP verification against `QR Code Test Quiz` confirmed redacted payloads on the player side and full fidelity on the host side
+- Plan: [plans/2026-07-03-r6-phase5-security-hardening.md](plans/2026-07-03-r6-phase5-security-hardening.md)
+
 ## 2026-05-09 (Maintenance: Security, Tooling, CI ✅)
 - **Security**: 101 Dependabot vulnerabilities → 2; bumped Next 16.2.6, Prisma 7.8, ESLint 10, Vitest 4, Playwright 1.59; added `resolutions` in `package.json` for transitive CVEs (minimatch, brace-expansion, flatted, picomatch, vite, postcss, @hono/node-server, js-yaml)
 - **ESLint 10**: Removed `FlatCompat` bridge (circular JSON error); native `eslint-config-next` flat export; disabled `react-hooks/error-boundaries` (false positive on Next.js async server components) and `react-hooks/set-state-in-effect` (legitimate derived-state patterns); fixed `use-presence.tsx` to add `sendHeartbeatRef` to deps
