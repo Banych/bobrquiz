@@ -1,7 +1,7 @@
 import type { QuizDTO as QuizDTOType } from '@application/dtos/quiz.dto';
 import { mapQuizToDTO } from '@application/mappers/quiz-mapper';
 import { mapQuizToPlayerFacingDTO } from '@application/mappers/player-quiz-mapper';
-import type { Player } from '@domain/entities/player';
+import { PlayerStatus, type Player } from '@domain/entities/player';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
 
@@ -27,8 +27,9 @@ export class JoinSessionUseCase {
       )
     );
 
-    const hydratedPlayers = players.filter((player): player is Player =>
-      Boolean(player)
+    const hydratedPlayers = players.filter(
+      (player): player is Player =>
+        !!player && player.status !== PlayerStatus.Removed
     );
 
     return mapQuizToPlayerFacingDTO(

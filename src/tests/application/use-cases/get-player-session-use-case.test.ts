@@ -92,6 +92,38 @@ describe('GetPlayerSessionUseCase', () => {
     expect(result.quiz.questions[0]?.options).toBeUndefined();
   });
 
+  it('excludes Removed players from the roster but keeps players list otherwise intact', async () => {
+    const aggregate = buildAggregate();
+    aggregate.addPlayer('player-2');
+    const active = new Player('player-1', 'Alice', 'quiz-1');
+    const removed = new Player('player-2', 'Bob', 'quiz-1');
+    removed.removeFromGame('kicked');
+
+    quizRepository.findById.mockResolvedValue(aggregate);
+    playerRepository.findById.mockImplementation(async (id) =>
+      id === 'player-1' ? active : removed
+    );
+
+    const result = await useCase.execute('quiz-1', 'player-1');
+
+    expect(result.quiz.players).toHaveLength(1);
+    expect(result.quiz.players[0]?.id).toBe('player-1');
+  });
+
+  it('still resolves the session for a player who has themselves been removed', async () => {
+    const aggregate = buildAggregate();
+    const removed = new Player('player-1', 'Alice', 'quiz-1');
+    removed.removeFromGame('kicked');
+
+    quizRepository.findById.mockResolvedValue(aggregate);
+    playerRepository.findById.mockResolvedValue(removed);
+
+    const result = await useCase.execute('quiz-1', 'player-1');
+
+    expect(result.player.id).toBe('player-1');
+    expect(result.player.status).toBe('Removed');
+  });
+
   it('throws if quiz is missing', async () => {
     quizRepository.findById.mockResolvedValue(null);
 

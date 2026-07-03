@@ -7,7 +7,7 @@ import {
 } from '@application/mappers/player-mapper';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
-import type { Player } from '@domain/entities/player';
+import { PlayerStatus, type Player } from '@domain/entities/player';
 
 export class GetPlayerSessionUseCase {
   constructor(
@@ -35,8 +35,16 @@ export class GetPlayerSessionUseCase {
       Boolean(player)
     );
 
+    // The roster shown to players excludes Removed players (kicked/timed
+    // out), but the requesting player's own session must still resolve even
+    // if they were the one removed, so this filter is scoped to the DTO's
+    // player list rather than applied to `hydratedPlayers` itself.
+    const rosterPlayers = hydratedPlayers.filter(
+      (player) => player.status !== PlayerStatus.Removed
+    );
+
     const quizDto = mapQuizToPlayerFacingDTO(
-      mapQuizToDTO(quizAggregate, hydratedPlayers)
+      mapQuizToDTO(quizAggregate, rosterPlayers)
     );
 
     const targetPlayer = hydratedPlayers.find(

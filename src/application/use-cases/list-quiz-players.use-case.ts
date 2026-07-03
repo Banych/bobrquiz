@@ -3,6 +3,7 @@ import {
   mapPlayerToDTO,
   buildLeaderboardMeta,
 } from '@application/mappers/player-mapper';
+import { PlayerStatus } from '@domain/entities/player';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
 
@@ -19,10 +20,15 @@ export class ListQuizPlayersUseCase {
     }
 
     const players = await this.playerRepository.listByQuizId(quizId);
+    const activePlayers = players.filter(
+      (player) => player.status !== PlayerStatus.Removed
+    );
     const leaderboardMeta = buildLeaderboardMeta(
       quizAggregate.getLeaderboard()
     );
 
-    return players.map((player) => mapPlayerToDTO(player, leaderboardMeta));
+    return activePlayers.map((player) =>
+      mapPlayerToDTO(player, leaderboardMeta)
+    );
   }
 }
