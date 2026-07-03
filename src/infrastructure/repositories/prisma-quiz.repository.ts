@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { QuizSessionAggregate } from '@domain/aggregates/quiz-session-aggregate';
 import { Quiz, QuizStatus } from '@domain/entities/quiz';
 import { Answer } from '@domain/entities/answer';
+import { PlayerStatus } from '@domain/entities/player';
 import type {
   IQuizRepository,
   QuizProgressUpdate,
@@ -253,7 +254,7 @@ export class PrismaQuizRepository implements IQuizRepository {
       include: {
         questions: true,
         players: {
-          where: { status: { not: 'Removed' } },
+          where: { status: { not: PlayerStatus.Removed } },
           select: { id: true },
         },
         _count: {
@@ -291,7 +292,7 @@ export class PrismaQuizRepository implements IQuizRepository {
       include: {
         questions: true,
         players: {
-          where: { status: { not: 'Removed' } },
+          where: { status: { not: PlayerStatus.Removed } },
           select: { id: true },
         },
       },
