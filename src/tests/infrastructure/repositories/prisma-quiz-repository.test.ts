@@ -245,4 +245,82 @@ describe('PrismaQuizRepository', () => {
       where: { id: 'quiz-1' },
     });
   });
+
+  describe('findAll', () => {
+    const baseRecord = {
+      id: 'quiz-1',
+      title: 'General Knowledge',
+      status: 'Pending',
+      currentQuestionIndex: 0,
+      timePerQuestion: 30,
+      allowSkipping: false,
+      joinCode: null,
+      startTime: null,
+      endTime: null,
+      questions: [],
+      players: [{ id: 'player-1' }],
+      _count: { questions: 0, players: 1 },
+    };
+
+    it('excludes removed players from the resulting quiz player set', async () => {
+      quizMocks.findMany.mockResolvedValue([baseRecord]);
+
+      await repository.findAll();
+
+      expect(prisma.quiz.findMany).toHaveBeenCalledWith({
+        include: {
+          questions: true,
+          players: {
+            where: { status: { not: 'Removed' } },
+            select: { id: true },
+          },
+          _count: {
+            select: { questions: true, players: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+  });
+
+  describe('findEntityById', () => {
+    const baseRecord = {
+      id: 'quiz-1',
+      title: 'General Knowledge',
+      status: 'Pending',
+      currentQuestionIndex: 0,
+      timePerQuestion: 30,
+      allowSkipping: false,
+      joinCode: null,
+      startTime: null,
+      endTime: null,
+      questions: [],
+      players: [{ id: 'player-1' }],
+    };
+
+    it('excludes removed players from the players relation query', async () => {
+      quizMocks.findUnique.mockResolvedValue(baseRecord);
+
+      await repository.findEntityById('quiz-1');
+
+      expect(prisma.quiz.findUnique).toHaveBeenCalledWith({
+        where: { id: 'quiz-1' },
+        include: {
+          questions: true,
+          players: {
+            where: { status: { not: 'Removed' } },
+            select: { id: true },
+          },
+        },
+      });
+    });
+
+    it('returns null when the quiz does not exist', async () => {
+      quizMocks.findUnique.mockResolvedValue(null);
+
+      const quiz = await repository.findEntityById('missing-quiz');
+
+      expect(quiz).toBeNull();
+    });
+  });
 });

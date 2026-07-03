@@ -293,19 +293,23 @@ This section expands on the R6 release with specific tasks discovered during R5 
 - [ ] Add source maps for production debugging
 - [ ] Set up alerts for error rate spikes
 
-### Phase 5: Production Hardening
+### Phase 5: Production Hardening — Trimmed to Evidence (2026-07-03) ✅
 
-**Performance Optimization:**
-- [ ] Configure Supabase Connection Pooler (PgBouncer)
-- [ ] Add Redis caching layer for hot paths (quiz state, leaderboard)
-- [ ] Move heartbeat endpoint to Supabase Edge Function
-- [ ] Add database indexes for slow queries identified in load testing
+Original scope below was written before any production traffic/deployment existed. Checked against `mcp__supabase__get_advisors` before starting: security and performance advisors both came back **clean** (zero lints), so RLS review, CORS review, and DB indexing had nothing to act on — ruled out as speculative. Digging into the data flow instead surfaced a real, concrete issue the advisors don't catch: player-facing quiz state (join response, polled session endpoint, and realtime broadcast) carried every question's full content and every player's raw answers, regardless of round state — a genuine cheating vector for a quiz game. That became the actual deliverable, alongside rate limiting (confirmed genuinely absent). Redis caching, Edge Function heartbeat, and deployment runbook/incident docs deferred — no evidence they're needed yet; revisit at actual launch (Phase 6) or if real load data shows a bottleneck.
+
+See [`plans/2026-07-03-r6-phase5-security-hardening.md`](progress/plans/2026-07-03-r6-phase5-security-hardening.md) for full detail.
+
+**Performance Optimization:** *(deferred — no evidence of need)*
+- [ ] ~~Configure Supabase Connection Pooler (PgBouncer)~~ — already done May 9 maintenance session (`.env.example` documents Supavisor URL; just needs to be the active `DATABASE_URL` at actual deploy time)
+- [ ] Add Redis caching layer for hot paths (quiz state, leaderboard) — deferred, no load-test evidence of a bottleneck
+- [ ] Move heartbeat endpoint to Supabase Edge Function — deferred, no latency complaint to fix
+- [ ] Add database indexes for slow queries — deferred, performance advisor is clean
 
 **Security Audit:**
-- [ ] Review all RLS policies in Supabase
-- [ ] Ensure no sensitive data leaks in API responses
-- [ ] Add rate limiting to public endpoints (join, answer submission)
-- [ ] Review CORS configuration
+- [x] Review all RLS policies in Supabase — verified clean via `get_advisors(type: 'security')`, zero lints
+- [x] Ensure no sensitive data leaks in API responses — found and fixed: player-facing quiz state redaction (`mapQuizToPlayerFacingDTO`)
+- [x] Add rate limiting to public endpoints (join, add player, answer submission)
+- [x] Review CORS configuration — verified clean, no custom headers, Next.js same-origin default
 
 **Deployment Documentation:**
 - [ ] Write production deployment runbook

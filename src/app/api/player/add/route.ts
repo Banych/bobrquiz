@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServices } from '@application/services/factories';
+import { enforceRateLimit } from '@lib/rate-limit';
 
 const AddPlayerBodySchema = z.object({
   quizId: z.string().min(1),
@@ -14,6 +15,18 @@ type ErrorResponse = {
 };
 
 export async function POST(request: Request) {
+  const rateLimit = enforceRateLimit(request, 'player-add', {
+    limit: 10,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' } satisfies ErrorResponse,
+      { status: 429 }
+    );
+  }
+
   try {
     const payload = await request.json();
     const parsed = AddPlayerBodySchema.parse(payload);
