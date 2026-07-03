@@ -6,7 +6,6 @@
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git add*)",
-      "Bash(git commit*)",
       "Bash(git branch*)",
       "Bash(git checkout*)",
       "Bash(git stash*)",
@@ -31,11 +30,6 @@
       "Bash(git clean -f*)"
     ]
   },
-  "enabledMcpjsonServers": [
-    "supabase",
-    "playwright",
-    "context7",
-    "github"
-  ],
+  "enabledMcpjsonServers": ["supabase", "playwright", "context7", "github"],
   "enableAllProjectMcpServers": true
 }

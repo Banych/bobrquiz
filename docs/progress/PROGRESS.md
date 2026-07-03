@@ -12,13 +12,18 @@ This document indexes all releases, completed work, and session notes. Use this 
 | **R3**  | Player MVP         | Join/answer flows, WebSocket sync, session persistence | ✅ Complete | ~2025-12-19     |
 | **R4**  | Content Admin      | CRUD (quiz/question), media uploads, auth gate         | ✅ Complete | 2025-12-21      |
 | **R5**  | Realtime & Scoring | Speed-based scoring, round transitions, reconnection   | ✅ Complete | 2026-02-01      |
-| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | � Active   | ~2026-03-31     |
+| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3, 5 done; 4, 6 not started) | ~2026-03-31     |
 
 ---
 
 ## Session Notes (Chronological)
 
 **Latest First** – Find detailed work notes by date:
+
+### 2026-07-03: docs/plan.md Reconciliation ✅
+- **Focus**: `docs/plan.md`'s R6 Phase 2/3 checklists were stale — fully unchecked despite the work being built and shipped in earlier sessions (2026-02-07, 2026-03-07). Verified each item against the actual codebase (files, components, Prisma schema) rather than trusting prior checkbox state.
+- **Findings**: Phase 3 (Questions/Media/Audit admin pages, host landing page, QR code join) is built, but narrower than originally scoped — e.g. audit log only covers quiz lifecycle events (not all CRUD), questions page has no bulk ops or type/status filter, media library has no "view usage" tracking. Phase 2 accessibility/responsive work was a deliberately trimmed targeted-fixes pass (documented in its own plan file's "Out of Scope"), not the full audit originally scoped — axe-core, WCAG AA audit, skip links, and screen-reader testing were never done. "Pause quiz mid-game" (Phase 3 host control) is confirmed still not built. Phase 1.6's E2E spec status was left explicitly unverified rather than guessed, since checking it required installing Playwright's CLI test-runner browser binaries (separate from the already-working MCP Playwright tool) for no benefit beyond a checkbox.
+- **Status**: Complete — doc-only change, no code touched.
 
 ### 2026-07-03: R6 Phase 5 — Security Hardening (Trimmed) ✅
 - **Focus**: Trimmed the original Phase 5 scope against evidence (Supabase security/performance advisors both clean), then fixed a real issue the advisors don't catch: player-facing quiz state leaked all questions' content and every player's raw answers via join response, polled session endpoint, and realtime broadcast
