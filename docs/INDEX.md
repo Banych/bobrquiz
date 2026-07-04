@@ -1,4 +1,4 @@
-# Documentation Index – Quiz Game
+# Documentation Index – Bobr Quiz
 
 Welcome! This is your navigation hub for all documentation. Use this to find exactly what you need.
 

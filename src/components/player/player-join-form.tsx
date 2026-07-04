@@ -152,7 +152,7 @@ export function PlayerJoinForm() {
       <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-8 px-6 py-12">
         <header className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">
-            Quiz Game
+            Bobr Quiz
           </p>
           <h1 className="mt-3 text-4xl font-semibold">Join the action</h1>
           <p className="mt-2 text-base text-slate-200/80">

@@ -1,4 +1,4 @@
-# Quiz Game – Copilot Instructions
+# Bobr Quiz – Copilot Instructions
 
 ## Architecture Overview
 This is a **Next.js 15 + Prisma v7 + Supabase** quiz game using **DDD-lite** (Domain-Driven Design) patterns. The critical data flow is:
@@ -393,22 +393,22 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';
 **Common workflows:**
 ```powershell
 # List open PRs / issues
-gh pr list --repo Banych/quiz-game
-gh issue list --repo Banych/quiz-game
+gh pr list --repo Banych/bobrquiz
+gh issue list --repo Banych/bobrquiz
 
 # View PR details and CI checks
-gh pr view 30 --repo Banych/quiz-game
-gh pr checks 30 --repo Banych/quiz-game
+gh pr view 30 --repo Banych/bobrquiz
+gh pr checks 30 --repo Banych/bobrquiz
 
 # Create PR from current branch (branch must already be pushed)
 gh pr create --base master --title "feat: ..." --body "..."
 
 # Add a comment (e.g. trigger Dependabot rebase)
-gh pr comment 30 --repo Banych/quiz-game --body "@dependabot rebase"
+gh pr comment 30 --repo Banych/bobrquiz --body "@dependabot rebase"
 
 # Rebase ALL open Dependabot PRs at once
-gh pr list --repo Banych/quiz-game --author dependabot --json number --jq '.[].number' | ForEach-Object {
-  gh pr comment $_ --repo Banych/quiz-game --body "@dependabot rebase"
+gh pr list --repo Banych/bobrquiz --author dependabot --json number --jq '.[].number' | ForEach-Object {
+  gh pr comment $_ --repo Banych/bobrquiz --body "@dependabot rebase"
 }
 ```
 

@@ -1,6 +1,6 @@
 # E2E Testing Setup
 
-This directory contains Playwright end-to-end tests for the Quiz Game application.
+This directory contains Playwright end-to-end tests for the Bobr Quiz application.
 
 ## Authentication Setup
 

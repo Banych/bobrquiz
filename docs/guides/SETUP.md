@@ -1,6 +1,6 @@
 # Guide: Initial Project Setup
 
-This guide walks through bootstrapping the Quiz Game project from scratch. Follow this if you're setting up the development environment for the first time.
+This guide walks through bootstrapping the Bobr Quiz project from scratch. Follow this if you're setting up the development environment for the first time.
 
 ## Quick Start (15 minutes)
 

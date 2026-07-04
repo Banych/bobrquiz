@@ -1,4 +1,4 @@
-# Quiz Game Delivery Plan
+# Bobr Quiz Delivery Plan
 
 ## Vision Snapshot
 - **Host/Admin desktop**: Runs the quiz, controls rounds, views live stats. Mirrors the layouts from the mockups (`docs/mockups/*.png`).
