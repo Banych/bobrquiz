@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardDescription,
@@ -6,6 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
+import { QrCode, Trophy, Zap } from 'lucide-react';
 import { BeaverMascot } from '@components/brand/beaver-mascot';
 
 export default function HomePage() {
@@ -21,6 +23,9 @@ export default function HomePage() {
           Create engaging quizzes, host live game sessions, and challenge your
           friends with real-time multiplayer trivia.
         </p>
+        <Badge variant="secondary" className="mt-4">
+          Free to use
+        </Badge>
 
         {/* CTAs */}
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -94,6 +99,62 @@ export default function HomePage() {
             </Card>
           </div>
         </div>
+      </section>
+
+      {/* Why Bobr Quiz Section */}
+      <section className="px-4 py-16">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-8 text-center text-2xl font-semibold sm:text-3xl">
+            Why Bobr Quiz
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Speed-based scoring
+                </CardTitle>
+                <CardDescription>
+                  Faster correct answers earn more points, keeping every round
+                  competitive down to the wire.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  Live leaderboards
+                </CardTitle>
+                <CardDescription>
+                  Rankings update in real time as players answer, so everyone
+                  sees where they stand instantly.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  Instant join
+                </CardTitle>
+                <CardDescription>
+                  Players scan a QR code or type a join code to hop in — no app
+                  install required.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Placeholder Section */}
+      <section className="border-t px-4 py-16 text-center">
+        <p className="text-lg font-medium text-muted-foreground">
+          Be one of our first players — reviews coming soon.
+        </p>
       </section>
 
       {/* Footer */}
