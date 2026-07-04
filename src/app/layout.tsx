@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Quiz Game',
+  title: 'Bobr Quiz',
   description:
     'Host live multiplayer quiz sessions with real-time scoring, speed bonuses, and instant leaderboards.',
 };

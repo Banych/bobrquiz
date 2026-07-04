@@ -1,4 +1,4 @@
-# Quiz Game – Architecture & Design
+# Bobr Quiz – Architecture & Design
 
 This document captures the DDD-lite architecture, tech stack decisions, and layer contracts that define the entire application. It supersedes the numbered step docs (01-04) and serves as the authoritative reference for understanding how to extend or modify the codebase.
 

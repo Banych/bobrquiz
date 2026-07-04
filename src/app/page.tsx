@@ -13,7 +13,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          Quiz Game
+          Bobr Quiz
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground sm:text-xl">
           Create engaging quizzes, host live game sessions, and challenge your
@@ -96,7 +96,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t px-4 py-6 text-center text-sm text-muted-foreground">
-        <p>Quiz Game &copy; {new Date().getFullYear()}</p>
+        <p>Bobr Quiz &copy; {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

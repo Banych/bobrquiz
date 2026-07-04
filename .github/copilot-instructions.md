@@ -1,4 +1,4 @@
-# Quiz Game – Copilot Instructions
+# Bobr Quiz – Copilot Instructions
 
 ## Architecture Overview
 This is a **Next.js 15 + Prisma v7 + Supabase** quiz game using **DDD-lite** (Domain-Driven Design) patterns. The critical data flow is:
