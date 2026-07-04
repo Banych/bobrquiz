@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { prisma } from '@infrastructure/database/prisma/client';
 import { seedLaunchDemoQuiz } from '@infrastructure/database/prisma/seed-helpers';
 
