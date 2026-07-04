@@ -1,6 +1,6 @@
 # Bobr Quiz Visual Branding Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the stock Next.js/shadcn visual identity with a warm brown/amber
 "Bobr Quiz" brand: a single flat-vector meme-deadpan beaver mascot, retheme'd color
@@ -13,6 +13,11 @@ geometry, parameterized by a `MascotColors` object. The live app renders it thro
 artwork). Server-only raster contexts (favicon, Apple icon, OG image, PWA manifest
 icons) can't read CSS custom properties, so they render the same shapes through a
 shared `createMascotIconResponse` helper using literal hex colors instead.
+
+**Superseded post-plan:** the hand-drawn geometry described above was replaced with a
+vectorized cartoon trace after visual review — see "Post-Plan Additions" at the end of
+this file. `mascotShapes()` now takes no arguments and uses one fixed color palette;
+`MascotColors`/`MASCOT_COLORS_CSS_VAR`/`MASCOT_COLORS_STATIC` no longer exist.
 
 **Tech Stack:** Next.js 16 App Router file conventions (`icon.tsx`, `apple-icon.tsx`,
 `opengraph-image.tsx`, `manifest.ts`), `next/og` `ImageResponse`, Tailwind v4 `@theme`
@@ -41,7 +46,7 @@ tokens, Vitest (node environment, no DOM/testing-library).
 **Interfaces:**
 - Produces: `MascotColors` interface (`fur`, `furDark`, `belly`, `teeth`, `eye`, `nose`, all `string`), `mascotShapes(colors: MascotColors): JSX.Element` (a `<>...</>` fragment of `<ellipse>`/`<circle>`/`<rect>`/`<path>` elements, viewBox-agnostic — callers wrap it in their own `<svg viewBox="0 0 200 200">`), `MASCOT_COLORS_CSS_VAR: MascotColors` (values are `var(--mascot-*)` strings, for use inside the live app where CSS custom properties resolve), `MASCOT_COLORS_STATIC: MascotColors` (literal hex, for `next/og` `ImageResponse` contexts, which render outside the app's CSS cascade and cannot read CSS custom properties).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // src/tests/components/beaver-mascot-shapes.test.ts
@@ -106,12 +111,12 @@ describe('beaver-mascot-shapes', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `yarn test beaver-mascot-shapes`
 Expected: FAIL — `Cannot find module '@components/brand/beaver-mascot-shapes'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```tsx
 // src/components/brand/beaver-mascot-shapes.tsx
@@ -196,12 +201,12 @@ export const MASCOT_COLORS_STATIC: MascotColors = {
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `yarn test beaver-mascot-shapes`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/brand/beaver-mascot-shapes.tsx src/tests/components/beaver-mascot-shapes.test.ts
@@ -222,7 +227,7 @@ git commit -m "feat: add shared beaver mascot shape geometry and color palettes"
 - Produces: `BeaverMascotProps` (`{ className?: string; size?: number }`), `BeaverMascot(props: BeaverMascotProps): JSX.Element` — used by Tasks 6–9 for hero/join/admin/404 placement.
 - New CSS custom properties consumed by Task 1's `MASCOT_COLORS_CSS_VAR`: `--mascot-fur`, `--mascot-fur-dark`, `--mascot-belly`, `--mascot-teeth`, `--mascot-eye`, `--mascot-nose` (defined in both `:root` and `.dark`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // src/tests/components/beaver-mascot.test.ts
@@ -258,12 +263,12 @@ describe('BeaverMascot', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `yarn test beaver-mascot.test`
 Expected: FAIL — `Cannot find module '@components/brand/beaver-mascot'`
 
-- [ ] **Step 3: Replace `src/app/globals.css`**
+- [x] **Step 3: Replace `src/app/globals.css`**
 
 ```css
 @import 'tailwindcss';
@@ -404,7 +409,7 @@ Expected: FAIL — `Cannot find module '@components/brand/beaver-mascot'`
 }
 ```
 
-- [ ] **Step 4: Write `src/components/brand/beaver-mascot.tsx`**
+- [x] **Step 4: Write `src/components/brand/beaver-mascot.tsx`**
 
 ```tsx
 import {
@@ -433,12 +438,12 @@ export function BeaverMascot({ className, size = 48 }: BeaverMascotProps) {
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `yarn test beaver-mascot.test`
 Expected: PASS (4 tests)
 
-- [ ] **Step 6: Visual smoke check**
+- [x] **Step 6: Visual smoke check**
 
 Run `yarn dev` (assume already running per project convention), navigate to
 `http://localhost:3000` with Playwright MCP, and confirm the page background/button
@@ -446,7 +451,7 @@ colors have shifted from gray to warm brown/amber (full placement happens in Tas
 this step only confirms the token retheme took effect on existing elements like the
 numbered-circle badges, which reference `bg-primary` already).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/app/globals.css src/components/brand/beaver-mascot.tsx src/tests/components/beaver-mascot.test.ts
@@ -477,7 +482,7 @@ sizes (Task 5) achieves the same goal — one dynamically-rendered SVG source, z
 dependencies, zero static binary files — without depending on unverified internal
 routing behavior.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 // src/tests/components/mascot-image-response.test.ts
@@ -499,12 +504,12 @@ describe('mascot-image-response', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `yarn test mascot-image-response`
 Expected: FAIL — `Cannot find module '@components/brand/mascot-image-response'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```tsx
 // src/components/brand/mascot-image-response.tsx
@@ -547,25 +552,25 @@ export default function AppleIcon() {
 }
 ```
 
-- [ ] **Step 4: Delete the stock favicon**
+- [x] **Step 4: Delete the stock favicon**
 
 ```bash
 rm src/app/favicon.ico
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `yarn test mascot-image-response`
 Expected: PASS (2 tests)
 
-- [ ] **Step 6: Manual verification**
+- [x] **Step 6: Manual verification**
 
 With `yarn dev` running, open `http://localhost:3000/icon` and
 `http://localhost:3000/apple-icon` directly in a browser (or via Playwright MCP
 `browser_navigate`) and confirm each renders the beaver mark as a PNG at the expected
 size.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/brand/mascot-image-response.tsx src/app/icon.tsx src/app/apple-icon.tsx src/tests/components/mascot-image-response.test.ts
@@ -583,7 +588,7 @@ git commit -m "feat: generate favicon and apple-icon from the mascot SVG, drop s
 **Interfaces:**
 - Consumes: `mascotShapes`, `MASCOT_COLORS_STATIC` from Task 1
 
-- [ ] **Step 1: Write the implementation**
+- [x] **Step 1: Write the implementation**
 
 ```tsx
 // src/app/opengraph-image.tsx
@@ -634,14 +639,14 @@ There is no meaningful unit test here (the file's entire content is a single
 `ImageResponse` render — Task 3's tests already cover that `next/og` wiring works).
 Verification is manual, in Step 2.
 
-- [ ] **Step 2: Manual verification**
+- [x] **Step 2: Manual verification**
 
 With `yarn dev` running, open `http://localhost:3000/opengraph-image` in a browser (or
 via Playwright MCP `browser_navigate` + `browser_take_screenshot`) and confirm it
 renders the mascot beside the "Bobr Quiz" wordmark on the dark brown background at
 1200×630.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/opengraph-image.tsx
@@ -660,7 +665,7 @@ git commit -m "feat: add Open Graph share image with mascot and wordmark"
 **Interfaces:**
 - Consumes: `createMascotIconResponse` from Task 3 (`@components/brand/mascot-image-response`)
 
-- [ ] **Step 1: Write the manifest icon routes**
+- [x] **Step 1: Write the manifest icon routes**
 
 ```tsx
 // src/app/icon-192.png/route.tsx
@@ -680,7 +685,7 @@ export async function GET() {
 }
 ```
 
-- [ ] **Step 2: Write `src/app/manifest.ts`**
+- [x] **Step 2: Write `src/app/manifest.ts`**
 
 ```typescript
 import type { MetadataRoute } from 'next';
@@ -707,14 +712,14 @@ No unit test — `manifest.ts` is a plain data-returning file conforming to a Ne
 type contract; Task 3 already covers the underlying `ImageResponse` wiring the icon
 routes depend on. Verification is manual, in Step 3.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 With `yarn dev` running, open `http://localhost:3000/manifest.webmanifest`,
 `http://localhost:3000/icon-192.png`, and `http://localhost:3000/icon-512.png`
 directly (or via Playwright MCP) and confirm the manifest JSON is well-formed and both
 icon URLs render the mascot PNG at their respective sizes.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/manifest.ts src/app/icon-192.png src/app/icon-512.png
@@ -728,18 +733,18 @@ git commit -m "feat: add PWA manifest with mascot-generated icons"
 **Files:**
 - Remove: `public/file.svg`, `public/globe.svg`, `public/next.svg`, `public/vercel.svg`, `public/window.svg`
 
-- [ ] **Step 1: Confirm nothing references these files**
+- [x] **Step 1: Confirm nothing references these files**
 
 Run: `grep -rn "file.svg\|globe.svg\|next.svg\|vercel.svg\|window.svg" src/`
 Expected: no output (already confirmed during spec research, re-verify before deleting)
 
-- [ ] **Step 2: Delete the files**
+- [x] **Step 2: Delete the files**
 
 ```bash
 git rm public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "chore: remove unused create-next-app boilerplate SVGs"
@@ -755,14 +760,14 @@ git commit -m "chore: remove unused create-next-app boilerplate SVGs"
 **Interfaces:**
 - Consumes: `BeaverMascot` from Task 2 (`@components/brand/beaver-mascot`)
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 ```typescript
 // src/app/page.tsx — add alongside existing imports at the top
 import { BeaverMascot } from '@components/brand/beaver-mascot';
 ```
 
-- [ ] **Step 2: Place the mascot above the hero heading**
+- [x] **Step 2: Place the mascot above the hero heading**
 
 Change:
 ```tsx
@@ -780,7 +785,7 @@ to:
         </h1>
 ```
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Playwright MCP: navigate to `http://localhost:3000`, snapshot, confirm the mascot
 renders above "Bobr Quiz" and the numbered feature badges show the new amber
@@ -788,7 +793,7 @@ renders above "Bobr Quiz" and the numbered feature badges show the new amber
 otherwise force via `prefers-color-scheme` emulation) to confirm the mascot's fur
 color shifts appropriately.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/page.tsx
@@ -805,7 +810,7 @@ git commit -m "feat: add mascot to landing page hero"
 **Interfaces:**
 - Consumes: `BeaverMascot` from Task 2 (`@components/brand/beaver-mascot`)
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 ```typescript
 // src/components/player/player-join-form.tsx
@@ -813,7 +818,7 @@ import { BeaverMascot } from '@components/brand/beaver-mascot';
 ```
 (add alongside the existing `import { ScoringInfoBadge } from './scoring-info-badge';` line)
 
-- [ ] **Step 2: Place the mascot in the header**
+- [x] **Step 2: Place the mascot in the header**
 
 Change:
 ```tsx
@@ -839,13 +844,13 @@ via-purple-950/40 to-slate-950`) is untouched per the spec — it doesn't use th
 `BeaverMascot`'s CSS-var colors (warm browns) will read fine against this dark
 gradient without any extra handling.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Playwright MCP: navigate to `http://localhost:3000/join`, snapshot, confirm the
 mascot renders above the "Bobr Quiz" eyebrow text and reads clearly against the dark
 purple gradient background.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/player/player-join-form.tsx
@@ -862,7 +867,7 @@ git commit -m "feat: add mascot to player join screen header"
 **Interfaces:**
 - Consumes: `BeaverMascot` from Task 2 (`@components/brand/beaver-mascot`)
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 ```typescript
 // src/app/(admin)/admin/layout.tsx
@@ -870,7 +875,7 @@ import { BeaverMascot } from '@components/brand/beaver-mascot';
 ```
 (add alongside the existing `import { Button } from '@/components/ui/button';` line)
 
-- [ ] **Step 2: Replace the plain-text title with a mascot + wordmark lockup**
+- [x] **Step 2: Replace the plain-text title with a mascot + wordmark lockup**
 
 Change:
 ```tsx
@@ -886,7 +891,7 @@ to:
             </div>
 ```
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Playwright MCP: navigate to `http://localhost:3000/admin` (requires an authenticated
 session — check with the user whether a test admin login is available; if not, this
@@ -894,7 +899,7 @@ step can be verified visually once and the wordmark reviewed via source inspecti
 snapshot, confirm the mascot + "Bobr Quiz Admin" wordmark render correctly in the
 header next to the Dashboard/Quizzes nav links.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "src/app/(admin)/admin/layout.tsx"
@@ -911,7 +916,7 @@ git commit -m "feat: add mascot wordmark to admin dashboard header"
 **Interfaces:**
 - Consumes: `BeaverMascot` from Task 2 (`@components/brand/beaver-mascot`)
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 ```typescript
 // src/app/not-found.tsx
@@ -919,7 +924,7 @@ import { BeaverMascot } from '@components/brand/beaver-mascot';
 ```
 (add alongside the existing `import Link from 'next/link';` line)
 
-- [ ] **Step 2: Place the mascot above the 404 card title**
+- [x] **Step 2: Place the mascot above the 404 card title**
 
 Change:
 ```tsx
@@ -939,12 +944,12 @@ to:
           </CardTitle>
 ```
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Playwright MCP: navigate to `http://localhost:3000/this-page-does-not-exist`,
 snapshot, confirm the mascot renders above the "404" heading.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/not-found.tsx
@@ -957,24 +962,24 @@ git commit -m "feat: add mascot to the 404 page"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `yarn test`
 Expected: all tests PASS, including the new Task 1–3 tests
 
-- [ ] **Step 2: Run lint**
+- [x] **Step 2: Run lint**
 
 Run: `yarn lint`
 Expected: no errors
 
-- [ ] **Step 3: Run a production build**
+- [x] **Step 3: Run a production build**
 
 Run: `yarn build`
 Expected: build succeeds; confirms `icon.tsx`, `apple-icon.tsx`, `opengraph-image.tsx`,
 `manifest.ts`, and the `icon-192.png`/`icon-512.png` routes all compile as valid Next.js
 file-convention/route modules.
 
-- [ ] **Step 4: Playwright visual pass across all four surfaces, light and dark**
+- [x] **Step 4: Playwright visual pass across all four surfaces, light and dark**
 
 Using Playwright MCP against the running dev server:
 - `http://localhost:3000` (hero) — screenshot in light mode and dark mode
@@ -988,14 +993,63 @@ Confirm: mascot renders correctly and legibly on every surface in both modes, am
 primary color is applied to buttons/CTAs/focus rings, no layout shift or overflow from
 the added mascot markup.
 
-- [ ] **Step 5: Spot-check generated assets by URL**
+- [x] **Step 5: Spot-check generated assets by URL**
 
 `http://localhost:3000/icon`, `/apple-icon`, `/opengraph-image`, `/manifest.webmanifest`,
 `/icon-192.png`, `/icon-512.png` — confirm each resolves and renders the expected image
 or JSON.
 
-- [ ] **Step 6: Update the plan's status and open a PR**
+- [x] **Step 6: Update the plan's status and open a PR**
 
 Mark this plan's tasks complete, then follow the project's PR workflow (branch already
 created for this work per CLAUDE.md's master-protection rule — do not commit to
 `master` directly).
+
+---
+
+## Status: ✅ Complete (all 11 tasks + post-plan additions below)
+
+PR: [#55](https://github.com/Banych/bobrquiz/pull/55) against `master`.
+
+## Post-Plan Additions (not in original scope)
+
+**Bug fixes found during implementation review:**
+- Task 1's `mascotShapes()` originally returned a React Fragment (`<>...</>`), which
+  crashes Satori (the engine behind `next/og`'s `ImageResponse`) with `TypeError:
+  Cannot convert a Symbol value to a string` — this 500'd `/icon` and `/apple-icon` in
+  the actual dev server. Fixed by using `<g>` (a real SVG grouping element) instead.
+  This bug recurred a second time when the mascot geometry was fully replaced (see
+  below) — same fix applied.
+- An implementer added an unjustified `export const dynamic = 'force-dynamic'` to
+  `icon.tsx`/`apple-icon.tsx` on the incorrect premise that `ImageResponse` can't be
+  statically generated. Removed; confirmed via `yarn build`'s route table that both
+  are correctly statically optimized (`○`) without it.
+- 32 Prettier formatting errors across Tasks 1–4's new files, caught by `yarn lint`
+  (implementers had only run `yarn test`). Fixed via `yarn lint:fix`.
+- Missing `metadataBase` in `src/app/layout.tsx` — harmless before this branch, but
+  became load-bearing once `opengraph-image.tsx` shipped (without it, the `og:image`
+  URL resolves against `localhost:3000` in production). Added, pointing at
+  `https://bobrquiz.vercel.app`.
+
+**Task 12 (added mid-implementation, not in original plan): join screen retheme.**
+User feedback after visual review: the player join screen's dark slate/purple gradient
+with emerald accents and rose error text clashed with the new brand, even though the
+original design spec explicitly left it out of scope. Retheme'd to a stone/amber dark
+gradient (`src/components/player/player-join-form.tsx`), keeping the same dark,
+immersive treatment — only the hue changed. Reviewed clean, no regressions.
+
+**Mascot redesign (the biggest deviation from plan).** The design spec's originally
+approved mascot ("flat-vector, Duolingo-owl-style geometric mark") was implemented as
+planned in Task 1, but rejected on visual review — twice — as looking amateurish. Two
+rounds of hand-typed SVG path coordinates (a spiky-hair/angry-eyebrow tweak, then a
+full profile-bust reshape) could not reach cartoon-illustration quality through
+guessing alone. Resolved by: generating a reference image via ChatGPT in the desired
+style (Angry-Beavers-inspired, brown-forward, white teeth), running it through
+vectorizer.io for a real multi-color vector trace, and wiring that traced geometry
+directly into `beaver-mascot-shapes.tsx` in place of the hand-drawn version. This
+dropped the CSS-variable color re-theming (`MascotColors`/`MASCOT_COLORS_CSS_VAR`/
+`MASCOT_COLORS_STATIC` all removed) in favor of one fixed palette baked into the trace
+— judged an acceptable trade once the difference in visual quality was seen directly.
+Full construction description recorded in the design spec's "Mascot Design" section
+for future pose-variant work. Reference assets kept at
+`docs/progress/plans/assets/mascot-reference.png` and `mascot-reference-trace.svg`.
