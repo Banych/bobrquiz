@@ -12,6 +12,7 @@
     "prisma:generate": "prisma generate --schema ./src/infrastructure/database/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema ./src/infrastructure/database/prisma/schema.prisma",
     "prisma:seed": "prisma db seed --schema ./src/infrastructure/database/prisma/schema.prisma",
+    "seed:demo": "tsx src/infrastructure/database/prisma/seed-launch-demo.ts",
     "test": "vitest",
     "test:run": "vitest --run",
     "test:watch": "vitest --watch",
