@@ -15,7 +15,7 @@ export interface MascotColors {
  */
 export function mascotShapes(colors: MascotColors) {
   return (
-    <>
+    <g>
       <ellipse cx="100" cy="172" rx="50" ry="26" fill={colors.furDark} />
       <path
         d="M70 165 L75 178 M90 168 L93 182 M110 168 L107 182 M130 165 L125 178"
@@ -56,7 +56,7 @@ export function mascotShapes(colors: MascotColors) {
         stroke={colors.furDark}
         strokeWidth="1.5"
       />
-    </>
+    </g>
   );
 }
 
