@@ -176,3 +176,102 @@ export const seedSampleQuiz = async (
 };
 
 export const seedDemoQuiz = async () => seedSampleQuiz();
+
+const LAUNCH_DEMO_JOIN_CODE = 'TRYBOBR';
+
+const LAUNCH_DEMO_QUESTIONS: Array<{
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  correctAnswers: string[];
+  points: number;
+}> = [
+  {
+    text: 'What is the largest planet in our solar system?',
+    type: 'multiple_choice',
+    options: ['Mercury', 'Venus', 'Jupiter', 'Saturn'],
+    correctAnswers: ['Jupiter'],
+    points: 100,
+  },
+  {
+    text: 'True or false: Mount Everest is the tallest mountain on Earth.',
+    type: 'true_false',
+    options: ['true', 'false'],
+    correctAnswers: ['true'],
+    points: 100,
+  },
+  {
+    text: 'Which ocean is the largest?',
+    type: 'multiple_choice',
+    options: ['Atlantic', 'Indian', 'Pacific', 'Arctic'],
+    correctAnswers: ['Pacific'],
+    points: 100,
+  },
+  {
+    text: 'How many continents are there?',
+    type: 'multiple_choice',
+    options: ['5', '6', '7', '8'],
+    correctAnswers: ['7'],
+    points: 100,
+  },
+  {
+    text: 'True or false: A group of crows is called a murder.',
+    type: 'true_false',
+    options: ['true', 'false'],
+    correctAnswers: ['true'],
+    points: 100,
+  },
+];
+
+/**
+ * Additive, idempotent seed for a production-safe demo quiz. Unlike
+ * `seedSampleQuiz`/`seedDemoQuiz` (dev/E2E fixtures that assume a clean
+ * database), this never calls `resetDatabase()` and is safe to re-run
+ * against a live database — it upserts on the quiz's unique `joinCode` and
+ * only creates questions the first time.
+ */
+export const seedLaunchDemoQuiz = async (): Promise<SeedQuizResult> => {
+  const quiz = await prisma.quiz.upsert({
+    where: { joinCode: LAUNCH_DEMO_JOIN_CODE },
+    update: {},
+    create: {
+      title: 'Bobr Quiz Demo',
+      status: 'Pending',
+      timePerQuestion: 20,
+      allowSkipping: true,
+      joinCode: LAUNCH_DEMO_JOIN_CODE,
+    },
+  });
+
+  const existingQuestions = await prisma.question.findMany({
+    where: { quizId: quiz.id },
+    orderBy: { orderIndex: 'asc' },
+  });
+
+  if (existingQuestions.length > 0) {
+    return { quiz, questions: existingQuestions, players: [] };
+  }
+
+  const questionInputs: SeedQuestionInput[] = LAUNCH_DEMO_QUESTIONS.map(
+    (template, index) => ({
+      id: randomUUID(),
+      quizId: quiz.id,
+      text: template.text,
+      options: template.options ?? [],
+      correctAnswers: template.correctAnswers,
+      type: template.type,
+      points: template.points,
+      orderIndex: index,
+      isPublished: true,
+    })
+  );
+
+  await prisma.question.createMany({ data: questionInputs });
+
+  const questions = await prisma.question.findMany({
+    where: { quizId: quiz.id },
+    orderBy: { orderIndex: 'asc' },
+  });
+
+  return { quiz, questions, players: [] };
+};

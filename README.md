@@ -1,3 +1,15 @@
+# Bobr Quiz
+
+Bobr Quiz is a real-time multiplayer trivia game. A host starts a live
+session and controls the pace; players join instantly from any device by
+entering a short code or scanning a QR code — no app install, no account
+required to play. Answers score based on speed and correctness, with a live
+leaderboard updating after every question.
+
+Want to see it in action? Join a live demo session with code `TRYBOBR` once
+one is running, or head to the [production site](https://bobrquiz.vercel.app)
+to host your own.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
