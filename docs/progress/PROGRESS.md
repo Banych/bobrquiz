@@ -20,6 +20,28 @@ This document indexes all releases, completed work, and session notes. Use this 
 
 **Latest First** – Find detailed work notes by date:
 
+### 2026-07-04: Bobr Quiz Visual Branding ✅
+- **Focus**: Full visual branding pass — cartoon beaver mascot, brown/amber color
+  retheme, generated favicon/apple-icon/OG-image/PWA-manifest assets (all via
+  `next/og`, zero new dependencies), mascot placed on hero/join/admin/404.
+- **Deliverables**: mascot went through 3 iterations — an approved hand-drawn
+  geometric mark (per spec) was rejected twice on visual review as too crude, replaced
+  with a real vector trace (vectorizer.io) of a ChatGPT-generated reference image in
+  an Angry-Beavers-inspired style. Join screen's dark slate/purple/emerald theme
+  retheme'd to stone/amber (added mid-session, not in original plan) after user
+  feedback that it clashed with the brand.
+- **Bugs found and fixed**: Satori (via `next/og`) can't render a React Fragment —
+  crashed `/icon`/`/apple-icon` with a 500, hit twice (once per mascot rewrite) and
+  fixed both times by using `<g>` instead of `<>`; an unjustified
+  `dynamic = 'force-dynamic'` export that disabled static optimization on the icon
+  routes; 32 Prettier errors implementers missed by only running `yarn test`; a
+  missing `metadataBase` that would've broken OG image URLs in production.
+- **Status**: Complete — 448 tests passing, lint clean, build passing, full manual
+  Playwright verification including an authenticated admin-header check.
+- Plan: [plans/2026-07-04-bobr-quiz-branding-implementation.md](plans/2026-07-04-bobr-quiz-branding-implementation.md)
+- File: [sessions/2026-07-04-bobr-quiz-branding.md](sessions/2026-07-04-bobr-quiz-branding.md)
+- PR: [#55](https://github.com/Banych/bobrquiz/pull/55)
+
 ### 2026-07-04: R6 — Isolate Production Supabase from Dev/Preview ✅
 - **Focus**: Production, Preview, and Development had been silently sharing one Supabase project ("Quiz-game-dev") since the app's first auto-deploy in April 2025 — confirmed via hash comparison of every Vercel env var. A test admin account had live admin access to production.
 - **Deliverables**: standalone `quiz-game-prod` Supabase project (schema, RLS, storage bucket + policies, admin Auth user all recreated to match); Vercel Production repointed at it exclusively; `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` removed from Production only.
