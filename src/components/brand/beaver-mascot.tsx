@@ -1,4 +1,4 @@
-import { mascotShapes, MASCOT_COLORS_CSS_VAR } from './beaver-mascot-shapes';
+import { mascotShapes, MASCOT_VIEW_BOX } from './beaver-mascot-shapes';
 
 export interface BeaverMascotProps {
   className?: string;
@@ -8,14 +8,14 @@ export interface BeaverMascotProps {
 export function BeaverMascot({ className, size = 48 }: BeaverMascotProps) {
   return (
     <svg
-      viewBox="0 0 200 200"
+      viewBox={MASCOT_VIEW_BOX}
       width={size}
       height={size}
       className={className}
       role="img"
       aria-label="Bobr Quiz mascot"
     >
-      {mascotShapes(MASCOT_COLORS_CSS_VAR)}
+      {mascotShapes()}
     </svg>
   );
 }

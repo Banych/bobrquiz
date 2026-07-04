@@ -22,20 +22,61 @@ primary identity.
 
 ## Mascot Design
 
-**Style:** a single flat-vector beaver mark combining geometric construction (circles /
-rounded rects, Duolingo-owl-style simplification — scales cleanly from 16px favicon to
-full-bleed hero art) with meme-deadpan personality (oversized front teeth, flat deadpan
-stare — the "bobr kurwa" internet-meme aesthetic).
+**Style (revised during implementation):** the original plan called for a hand-authored,
+geometric flat-vector mark (circles/rounded rects, Duolingo-owl-style) parameterized by a
+`MascotColors` palette so it could re-theme via CSS variables for dark mode. That
+approach was tried and rejected after two rounds of visual review — hand-typed SVG
+path coordinates cannot reach cartoon-illustration quality through guessing alone; the
+results read as amateurish rather than polished.
+
+**What shipped instead:** a real vector trace of a commissioned reference image,
+sourced through vectorizer.io (raster-to-vector auto-trace), replacing the hand-drawn
+geometry entirely. This trades the "re-themes automatically via CSS vars" property for
+"looks like an actual illustrated character" — judged the better trade once the
+hand-drawn version was seen next to the reference.
+
+**Reference description (for future pose variants — keep new poses consistent with this):**
+A 3/4-profile head-and-shoulders bust (not a full sitting body), in the exaggerated
+rubber-hose/flash-animation style of 90s Nickelodeon cartoons (visual touchstone: *The
+Angry Beavers*). Facing right. Construction, top to bottom:
+- **Hair/fur silhouette:** a large, jagged, spiky mass on top of the head (4-6
+  asymmetric pointed spikes of varying height, tallest toward the back), with smaller
+  jagged tufts continuing down the back of the head and along the neck/shoulder line.
+  Bold black outline throughout — flat cel-shaded fills, no gradients or textures.
+- **Eye:** a single visible eye, sly and half-lidded (heavy upper eyelid over a thin
+  sliver of eye-white, small dark pupil near the front/nose-side corner) — this is the
+  mascot's main expression carrier. One thick, arched eyebrow sits close above it.
+- **Ear:** one small teardrop-shaped ear on the back/left of the head, darker brown
+  with a darker inner shadow, tucked where the hair meets the face.
+  fill (currently a muted plum/purple in this asset) — a deliberate two-tone accent,
+  distinct from the fur palette, echoing the original reference image.
+- **Mouth:** a simple curved smirk line beneath the eye, running toward the snout.
+- **Whiskers:** a few thin lines plus small dots near the cheek/snout base.
+- **Teeth:** prominent front teeth hanging below the snout tip, cream/off-white (not
+  orange/brown — this was an explicit correction from the first reference image), with
+  a center divider line suggesting two teeth.
+- **Body:** shoulders/chest continue the same jagged fur silhouette, cropped at the
+  bottom edge (no arms/hands, no full sitting pose).
+
+**Color palette (as traced, brown-forward per explicit correction from the first
+reference):** primary mid-brown fur, a darker brown for shading/contours, a light tan
+for highlight streaks, near-white/cream for teeth and small highlights, a muted
+plum/purple for the nose, near-black for linework. No yellow/orange anywhere — earlier
+reference images skewed yellow-orange and were explicitly rejected for that reason.
 
 **v1 scope:** one default pose only, reused across every surface. No pose variants
 (host/celebratory/dejected/dam-building) in this pass — those are deferred to a future
-session once the base mark is validated in production.
+session. When that session happens, generate new poses through the same pipeline
+(reference image → vectorizer.io trace) rather than hand-authoring paths, and keep the
+face construction (sly half-lidded eye, arched brow, jagged hair, cream teeth, plum
+nose) consistent across poses so they read as the same character.
 
-**Construction:** hand-authored SVG as a single source of truth.
-- `src/components/brand/beaver-mascot.tsx` — React component rendering inline `<svg>`
-  paths, accepting `className`/`size` props. Colors reference the CSS variables from
-  the palette below (e.g. `currentColor` / `var(--color-primary)`), so it re-themes for
-  dark mode automatically without separate dark-mode artwork.
+**Construction:** vector-traced SVG as the single source of truth, fixed color palette
+(no CSS-variable re-theming — the mascot now looks the same in light and dark mode,
+which reads fine since the reference character itself has one fixed palette, not
+unlike how a real logo/mascot mark doesn't reskin per background).
+- `src/components/brand/beaver-mascot.tsx` — React component rendering the traced
+  `<svg>` paths, accepting `className`/`size` props.
 - **Revised during planning:** a literal binary `favicon.ico` would require adding a
   new image/ICO-conversion dependency (none exists in this repo). Instead,
   `src/app/icon.tsx` uses Next's `generateImageMetadata()` to render multiple sizes
