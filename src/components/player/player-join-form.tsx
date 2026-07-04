@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScoringInfoBadge } from './scoring-info-badge';
+import { BeaverMascot } from '@components/brand/beaver-mascot';
 
 const STORAGE_KEY = 'quiz-game-player-session';
 
@@ -151,6 +152,7 @@ export function PlayerJoinForm() {
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950/40 to-slate-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-8 px-6 py-12">
         <header className="text-center">
+          <BeaverMascot size={64} className="mx-auto mb-2" />
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">
             Bobr Quiz
           </p>

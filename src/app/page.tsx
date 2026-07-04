@@ -6,12 +6,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
+import { BeaverMascot } from '@components/brand/beaver-mascot';
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero Section */}
       <section className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+        <BeaverMascot size={96} className="mb-2" />
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
           Bobr Quiz
         </h1>
