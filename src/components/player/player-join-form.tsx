@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScoringInfoBadge } from './scoring-info-badge';
+import { BeaverMascot } from '@components/brand/beaver-mascot';
 
 const STORAGE_KEY = 'quiz-game-player-session';
 
@@ -148,14 +149,15 @@ export function PlayerJoinForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950/40 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-stone-950 via-amber-950/40 to-stone-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-8 px-6 py-12">
         <header className="text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">
+          <BeaverMascot size={64} className="mx-auto mb-2" />
+          <p className="text-xs uppercase tracking-[0.3em] text-amber-200/80">
             Bobr Quiz
           </p>
           <h1 className="mt-3 text-4xl font-semibold">Join the action</h1>
-          <p className="mt-2 text-base text-slate-200/80">
+          <p className="mt-2 text-base text-stone-300/80">
             Enter the code from the host screen and pick a display name.
           </p>
           {quizInfo?.settings?.scoringAlgorithm && (
@@ -192,7 +194,7 @@ export function PlayerJoinForm() {
                   setJoinCode(event.target.value.toUpperCase())
                 }
                 placeholder="ABCD"
-                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-lg tracking-[0.4em] text-center uppercase text-white placeholder:text-white/40 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-lg tracking-[0.4em] text-center uppercase text-white placeholder:text-white/40 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
                 disabled={isSubmitting}
                 inputMode="text"
                 autoComplete="off"
@@ -206,7 +208,7 @@ export function PlayerJoinForm() {
                 value={playerName}
                 onChange={(event) => setPlayerName(event.target.value)}
                 placeholder="Alex"
-                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-lg text-white placeholder:text-white/40 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-lg text-white placeholder:text-white/40 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
                 disabled={isSubmitting}
                 autoComplete="name"
               />
@@ -214,7 +216,7 @@ export function PlayerJoinForm() {
 
             <Button
               type="submit"
-              className="w-full rounded-2xl bg-emerald-400 text-base font-semibold text-emerald-950 hover:bg-emerald-300"
+              className="w-full rounded-2xl bg-amber-400 text-base font-semibold text-amber-950 hover:bg-amber-300"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Connecting…' : 'Join quiz'}
@@ -222,7 +224,7 @@ export function PlayerJoinForm() {
           </div>
 
           {error ? (
-            <p role="alert" className="mt-4 text-sm text-rose-200">
+            <p role="alert" className="mt-4 text-sm text-red-300">
               {error}
             </p>
           ) : null}
@@ -240,7 +242,7 @@ export function PlayerJoinForm() {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <Button
                 type="button"
-                className="w-full rounded-2xl bg-white/90 text-base font-semibold text-slate-950 hover:bg-white"
+                className="w-full rounded-2xl bg-white/90 text-base font-semibold text-stone-950 hover:bg-white"
                 onClick={handleResume}
               >
                 Reopen session

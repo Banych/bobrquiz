@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://bobrquiz.vercel.app'),
   title: 'Bobr Quiz',
   description:
     'Host live multiplayer quiz sessions with real-time scoring, speed bonuses, and instant leaderboards.',

@@ -1,0 +1,8 @@
+import { createMascotIconResponse } from '@components/brand/mascot-image-response';
+
+export const size = { width: 180, height: 180 };
+export const contentType = 'image/png';
+
+export default function AppleIcon() {
+  return createMascotIconResponse(180);
+}
