@@ -10,9 +10,8 @@ describe('beaver-mascot-shapes', () => {
   });
 
   it('should define all six mascot color keys on the CSS-var palette', async () => {
-    const { MASCOT_COLORS_CSS_VAR } = await import(
-      '@components/brand/beaver-mascot-shapes'
-    );
+    const { MASCOT_COLORS_CSS_VAR } =
+      await import('@components/brand/beaver-mascot-shapes');
     const keys: Array<keyof MascotColors> = [
       'fur',
       'furDark',
@@ -27,9 +26,8 @@ describe('beaver-mascot-shapes', () => {
   });
 
   it('should define all six mascot color keys on the static hex palette', async () => {
-    const { MASCOT_COLORS_STATIC } = await import(
-      '@components/brand/beaver-mascot-shapes'
-    );
+    const { MASCOT_COLORS_STATIC } =
+      await import('@components/brand/beaver-mascot-shapes');
     const keys: Array<keyof MascotColors> = [
       'fur',
       'furDark',
@@ -44,9 +42,8 @@ describe('beaver-mascot-shapes', () => {
   });
 
   it('should render a fragment containing the eye and teeth shapes', async () => {
-    const { mascotShapes, MASCOT_COLORS_STATIC } = await import(
-      '@components/brand/beaver-mascot-shapes'
-    );
+    const { mascotShapes, MASCOT_COLORS_STATIC } =
+      await import('@components/brand/beaver-mascot-shapes');
     const fragment = mascotShapes(MASCOT_COLORS_STATIC);
     const children = fragment.props.children as Array<{
       type: string;
