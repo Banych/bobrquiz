@@ -12,13 +12,20 @@ This document indexes all releases, completed work, and session notes. Use this 
 | **R3**  | Player MVP         | Join/answer flows, WebSocket sync, session persistence | ✅ Complete | ~2025-12-19     |
 | **R4**  | Content Admin      | CRUD (quiz/question), media uploads, auth gate         | ✅ Complete | 2025-12-21      |
 | **R5**  | Realtime & Scoring | Speed-based scoring, round transitions, reconnection   | ✅ Complete | 2026-02-01      |
-| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3, 5 done; 4, 6 not started) | ~2026-03-31     |
+| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3, 5 done; Prod isolation done; 4, rest of 6 not started) | ~2026-03-31     |
 
 ---
 
 ## Session Notes (Chronological)
 
 **Latest First** – Find detailed work notes by date:
+
+### 2026-07-04: R6 — Isolate Production Supabase from Dev/Preview ✅
+- **Focus**: Production, Preview, and Development had been silently sharing one Supabase project ("Quiz-game-dev") since the app's first auto-deploy in April 2025 — confirmed via hash comparison of every Vercel env var. A test admin account had live admin access to production.
+- **Deliverables**: standalone `quiz-game-prod` Supabase project (schema, RLS, storage bucket + policies, admin Auth user all recreated to match); Vercel Production repointed at it exclusively; `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` removed from Production only.
+- **Verified live, not just via config**: real browser login to the production admin UI, created a test quiz, confirmed via direct SQL it exists in the new project and is absent from the old one; 439 tests still passing.
+- **Notable**: two Vercel CLI gotchas hit mid-execution — `env rm NAME <env>` on a variable shared across environments deletes it entirely rather than narrowing scope (had to restore Dev/Preview from local `.env`), and `preview`/`production` env vars default to Vercel's write-only "Sensitive" type (can't be read back to verify — confirmed via a functional test instead).
+- Plan: [plans/2026-07-03-r6-supabase-prod-isolation.md](plans/2026-07-03-r6-supabase-prod-isolation.md)
 
 ### 2026-07-03: docs/plan.md Reconciliation ✅
 - **Focus**: `docs/plan.md`'s R6 Phase 2/3 checklists were stale — fully unchecked despite the work being built and shipped in earlier sessions (2026-02-07, 2026-03-07). Verified each item against the actual codebase (files, components, Prisma schema) rather than trusting prior checkbox state.

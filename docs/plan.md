@@ -322,7 +322,7 @@ See [`plans/2026-07-03-r6-phase5-security-hardening.md`](progress/plans/2026-07-
 - [ ] Record product demo video (optional)
 - [ ] Prepare launch announcement content
 - [ ] Set up custom domain if not already configured
-- [ ] Configure Vercel production environment
+- [x] Configure Vercel production environment — done 2026-07-04, but not in the way this checklist assumed. The app had *already* been auto-deploying to production since April 2025 via Vercel's GitHub integration, silently sharing one Supabase project ("Quiz-game-dev") across Production/Preview/Development the whole time — a test admin account had live access to what was presented as "production." Fixed by provisioning a standalone `quiz-game-prod` Supabase project and repointing Vercel's Production environment at it exclusively (schema/RLS/storage/admin auth all recreated to match); Preview and Development still intentionally share the dev project. Verified live end-to-end (real admin login + quiz creation on the production URL, confirmed absent from the old project), not just by inspecting config. See [plans/2026-07-03-r6-supabase-prod-isolation.md](progress/plans/2026-07-03-r6-supabase-prod-isolation.md). Custom domain still not configured — separate, unblocked item above.
 
 ### Acceptance Criteria for R6
 
