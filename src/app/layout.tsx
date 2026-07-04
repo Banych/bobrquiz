@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { AppProviders } from './providers';
 import { validateEnvironment } from '@lib/env-validation';
+import { SITE_URL } from '@lib/site-url';
 
 // Validate environment variables at startup
 if (typeof window === 'undefined') {
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bobrquiz.vercel.app'),
+  metadataBase: new URL(SITE_URL),
   title: 'Bobr Quiz',
   description:
     'Host live multiplayer quiz sessions with real-time scoring, speed bonuses, and instant leaderboards.',
