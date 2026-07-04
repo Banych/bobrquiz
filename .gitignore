@@ -49,3 +49,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Supabase CLI local link state (machine-specific, not project config)
+supabase/.temp/

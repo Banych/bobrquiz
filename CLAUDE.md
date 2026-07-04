@@ -406,3 +406,4 @@ For realtime issues: check the `realtime` service logs and verify Supabase chann
 ### Git Commits
 - **Do NOT add Co-Authored-By** lines to commit messages
 - Keep commit messages concise and descriptive
+- **NEVER commit directly to `master`** — it is branch-protected and requires a PR anyway, but treat this as a hard rule regardless: always create a feature branch, commit there, and open a PR (see `.github/copilot-instructions.md` / earlier sessions for the recovery pattern if `master` is checked out locally: create a new branch from HEAD, don't rename `master` itself)
