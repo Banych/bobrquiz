@@ -41,11 +41,11 @@ describe('beaver-mascot-shapes', () => {
     });
   });
 
-  it('should render a fragment containing the eye and teeth shapes', async () => {
+  it('should render a group containing the eye and teeth shapes', async () => {
     const { mascotShapes, MASCOT_COLORS_STATIC } =
       await import('@components/brand/beaver-mascot-shapes');
-    const fragment = mascotShapes(MASCOT_COLORS_STATIC);
-    const children = fragment.props.children as Array<{
+    const group = mascotShapes(MASCOT_COLORS_STATIC);
+    const children = group.props.children as Array<{
       type: string;
       props: Record<string, unknown>;
     }>;
