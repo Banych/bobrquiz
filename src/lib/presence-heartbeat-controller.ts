@@ -8,19 +8,22 @@
  * - persist: DB-write heartbeat, on a slower, jittered cadence, since it is
  *   the one that contributes to Postgres pool pressure under load.
  *
- * A shared failure counter and circuit breaker cover both loops: either one
- * failing counts toward onConnectionError, and either one succeeding resets
- * the counter and fires onReconnected if there had been prior failures.
+ * Each loop maintains its own failure streak, since they can diverge (e.g. a
+ * DB outage fails persist while the separate Realtime websocket keeps
+ * succeeding) — a shared counter would let one loop's success mask the
+ * other's ongoing failures. The circuit trips (onConnectionError, once) the
+ * moment either stream's streak first reaches maxRetryAttempts, and clears
+ * (onReconnected) once both streams are healthy again.
  */
 
 export type PresenceHeartbeatCallbacks = {
-  /** Called whenever the shared consecutive-failure count changes. */
+  /** Called whenever the higher of the two loops' consecutive-failure counts changes. */
   onFailureCountChange: (count: number) => void;
   /** Called on every successful track or persist attempt, with an ISO timestamp. */
   onSuccess: (timestampIso: string) => void;
-  /** Called once, the moment failureCount first reaches maxRetryAttempts. */
+  /** Called once, the moment either stream's failure count first reaches maxRetryAttempts. */
   onConnectionError: () => void;
-  /** Called once, the next time a heartbeat succeeds after prior failures. */
+  /** Called once, when both streams have recovered after prior failures. */
   onReconnected: () => void;
 };
 
@@ -55,7 +58,7 @@ export interface PresenceHeartbeatController {
   sendImmediate: () => Promise<void>;
   /** Stop all scheduled loops and clear pending timers. */
   stop: () => void;
-  /** Current consecutive-failure count, shared across both loops. */
+  /** Higher of the two streams' current consecutive-failure counts. */
   getFailureCount: () => number;
 }
 
@@ -73,7 +76,9 @@ export function createPresenceHeartbeatController(
   callbacks: PresenceHeartbeatCallbacks,
   config: PresenceHeartbeatConfig = DEFAULT_PRESENCE_HEARTBEAT_CONFIG
 ): PresenceHeartbeatController {
-  let failureCount = 0;
+  let trackFailureCount = 0;
+  let persistFailureCount = 0;
+  let lastReportedFailureCount = 0;
   let hasCalledErrorCallback = false;
   let trackTimeout: ReturnType<typeof setTimeout> | null = null;
   let persistTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -87,41 +92,83 @@ export function createPresenceHeartbeatController(
         ]
       : config.circuitOpenIntervalMs;
 
-  const handleSuccess = (): void => {
-    const hadFailures = failureCount > 0;
-    failureCount = 0;
-    hasCalledErrorCallback = false;
-    callbacks.onFailureCountChange(0);
+  const isAnyStreamFailing = (): boolean =>
+    trackFailureCount > 0 || persistFailureCount > 0;
+
+  const isCircuitTripped = (): boolean =>
+    trackFailureCount >= config.maxRetryAttempts ||
+    persistFailureCount >= config.maxRetryAttempts;
+
+  const reportFailureCount = (): void => {
+    const nextCount = Math.max(trackFailureCount, persistFailureCount);
+    if (nextCount === lastReportedFailureCount) return;
+    lastReportedFailureCount = nextCount;
+    callbacks.onFailureCountChange(nextCount);
+  };
+
+  const handleTrackSuccess = (): void => {
+    const hadFailures = trackFailureCount > 0;
+    trackFailureCount = 0;
+    reportFailureCount();
     callbacks.onSuccess(new Date().toISOString());
-    if (hadFailures) {
+    if (hadFailures && !isAnyStreamFailing()) {
+      hasCalledErrorCallback = false;
       callbacks.onReconnected();
     }
   };
 
-  const handleFailure = (error: unknown): number => {
-    failureCount += 1;
-    callbacks.onFailureCountChange(failureCount);
+  const handlePersistSuccess = (): void => {
+    const hadFailures = persistFailureCount > 0;
+    persistFailureCount = 0;
+    reportFailureCount();
+    callbacks.onSuccess(new Date().toISOString());
+    if (hadFailures && !isAnyStreamFailing()) {
+      hasCalledErrorCallback = false;
+      callbacks.onReconnected();
+    }
+  };
+
+  const handleTrackFailure = (error: unknown): number => {
+    trackFailureCount += 1;
+    reportFailureCount();
 
     console.warn(
-      `[PresenceHeartbeatController] Heartbeat failed (attempt ${failureCount}):`,
+      `[PresenceHeartbeatController] Track heartbeat failed (attempt ${trackFailureCount}):`,
       error
     );
 
-    if (failureCount >= config.maxRetryAttempts && !hasCalledErrorCallback) {
+    if (isCircuitTripped() && !hasCalledErrorCallback) {
       hasCalledErrorCallback = true;
       callbacks.onConnectionError();
     }
 
-    return failureCount;
+    return trackFailureCount;
+  };
+
+  const handlePersistFailure = (error: unknown): number => {
+    persistFailureCount += 1;
+    reportFailureCount();
+
+    console.warn(
+      `[PresenceHeartbeatController] Persist heartbeat failed (attempt ${persistFailureCount}):`,
+      error
+    );
+
+    if (isCircuitTripped() && !hasCalledErrorCallback) {
+      hasCalledErrorCallback = true;
+      callbacks.onConnectionError();
+    }
+
+    return persistFailureCount;
   };
 
   const runTrackTick = async (): Promise<void> => {
     let delay = config.trackIntervalMs;
     try {
       await track();
-      handleSuccess();
+      handleTrackSuccess();
     } catch (error) {
-      delay = nextDelayFor(handleFailure(error));
+      delay = nextDelayFor(handleTrackFailure(error));
     }
     if (stopped) return;
     trackTimeout = setTimeout(() => void runTrackTick(), delay);
@@ -131,9 +178,9 @@ export function createPresenceHeartbeatController(
     let delay = config.persistIntervalMs + persistJitter;
     try {
       await persist();
-      handleSuccess();
+      handlePersistSuccess();
     } catch (error) {
-      delay = nextDelayFor(handleFailure(error));
+      delay = nextDelayFor(handlePersistFailure(error));
     }
     if (stopped) return;
     persistTimeout = setTimeout(() => void runPersistTick(), delay);
@@ -150,10 +197,15 @@ export function createPresenceHeartbeatController(
     sendImmediate: async () => {
       try {
         await track();
-        await persist();
-        handleSuccess();
+        handleTrackSuccess();
       } catch (error) {
-        handleFailure(error);
+        handleTrackFailure(error);
+      }
+      try {
+        await persist();
+        handlePersistSuccess();
+      } catch (error) {
+        handlePersistFailure(error);
       }
     },
     stop: () => {
@@ -163,6 +215,6 @@ export function createPresenceHeartbeatController(
       trackTimeout = null;
       persistTimeout = null;
     },
-    getFailureCount: () => failureCount,
+    getFailureCount: () => Math.max(trackFailureCount, persistFailureCount),
   };
 }

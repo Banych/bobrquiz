@@ -75,3 +75,6 @@ Considered building new failure-detection machinery for DB persistence specifica
 
 **Decision: defer server-side presence aggregation (Approach 2)**
 Would remove per-client heartbeat DB writes entirely by having one server-side process read Realtime's own presence state and batch-write `lastSeenAt`. Rejected for this round: Vercel's serverless model has no natural home for a long-lived background process (would need a Vercel Cron function or separate worker — new infra, new failure modes), and it doesn't address bug #2 by itself since the honest-failure-surfacing work is still needed regardless. Revisit if player counts grow well beyond a handful per game.
+
+**Decision: independent per-loop failure streaks, not a single shared counter**
+The initial implementation shared one `failureCount` across both the track and persist loops. Final review caught that this let a healthy track loop (websocket, succeeds every 10s) silently reset a failing persist loop's streak every cycle — meaning persist failures could never reach `maxRetryAttempts` and the circuit breaker would never trip for the exact DB-outage scenario this fix targets. Fixed by giving each loop its own failure count, tripping the circuit when either reaches the threshold and clearing it only once both have recovered.

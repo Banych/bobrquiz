@@ -293,4 +293,35 @@ describe('presence-heartbeat-controller', () => {
     expect(track).toHaveBeenCalledTimes(1);
     expect(persist).toHaveBeenCalledTimes(1);
   });
+
+  it('does not mask persist failures with concurrent track successes (independent per-loop failure streaks)', async () => {
+    const track = vi.fn().mockResolvedValue(undefined);
+    const persist = vi.fn().mockRejectedValue(new Error('persist failed'));
+    const callbacks = makeCallbacks();
+    const controller = createPresenceHeartbeatController(
+      track,
+      persist,
+      callbacks,
+      FAST_CONFIG
+    );
+
+    controller.start({ persistEnabled: true });
+    await vi.advanceTimersByTimeAsync(0); // t=0: track succeeds, persist fails (1)
+    expect(callbacks.failureCounts).toEqual([1]);
+
+    await vi.advanceTimersByTimeAsync(100); // t=100: persist retry fails (2); track not due yet
+    expect(persist).toHaveBeenCalledTimes(2);
+    expect(callbacks.failureCounts).toEqual([1, 2]);
+
+    await vi.advanceTimersByTimeAsync(200); // t=300: persist retry fails (3) -> circuit trips
+    expect(persist).toHaveBeenCalledTimes(3);
+    expect(callbacks.connectionErrors).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(700); // t=1000: track tick fires and succeeds
+    expect(track).toHaveBeenCalledTimes(2);
+    // track succeeding must NOT clear persist's failure state or fire a spurious reconnect
+    expect(callbacks.connectionErrors).toBe(1);
+    expect(callbacks.reconnects).toBe(0);
+    expect(controller.getFailureCount()).toBe(3);
+  });
 });
