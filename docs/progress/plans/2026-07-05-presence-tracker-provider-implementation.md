@@ -1,5 +1,7 @@
 # Presence Tracker Provider Mounting Implementation Plan
 
+**Status:** ✅ Complete — merged via [PR #59](https://github.com/Banych/bobrquiz/pull/59)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Mount `PresenceTrackerProvider` (built in Phase 4.1, never wired up) so the presence heartbeat actually runs in production, and harden `usePresenceTracker()` to fail loud so this exact bug class — a hook silently no-op'ing because its provider was never mounted — can't recur undetected.
@@ -29,7 +31,7 @@
 
 There is no unit test for this file today (it's a rendering-only wiring file with no branching logic — the same is true of the pre-existing `RealtimeClientProvider` mount it mirrors), so this task is verified via typecheck, lint, and the full test suite, not a new test.
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 Replace `src/app/providers.tsx` entirely with:
 
@@ -91,12 +93,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
 `useState(getPresenceTracker)` uses React's lazy-initializer form (same pattern already used one line above for `useState(createQueryClient)`), so `getPresenceTracker()` runs exactly once per `AppProviders` instance. `getPresenceTracker()` itself also caches a module-level singleton, so this is safe even if `AppProviders` were ever remounted.
 
-- [ ] **Step 2: Run the full test suite**
+- [x] **Step 2: Run the full test suite**
 
 Run: `yarn test`
 Expected: PASS — no regressions. No test currently exercises `AppProviders` directly (no jsdom/renderHook), so nothing here should change test output.
 
-- [ ] **Step 3: Run lint and build**
+- [x] **Step 3: Run lint and build**
 
 Run: `yarn lint`
 Expected: 0 errors
@@ -104,7 +106,7 @@ Expected: 0 errors
 Run: `yarn build`
 Expected: succeeds (this also typechecks — confirms `PresenceTrackerProvider`'s `tracker` prop type matches `getPresenceTracker()`'s return type)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/providers.tsx
@@ -132,7 +134,7 @@ fix in PR #58."
 - Produces: `usePresenceTracker(): IPresenceTracker` — return type changes from `IPresenceTracker | null` to `IPresenceTracker` (no consumers outside this file exist today, confirmed by repo-wide search, so this is a safe signature tightening).
 - Consumes: `IPresenceTracker` (unchanged, from `@infrastructure/realtime/presence-tracker`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add these imports and this new `describe` block to `src/tests/hooks/use-presence.test.ts` — full new file contents:
 
@@ -242,12 +244,12 @@ describe('usePresence', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `yarn test use-presence`
 Expected: FAIL — `assertPresenceTracker` is not yet exported from `@hooks/use-presence`, so the import resolves to `undefined`; calling it throws a runtime `TypeError` ("assertPresenceTracker is not a function").
 
-- [ ] **Step 3: Implement `assertPresenceTracker` and harden `usePresenceTracker`**
+- [x] **Step 3: Implement `assertPresenceTracker` and harden `usePresenceTracker`**
 
 Replace `src/hooks/use-presence.tsx` entirely with:
 
@@ -494,17 +496,17 @@ Changes from the pre-existing file:
 - Removed `if (!current.tracker) return;` from `track()` — unreachable now that `tracker` can't be `null`.
 - Removed `if (!tracker) return;` from the subscribe/start effect — unreachable for the same reason.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `yarn test use-presence`
 Expected: PASS (5 tests: 3 existing type-contract tests + 2 new `assertPresenceTracker` tests)
 
-- [ ] **Step 5: Run the full test suite**
+- [x] **Step 5: Run the full test suite**
 
 Run: `yarn test`
 Expected: PASS, no regressions (in particular, `presence-heartbeat-controller.test.ts` and any test importing `@hooks/use-presence` types should be unaffected — `UsePresenceOptions`/`UsePresenceReturn` are unchanged).
 
-- [ ] **Step 6: Run lint and build**
+- [x] **Step 6: Run lint and build**
 
 Run: `yarn lint`
 Expected: 0 errors
@@ -512,7 +514,7 @@ Expected: 0 errors
 Run: `yarn build`
 Expected: succeeds
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/hooks/use-presence.tsx src/tests/hooks/use-presence.test.ts
@@ -532,11 +534,13 @@ return (confirmed by repo-wide search), so this is a safe tightening."
 
 Not a code change — confirms the heartbeat actually runs now (the core bug), then re-runs PR #58's originally-planned failure-simulation verification, which was blocked by this exact bug.
 
-- [ ] **Step 1: Confirm the heartbeat now actually fires**
+**Note:** the first attempt at this task (joining the demo quiz) immediately surfaced a second, independent bug — `SupabasePresenceTracker.subscribe()` crashing on remount, since this was the first time the heartbeat mechanism ever actually ran. That bug was fixed in a follow-up plan (`docs/progress/plans/2026-07-05-presence-channel-reuse-implementation.md`), whose own Task 2 completed all 5 steps below for real, on the fixed code. Checked off here since the verification this task specifies was genuinely performed, just as part of the follow-up plan's manual verification rather than in isolation immediately after Task 2.
+
+- [x] **Step 1: Confirm the heartbeat now actually fires**
 
 With the dev server running (picking up Tasks 1-2), navigate to `/join`, enter join code `TRYBOBR` (the `Bobr Quiz Demo` quiz), pick a name, join. Using the Playwright MCP's network-requests tool, confirm at least one `POST /api/quiz/[quizId]/player/[playerId]/presence` request appears within the first ~25s (the persist cadence is `20_000` ± up to `5_000` jitter). This is the concrete proof the root bug is fixed — before this plan, zero such requests were ever observed.
 
-- [ ] **Step 2: Simulate a persistence failure**
+- [x] **Step 2: Simulate a persistence failure**
 
 Temporarily edit `src/app/api/quiz/[quizId]/player/[playerId]/presence/route.ts` to force a failure — add as the first line inside the `POST` handler:
 
@@ -546,15 +550,15 @@ return NextResponse.json({ error: 'simulated' }, { status: 500 });
 
 Save and let the dev server hot-reload.
 
-- [ ] **Step 3: Confirm the player sees the reconnecting banner**
+- [x] **Step 3: Confirm the player sees the reconnecting banner**
 
 Within ~30s (5 fast retries: 1+2+4+8+8s), the `ConnectionStatusBanner` should appear on the player screen showing "Connection lost. Trying to reconnect..." — confirm via a Playwright snapshot.
 
-- [ ] **Step 4: Confirm recovery**
+- [x] **Step 4: Confirm recovery**
 
 Revert the temporary change from Step 2, save. Within the next persist attempt (circuit-open cadence, 30s), confirm the banner clears and shows "✓ Reconnected! Your session has been restored."
 
-- [ ] **Step 5: Confirm the host's view was sensible throughout**
+- [x] **Step 5: Confirm the host's view was sensible throughout**
 
 Check the host dashboard's Players panel during the simulated outage — the player should age through away/disconnected on the same schedule as before, then reflect the recovery once heartbeats resume.
 

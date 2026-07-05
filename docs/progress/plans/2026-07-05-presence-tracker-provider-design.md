@@ -1,6 +1,6 @@
 # Presence Tracker Provider Mounting — Design Spec
 
-**Status:** 📋 Approved, ready for implementation plan
+**Status:** ✅ Complete — merged via [PR #59](https://github.com/Banych/bobrquiz/pull/59)
 **Related:** `fix/presence-heartbeat-resilience` (PR #58, merged) — that fix corrected the heartbeat's retry/backoff/circuit-breaker logic, but discovered during manual verification that the heartbeat never runs at all in production, independent of that fix.
 
 ## Background

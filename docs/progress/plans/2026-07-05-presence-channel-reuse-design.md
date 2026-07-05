@@ -1,6 +1,6 @@
 # Presence Channel Reuse Race — Design Spec
 
-**Status:** 📋 Approved, ready for implementation plan
+**Status:** ✅ Complete — merged via [PR #59](https://github.com/Banych/bobrquiz/pull/59)
 **Related:** `fix/presence-tracker-provider-mount` (Tasks 1-2, already committed on that branch) — mounting `PresenceTrackerProvider` made `SupabasePresenceTracker.subscribe()` actually execute for the first time in production, which immediately exposed this bug.
 
 ## Background

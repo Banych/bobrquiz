@@ -1,5 +1,7 @@
 # Presence Channel Reuse Race Implementation Plan
 
+**Status:** ✅ Complete — merged via [PR #59](https://github.com/Banych/bobrquiz/pull/59)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Stop `SupabasePresenceTracker.subscribe()` from crashing the player screen on remount (React Strict Mode's dev double-invoke, or any real fast remount), by keeping the channel alive for a short grace period after unsubscribe instead of racing its async teardown.
@@ -28,7 +30,7 @@
 - Produces: `export class SupabasePresenceTracker implements IPresenceTracker` (currently unexported — exporting it is required so the test file can import and test it directly; its public methods — `subscribe`, `track`, `untrack`, `getPresenceState`, `disconnect` — keep their existing `IPresenceTracker` signatures unchanged).
 - No other file in the repo imports `SupabasePresenceTracker` by name today (only `getPresenceTracker()`'s return type, `IPresenceTracker`, is consumed elsewhere), so exporting it has no other call sites to update.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/tests/infrastructure/realtime/presence-tracker.test.ts` entirely with (this preserves every existing `MockPresenceTracker` test unchanged and appends a new `describe` block):
 
@@ -441,12 +443,12 @@ describe('SupabasePresenceTracker', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `yarn test presence-tracker`
 Expected: FAIL — `SupabasePresenceTracker` is not yet exported from `@infrastructure/realtime/presence-tracker` (the class exists but has no `export` keyword yet), so the whole test file fails to load (either a "no matching export" module error, or `new SupabasePresenceTracker(...)` throwing "not a constructor" if the import resolves to `undefined`).
 
-- [ ] **Step 3: Implement the grace-period reuse logic**
+- [x] **Step 3: Implement the grace-period reuse logic**
 
 Replace `src/infrastructure/realtime/presence-tracker.ts` entirely with:
 
@@ -796,17 +798,17 @@ Changes from the pre-existing file:
 - New private `teardownChannel(quizId, channel)` replaces the old private `unsubscribe(quizId)` — same `untrack()`/`unsubscribe()` calls, now invoked only after the grace period (or immediately from `disconnect()`).
 - `disconnect()` now also clears any pending `teardownTimer`s before tearing every channel down immediately.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `yarn test presence-tracker`
 Expected: PASS (17 tests: 12 existing `PresenceTracker`/`MockPresenceTracker` tests + 5 new `SupabasePresenceTracker` tests)
 
-- [ ] **Step 5: Run the full test suite**
+- [x] **Step 5: Run the full test suite**
 
 Run: `yarn test`
 Expected: PASS, no regressions.
 
-- [ ] **Step 6: Run lint and build**
+- [x] **Step 6: Run lint and build**
 
 Run: `yarn lint`
 Expected: 0 errors
@@ -814,7 +816,7 @@ Expected: 0 errors
 Run: `yarn build`
 Expected: succeeds
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/infrastructure/realtime/presence-tracker.ts src/tests/infrastructure/realtime/presence-tracker.test.ts
@@ -839,15 +841,15 @@ channel never needs .on() called twice."
 
 Not a code change — confirms joining no longer crashes, then completes the `PresenceTrackerProvider` plan's originally-deferred verification (heartbeat POST requests appear, failure-simulation banner, recovery), which this bug had blocked.
 
-- [ ] **Step 1: Confirm joining no longer crashes**
+- [x] **Step 1: Confirm joining no longer crashes**
 
 With the dev server running (picking up Task 1), navigate to `/join`, enter join code `TRYBOBR` (the `Bobr Quiz Demo` quiz), pick a name, join. Confirm via a Playwright snapshot that the actual player screen renders (not the generic "Something went wrong" error page), and confirm zero console errors.
 
-- [ ] **Step 2: Confirm the heartbeat fires**
+- [x] **Step 2: Confirm the heartbeat fires**
 
 Using the Playwright MCP's network-requests tool, confirm at least one `POST /api/quiz/[quizId]/player/[playerId]/presence` request appears within the first ~25s.
 
-- [ ] **Step 3: Simulate a persistence failure**
+- [x] **Step 3: Simulate a persistence failure**
 
 Temporarily edit `src/app/api/quiz/[quizId]/player/[playerId]/presence/route.ts` to force a failure — add as the first line inside the `POST` handler:
 
@@ -857,15 +859,15 @@ return NextResponse.json({ error: 'simulated' }, { status: 500 });
 
 Save and let the dev server hot-reload.
 
-- [ ] **Step 4: Confirm the player sees the reconnecting banner**
+- [x] **Step 4: Confirm the player sees the reconnecting banner**
 
 Within ~30s (5 fast retries: 1+2+4+8+8s), the `ConnectionStatusBanner` should appear on the player screen showing "Connection lost. Trying to reconnect..." — confirm via a Playwright snapshot.
 
-- [ ] **Step 5: Confirm recovery**
+- [x] **Step 5: Confirm recovery**
 
 Revert the temporary change from Step 3, save. Within the next persist attempt (circuit-open cadence, 30s), confirm the banner clears and shows "✓ Reconnected! Your session has been restored."
 
-- [ ] **Step 6: Confirm the host's view was sensible throughout**
+- [x] **Step 6: Confirm the host's view was sensible throughout**
 
 Check the host dashboard's Players panel during the simulated outage — the player should age through away/disconnected on the same schedule as before, then reflect the recovery once heartbeats resume.
 
