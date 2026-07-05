@@ -3,6 +3,8 @@ import type {
   UsePresenceOptions,
   UsePresenceReturn,
 } from '@hooks/use-presence';
+import { assertPresenceTracker } from '@hooks/use-presence';
+import type { IPresenceTracker } from '@infrastructure/realtime/presence-tracker';
 
 /**
  * Type-contract tests for usePresence's public API.
@@ -76,6 +78,26 @@ describe('usePresence', () => {
       expect(minimalOptions.onLeave).toBeUndefined();
       expect(minimalOptions.onConnectionError).toBeUndefined();
       expect(minimalOptions.onReconnected).toBeUndefined();
+    });
+  });
+
+  describe('assertPresenceTracker', () => {
+    it('throws when the tracker is null', () => {
+      expect(() => assertPresenceTracker(null)).toThrow(
+        'PresenceTrackerProvider is missing from the component tree.'
+      );
+    });
+
+    it('returns the tracker unchanged when it is not null', () => {
+      const mockTracker: IPresenceTracker = {
+        subscribe: () => () => {},
+        track: async () => {},
+        untrack: async () => {},
+        getPresenceState: () => ({}),
+        disconnect: () => {},
+      };
+
+      expect(assertPresenceTracker(mockTracker)).toBe(mockTracker);
     });
   });
 });
