@@ -2,8 +2,10 @@ import {
   type IPresenceTracker,
   type PresenceState,
   type PresenceSubscribeOptions,
+  SupabasePresenceTracker,
 } from '@infrastructure/realtime/presence-tracker';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 /**
  * Mock presence tracker for testing.
@@ -253,5 +255,152 @@ describe('PresenceTracker', () => {
       expect(Object.keys(quiz1State)).toEqual(['player-1']);
       expect(Object.keys(quiz2State)).toEqual(['player-2']);
     });
+  });
+});
+
+/**
+ * Mock Supabase channel/client for testing SupabasePresenceTracker's real
+ * channel reuse/teardown logic (not a stand-in fake -- this exercises the
+ * actual class, mocking only the Supabase client boundary).
+ */
+type MockChannel = {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  track: ReturnType<typeof vi.fn>;
+  untrack: ReturnType<typeof vi.fn>;
+  unsubscribe: ReturnType<typeof vi.fn>;
+  presenceState: ReturnType<typeof vi.fn>;
+  emit: (event: 'sync' | 'join' | 'leave', payload?: unknown) => void;
+};
+
+const createMockChannel = (): MockChannel => {
+  const listeners = new Map<string, (payload: unknown) => void>();
+
+  return {
+    on: vi.fn(
+      (
+        _type: string,
+        filter: { event: string },
+        callback: (payload: unknown) => void
+      ) => {
+        listeners.set(filter.event, callback);
+      }
+    ),
+    subscribe: vi.fn((callback?: (status: string) => void) => {
+      callback?.('SUBSCRIBED');
+    }),
+    track: vi.fn().mockResolvedValue('ok'),
+    untrack: vi.fn().mockResolvedValue('ok'),
+    unsubscribe: vi.fn().mockResolvedValue('ok'),
+    presenceState: vi.fn().mockReturnValue({}),
+    emit: (event, payload) => {
+      listeners.get(event)?.(payload);
+    },
+  };
+};
+
+const createMockClient = () => {
+  const channelsByName = new Map<string, MockChannel>();
+  const channel = vi.fn((name: string) => {
+    const mockChannel = createMockChannel();
+    channelsByName.set(name, mockChannel);
+    return mockChannel;
+  });
+  return {
+    client: { channel } as unknown as SupabaseClient,
+    channelsByName,
+    channelFn: channel,
+  };
+};
+
+describe('SupabasePresenceTracker', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('reuses the channel when subscribe is called again within the grace period', () => {
+    const { client, channelsByName, channelFn } = createMockClient();
+    const tracker = new SupabasePresenceTracker(client);
+
+    const unsubscribe1 = tracker.subscribe('quiz-1', 'player-1', {});
+    unsubscribe1();
+
+    tracker.subscribe('quiz-1', 'player-1', {});
+
+    expect(channelFn).toHaveBeenCalledTimes(1);
+    const channel = channelsByName.get('presence:quiz:quiz-1')!;
+    expect(channel.on).toHaveBeenCalledTimes(3);
+    expect(channel.subscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates a fresh channel when subscribe is called after the grace period elapses', async () => {
+    const { client, channelFn } = createMockClient();
+    const tracker = new SupabasePresenceTracker(client);
+
+    const unsubscribe1 = tracker.subscribe('quiz-1', 'player-1', {});
+    unsubscribe1();
+
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    tracker.subscribe('quiz-1', 'player-1', {});
+
+    expect(channelFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('routes presence events to the latest handlers after a reuse', () => {
+    const { client, channelsByName } = createMockClient();
+    const tracker = new SupabasePresenceTracker(client);
+
+    const onSync1 = vi.fn();
+    const unsubscribe1 = tracker.subscribe('quiz-1', 'player-1', {
+      onSync: onSync1,
+    });
+    unsubscribe1();
+
+    const onSync2 = vi.fn();
+    tracker.subscribe('quiz-1', 'player-1', { onSync: onSync2 });
+
+    const channel = channelsByName.get('presence:quiz:quiz-1')!;
+    channel.emit('sync');
+
+    expect(onSync1).not.toHaveBeenCalled();
+    expect(onSync2).toHaveBeenCalledTimes(1);
+  });
+
+  it('tears down the channel once the grace period elapses uncancelled', async () => {
+    const { client, channelsByName } = createMockClient();
+    const tracker = new SupabasePresenceTracker(client);
+
+    const unsubscribe = tracker.subscribe('quiz-1', 'player-1', {});
+    unsubscribe();
+
+    const channel = channelsByName.get('presence:quiz:quiz-1')!;
+    expect(channel.untrack).not.toHaveBeenCalled();
+    expect(channel.unsubscribe).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(channel.untrack).toHaveBeenCalledTimes(1);
+    expect(channel.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call channel.untrack/unsubscribe if resubscribed before the grace period elapses', async () => {
+    const { client, channelsByName } = createMockClient();
+    const tracker = new SupabasePresenceTracker(client);
+
+    const unsubscribe1 = tracker.subscribe('quiz-1', 'player-1', {});
+    unsubscribe1();
+
+    tracker.subscribe('quiz-1', 'player-1', {});
+
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    const channel = channelsByName.get('presence:quiz:quiz-1')!;
+    expect(channel.untrack).not.toHaveBeenCalled();
+    expect(channel.unsubscribe).not.toHaveBeenCalled();
   });
 });
