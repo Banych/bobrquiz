@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -95,9 +96,11 @@ export const usePresence = ({
 
   // Latest-value refs so the controller's track/persist functions and
   // callbacks never close over stale props, without needing to recreate
-  // the controller (and restart its timers) on every render. Synced in an
-  // effect rather than during render, since refs must not be written while
-  // rendering (react-hooks/refs).
+  // the controller (and restart its timers) on every render. Synced in a
+  // layout effect (not during render, since refs must not be written while
+  // rendering per react-hooks/refs) so the mirroring happens synchronously
+  // in the commit phase, before the controller's setTimeout-driven ticks
+  // can fire against a stale ref value.
   const latestRef = useRef({
     tracker,
     quizId,
@@ -108,7 +111,7 @@ export const usePresence = ({
   const onConnectionErrorRef = useRef(onConnectionError);
   const onReconnectedRef = useRef(onReconnected);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     latestRef.current = {
       tracker,
       quizId,
@@ -154,11 +157,13 @@ export const usePresence = ({
     typeof createPresenceHeartbeatController
   > | null>(null);
 
-  // Create the controller once on mount. Done in an effect (not directly in
-  // the render body) since refs must not be written while rendering; the
-  // ref-null check keeps this a one-time initialization even under
-  // StrictMode's double-invoke.
-  useEffect(() => {
+  // Create the controller once on mount. Done in a layout effect (not
+  // directly in the render body) since refs must not be written while
+  // rendering; using useLayoutEffect (rather than a passive effect) ensures
+  // the controller exists synchronously in the commit phase, before any
+  // other timing-sensitive effects below can run. The ref-null check keeps
+  // this a one-time initialization even under StrictMode's double-invoke.
+  useLayoutEffect(() => {
     if (controllerRef.current === null) {
       controllerRef.current = createPresenceHeartbeatController(
         track,
