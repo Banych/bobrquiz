@@ -1,6 +1,6 @@
 # Presence Heartbeat Resilience — Design Spec
 
-**Status:** 📋 Approved, ready for implementation plan
+**Status:** ✅ Complete — merged via [PR #58](https://github.com/Banych/bobrquiz/pull/58)
 **Related:** `fix/host-leaderboard-realtime-update` (bug #1, already fixed/committed on a separate branch)
 
 ## Background

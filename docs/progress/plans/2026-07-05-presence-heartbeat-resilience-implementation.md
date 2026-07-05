@@ -1,5 +1,7 @@
 # Presence Heartbeat Resilience Implementation Plan
 
+**Status:** ✅ Complete — merged via [PR #58](https://github.com/Banych/bobrquiz/pull/58)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Stop the presence heartbeat from silently swallowing DB-write failures (which currently lets a fully-connected player be marked away/disconnected/removed with zero feedback), and reduce the heartbeat's contribution to Supabase pool connection pressure.
@@ -31,7 +33,7 @@
   - `DEFAULT_PRESENCE_HEARTBEAT_CONFIG: PresenceHeartbeatConfig` — the production values.
   - `PresenceHeartbeatController = { start: (options: { persistEnabled: boolean }) => void; sendImmediate: () => Promise<void>; stop: () => void; getFailureCount: () => number }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/tests/lib/presence-heartbeat-controller.test.ts`:
 
@@ -334,12 +336,12 @@ describe('presence-heartbeat-controller', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `yarn test presence-heartbeat-controller`
 Expected: FAIL — `Cannot find module '@lib/presence-heartbeat-controller'`
 
-- [ ] **Step 3: Implement `createPresenceHeartbeatController`**
+- [x] **Step 3: Implement `createPresenceHeartbeatController`**
 
 Create `src/lib/presence-heartbeat-controller.ts`:
 
@@ -514,12 +516,12 @@ export function createPresenceHeartbeatController(
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `yarn test presence-heartbeat-controller`
 Expected: PASS (12 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/presence-heartbeat-controller.ts src/tests/lib/presence-heartbeat-controller.test.ts
@@ -537,7 +539,7 @@ git commit -m "feat: add presence heartbeat controller with decoupled track/pers
 - Consumes: `createPresenceHeartbeatController` from Task 1 (`@lib/presence-heartbeat-controller`)
 - Produces: unchanged `UsePresenceOptions`/`UsePresenceReturn` (consumed by `src/hooks/use-reconnection.ts`, already correct, no changes needed there)
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 Replace `src/hooks/use-presence.tsx` entirely with:
 
@@ -731,17 +733,17 @@ export const usePresence = ({
 };
 ```
 
-- [ ] **Step 2: Run the existing type-contract test to verify the public API is unchanged**
+- [x] **Step 2: Run the existing type-contract test to verify the public API is unchanged**
 
 Run: `yarn test use-presence`
 Expected: PASS (see Task 3 for cleanup of stale assertions in this file)
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 Run: `yarn test`
 Expected: PASS — no regressions in `use-reconnection.test.ts` or anywhere else importing `usePresence`'s types.
 
-- [ ] **Step 4: Run lint and typecheck**
+- [x] **Step 4: Run lint and typecheck**
 
 Run: `yarn lint`
 Expected: 0 errors (pre-existing warnings in unrelated files are fine, see baseline noted below)
@@ -749,7 +751,7 @@ Expected: 0 errors (pre-existing warnings in unrelated files are fine, see basel
 Run: `yarn build`
 Expected: succeeds (this also typechecks)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hooks/use-presence.tsx
@@ -772,7 +774,7 @@ state and ConnectionStatusBanner actually activate for DB failures."
 
 The existing file has a `Retry Configuration` describe block asserting hardcoded literals disconnected from any import (one literally asserts `heartbeatInterval = 30_000` labeled "30 seconds", which never matched the real 10s constant) — this is dead weight now that Task 1's `presence-heartbeat-controller.test.ts` provides real, behavior-verified coverage of retry delays, max attempts, and failure-count transitions. Remove the now-redundant/misleading blocks and keep only genuine type-contract checks.
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 Replace `src/tests/hooks/use-presence.test.ts` entirely with:
 
@@ -860,17 +862,17 @@ describe('usePresence', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they pass**
+- [x] **Step 2: Run tests to verify they pass**
 
 Run: `yarn test use-presence`
 Expected: PASS (3 tests)
 
-- [ ] **Step 3: Run the full suite once more**
+- [x] **Step 3: Run the full suite once more**
 
 Run: `yarn test`
 Expected: PASS, no regressions
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/tests/hooks/use-presence.test.ts
@@ -883,6 +885,8 @@ presence-heartbeat-controller.test.ts."
 ---
 
 ### Task 4: Manual verification
+
+**Skipped.** While attempting this, live Playwright testing found that `PresenceTrackerProvider` is never mounted anywhere in `src/app`, so `usePresenceTracker()` always returns `null` and the entire heartbeat (both `track()` and `persist()`) never starts at all in the running app — independent of this plan's fix, and pre-existing (confirmed identical in the pre-fix original file). There is currently no way to exercise the live retry/circuit-breaker/banner behavior against a running server, since the code path is unreachable. This is tracked as a separate follow-up (wire up the provider, then run this Task 4 procedure for real). Steps below are left as the procedure to run once that follow-up lands.
 
 Not a code change — verifies the fix end-to-end the same way bug #1 was verified (Playwright MCP against the running dev server and the `Bobr Quiz Demo` quiz, join code `TRYBOBR`).
 
