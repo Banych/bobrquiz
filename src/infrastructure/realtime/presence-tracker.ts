@@ -135,6 +135,8 @@ export class SupabasePresenceTracker implements IPresenceTracker {
         clearTimeout(entry.teardownTimer);
         entry.teardownTimer = null;
       }
+      // Merges (not replaces) so a caller must supply every handler it wants
+      // active on reuse -- an omitted key keeps the previous subscriber's handler.
       Object.assign(entry.handlers, options);
     } else {
       const channelName = getChannelName(quizId);
@@ -185,6 +187,10 @@ export class SupabasePresenceTracker implements IPresenceTracker {
     return () => {
       const current = this.channels.get(quizId);
       if (!current) return;
+
+      if (current.teardownTimer !== null) {
+        clearTimeout(current.teardownTimer);
+      }
 
       current.teardownTimer = setTimeout(() => {
         this.channels.delete(quizId);
