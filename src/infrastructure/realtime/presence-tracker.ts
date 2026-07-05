@@ -74,6 +74,21 @@ const PRESENCE_CHANNEL_PREFIX = 'presence:quiz:';
 const getChannelName = (quizId: string): string =>
   `${PRESENCE_CHANNEL_PREFIX}${quizId}`;
 
+/**
+ * How long to keep a channel alive after its last subscriber unsubscribes,
+ * before actually tearing it down. Survives quick remounts (React Strict
+ * Mode's dev-only double-invoke of effects, or any real fast remount)
+ * without re-calling `.on()` on an already-subscribed channel, which
+ * Supabase's realtime-js throws on.
+ */
+const UNSUBSCRIBE_GRACE_PERIOD_MS = 3_000;
+
+type ChannelEntry = {
+  channel: RealtimeChannel;
+  handlers: PresenceSubscribeOptions;
+  teardownTimer: ReturnType<typeof setTimeout> | null;
+};
+
 const logPresenceIssue = (
   level: 'warn' | 'error',
   message: string,
@@ -89,10 +104,20 @@ const logPresenceIssue = (
 /**
  * Supabase Presence Tracker implementation.
  * Uses Supabase Realtime Presence API to track player connections.
+ *
+ * Channels are kept alive for UNSUBSCRIBE_GRACE_PERIOD_MS after their last
+ * subscriber unsubscribes, so a quick remount (React Strict Mode's
+ * dev-only double-invoke, or any real fast remount) reuses the same
+ * channel instead of racing its async teardown. Supabase's own realtime-js
+ * client dedupes channels by topic internally and only releases a topic
+ * asynchronously (via a close handshake), so recreating a channel for the
+ * same topic before that completes would hand back the same,
+ * already-subscribed object -- this is why reuse, not a faster teardown,
+ * is the fix.
  */
-class SupabasePresenceTracker implements IPresenceTracker {
+export class SupabasePresenceTracker implements IPresenceTracker {
   private readonly client: SupabaseClient;
-  private readonly channels: Map<string, RealtimeChannel> = new Map();
+  private readonly channels: Map<string, ChannelEntry> = new Map();
 
   constructor(client: SupabaseClient) {
     this.client = client;
@@ -103,75 +128,86 @@ class SupabasePresenceTracker implements IPresenceTracker {
     playerId: string,
     options: PresenceSubscribeOptions
   ): () => void {
-    const channelName = getChannelName(quizId);
+    let entry = this.channels.get(quizId);
 
-    // Reuse existing channel if already subscribed
-    let channel = this.channels.get(quizId);
-    if (!channel) {
-      channel = this.client.channel(channelName, {
+    if (entry) {
+      if (entry.teardownTimer !== null) {
+        clearTimeout(entry.teardownTimer);
+        entry.teardownTimer = null;
+      }
+      // Merges (not replaces) so a caller must supply every handler it wants
+      // active on reuse -- an omitted key keeps the previous subscriber's handler.
+      Object.assign(entry.handlers, options);
+    } else {
+      const channelName = getChannelName(quizId);
+      const channel = this.client.channel(channelName, {
         config: {
           presence: {
             key: playerId,
           },
         },
       });
-      this.channels.set(quizId, channel);
-    }
+      const handlers: PresenceSubscribeOptions = { ...options };
 
-    // Set up presence event handlers
-    if (options.onSync) {
       channel.on('presence', { event: 'sync' }, () => {
-        const state = channel!.presenceState<PresenceState>();
-        options.onSync!(state);
+        const state = channel.presenceState<PresenceState>();
+        handlers.onSync?.(state);
       });
-    }
 
-    if (options.onJoin) {
       channel.on(
         'presence',
         { event: 'join' },
         ({ newPresences }: { newPresences: PresenceState[] }) => {
-          options.onJoin!(newPresences);
+          handlers.onJoin?.(newPresences);
         }
       );
-    }
 
-    if (options.onLeave) {
       channel.on(
         'presence',
         { event: 'leave' },
         ({ leftPresences }: { leftPresences: PresenceState[] }) => {
-          options.onLeave!(leftPresences);
+          handlers.onLeave?.(leftPresences);
         }
       );
+
+      channel.subscribe((status) => {
+        if (status !== 'SUBSCRIBED') {
+          logPresenceIssue('warn', 'Presence subscription status changed', {
+            quizId,
+            playerId,
+            status,
+          });
+        }
+      });
+
+      entry = { channel, handlers, teardownTimer: null };
+      this.channels.set(quizId, entry);
     }
 
-    // Subscribe to the channel
-    channel.subscribe((status) => {
-      if (status !== 'SUBSCRIBED') {
-        logPresenceIssue('warn', 'Presence subscription status changed', {
-          quizId,
-          playerId,
-          status,
-        });
-      }
-    });
-
-    // Return unsubscribe function
     return () => {
-      this.unsubscribe(quizId);
+      const current = this.channels.get(quizId);
+      if (!current) return;
+
+      if (current.teardownTimer !== null) {
+        clearTimeout(current.teardownTimer);
+      }
+
+      current.teardownTimer = setTimeout(() => {
+        this.channels.delete(quizId);
+        void this.teardownChannel(quizId, current.channel);
+      }, UNSUBSCRIBE_GRACE_PERIOD_MS);
     };
   }
 
   async track(quizId: string, state: PresenceState): Promise<void> {
-    const channel = this.channels.get(quizId);
-    if (!channel) {
+    const entry = this.channels.get(quizId);
+    if (!entry) {
       logPresenceIssue('warn', 'Cannot track: channel not found', { quizId });
       return;
     }
 
     try {
-      await channel.track(state);
+      await entry.channel.track(state);
     } catch (error) {
       logPresenceIssue('error', 'Failed to track presence', {
         quizId,
@@ -182,32 +218,30 @@ class SupabasePresenceTracker implements IPresenceTracker {
   }
 
   async untrack(quizId: string): Promise<void> {
-    const channel = this.channels.get(quizId);
-    if (!channel) {
+    const entry = this.channels.get(quizId);
+    if (!entry) {
       return;
     }
 
     try {
-      await channel.untrack();
+      await entry.channel.untrack();
     } catch (error) {
       logPresenceIssue('warn', 'Failed to untrack presence', { quizId, error });
     }
   }
 
   getPresenceState(quizId: string): Record<string, PresenceState[]> {
-    const channel = this.channels.get(quizId);
-    if (!channel) {
+    const entry = this.channels.get(quizId);
+    if (!entry) {
       return {};
     }
-    return channel.presenceState<PresenceState>();
+    return entry.channel.presenceState<PresenceState>();
   }
 
-  private async unsubscribe(quizId: string): Promise<void> {
-    const channel = this.channels.get(quizId);
-    if (!channel) {
-      return;
-    }
-
+  private async teardownChannel(
+    quizId: string,
+    channel: RealtimeChannel
+  ): Promise<void> {
     try {
       await channel.untrack();
       await channel.unsubscribe();
@@ -216,15 +250,17 @@ class SupabasePresenceTracker implements IPresenceTracker {
         quizId,
         error,
       });
-    } finally {
-      this.channels.delete(quizId);
     }
   }
 
   disconnect(): void {
-    for (const quizId of this.channels.keys()) {
-      void this.unsubscribe(quizId);
+    for (const [quizId, entry] of this.channels) {
+      if (entry.teardownTimer !== null) {
+        clearTimeout(entry.teardownTimer);
+      }
+      void this.teardownChannel(quizId, entry.channel);
     }
+    this.channels.clear();
   }
 }
 

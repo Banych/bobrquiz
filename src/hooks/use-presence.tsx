@@ -32,8 +32,24 @@ export const PresenceTrackerProvider = ({
   </PresenceTrackerContext.Provider>
 );
 
-export const usePresenceTracker = (): IPresenceTracker | null => {
-  return useContext(PresenceTrackerContext);
+/**
+ * Throws if the tracker is missing instead of silently returning null.
+ * Extracted as a plain function so it's unit-testable without rendering
+ * (this repo has no jsdom/renderHook infra).
+ */
+export const assertPresenceTracker = (
+  tracker: IPresenceTracker | null
+): IPresenceTracker => {
+  if (!tracker) {
+    throw new Error(
+      'PresenceTrackerProvider is missing from the component tree.'
+    );
+  }
+  return tracker;
+};
+
+export const usePresenceTracker = (): IPresenceTracker => {
+  return assertPresenceTracker(useContext(PresenceTrackerContext));
 };
 
 export type UsePresenceOptions = {
@@ -125,7 +141,6 @@ export const usePresence = ({
 
   const track = useCallback(async () => {
     const current = latestRef.current;
-    if (!current.tracker) return;
     await current.tracker.track(current.quizId, {
       playerId: current.playerId,
       playerName: current.playerName,
@@ -180,8 +195,6 @@ export const usePresence = ({
 
   // Subscribe to presence and start the heartbeat controller on mount.
   useEffect(() => {
-    if (!tracker) return;
-
     const unsubscribe = tracker.subscribe(quizId, playerId, {
       onSync: (state) => {
         setPresenceState(state);
