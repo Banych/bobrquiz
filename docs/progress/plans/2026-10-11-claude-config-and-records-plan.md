@@ -29,9 +29,13 @@ broken links that are not in the baseline. Empty output passes.
 
 ```bash
 W=.superpowers/sdd/2026-10-11-claude-config-and-records-plan
-node $W/check-links.mjs | command grep ' -> ' | sed 's/:[0-9]* ->/ ->/' | sort -u > $W/links-after.txt
-comm -13 $W/links-baseline.txt $W/links-after.txt
+node $W/check-links.mjs | command grep ' -> ' | command grep -v '2026-10-11-claude-config-and-records' \
+  | sed 's/:[0-9]* ->/ ->/' | LC_ALL=C sort -u > $W/links-after.txt
+LC_ALL=C comm -13 $W/links-baseline.txt $W/links-after.txt
 ```
+
+The spec and plan for this work are filtered out because their example links are illustrative.
+The baseline is sorted with `LC_ALL=C` to match.
 
 ## Global Constraints
 
@@ -80,6 +84,12 @@ comm -13 $W/links-baseline.txt $W/links-after.txt
    `npx prisma`).
 6. **`docs/archive/` is excluded from the link check.** Moved files keep their outbound links
    as written; they are history.
+7. **Plain-text historical mentions of moved paths stay** (plan-check, 2026-10-11). Examples:
+   ADR-017's "Consolidated structure.md + 01-04 steps", and dev-notes lines describing past
+   work. Rewriting them would change what those records said at the time. Markdown links are
+   rewritten.
+8. **The "Commands available" list is dropped from CLAUDE.md**, as the spec says. The
+   `description:` lines carry it.
 
 ## Review Focus
 
@@ -110,7 +120,7 @@ comm -13 $W/links-baseline.txt $W/links-after.txt
 
 **Interfaces:**
 - Produces: `.claude/settings.json` is the committed project settings file; Task 6's CLAUDE.md
-  names it. The findings path is linked from Task 5's PROGRESS line.
+  names it. The findings path is linked from this work's PROGRESS index line (Task 7 Step 10).
 
 - [ ] **Step 1: Write the acceptance check and see it fail**
 
@@ -351,6 +361,10 @@ description: Use when clarifying requirements, reviewing a feature from the busi
 ---
 ```
 
+In `product-owner.md`, the line `Read relevant docs (\`docs/plan.md\`, session notes)` (line 40
+before the frontmatter) becomes `Read relevant docs (\`docs/plan.md\`, the specs and plans in
+\`docs/progress/plans/\`)`.
+
 In `create-hook.md`, replace the two lines that were lines 21–22 before the frontmatter
 (they are 24–25 after it):
 
@@ -433,6 +447,8 @@ Expected now: `FAIL`.
   (`ls`, `command grep -rn <symbol> src`).
   - Correct renamed paths (e.g. `usePlayerSession.ts` → `use-player-session.ts`).
   - Delete statements about code that no longer exists.
+  - Repoint `docs/04-presentation-and-realtime.md` (cited at copilot-instructions :687 and
+    :702) to `docs/guides/PRESENTATION-LAYER.md`. Task 4 archives `docs/04-…`.
   - Keep a list of each correction for the report.
 - Do not add new guidance.
 
@@ -518,6 +534,12 @@ mirrored .claude/commands are removed."
   Re-find them with the Step 1 grep.
 - Modify: `docs/ARCHITECTURE.md:709`. Its link `PROGRESS.md` is broken on master; point it at
   `progress/PROGRESS.md`.
+- Modify: `docs/ARCHITECTURE.md:358-377`, the `docs/` tree. Make it match the tree after the
+  move: `archive/`, `guides/` (including `PATTERNS.md`), `progress/` with `plans/`,
+  `sessions/` and `findings/`, and no `progress/actions/`.
+- Modify: `docs/progress/PROGRESS.md:418` and `:429`. These are `[actions/](actions/)`
+  directory links, which the Step 1 grep does not catch. Task 5 rewrites both sections, so
+  here just point them at `../archive/actions/`.
 - Modify (status line only): `docs/archive/actions/07-r5-realtime-scoring-implementation.md`
   becomes `✅ Superseded by docs/progress/plans/2026-01-31-r5-completion-plan.md (R5 complete
   2026-02-01)`.
@@ -526,7 +548,6 @@ mirrored .claude/commands are removed."
 
 **Interfaces:**
 - Produces: the archive paths above. Task 5's PROGRESS and DECISION-LOG edits use them.
-  `docs/progress/sessions/README.md` is the frozen-history note Task 6 links to.
 
 - [ ] **Step 1: Write the acceptance check and see it fail**
 
@@ -536,8 +557,8 @@ command grep -rnE 'progress/actions/|actions/0[0-9]-|REORGANIZATION-SUMMARY\.md|
   | command grep -v 'archive/' | command grep -v '2026-10-11-claude-config-and-records'
 ```
 
-Expected now: the lines listed under Files. After the change, it should return no line that
-names a pre-move path.
+Expected now: the lines listed under Files, plus about 35 lines inside the files being moved
+(those drop out after the move under `archive/`).
 
 - [ ] **Step 2: Move**
 
@@ -566,10 +587,8 @@ point at paths that have since moved.
 
 - [ ] **Step 3: Rewrite links**
 
-For each hit from Step 1, point the path at its new location:
-- In a markdown link, the new path must be correct relative to the linking file.
-- In plain text, write the repo-root path.
-
+For each hit from Step 1 that is a markdown link `](…)`, point the path at its new location,
+correct relative to the linking file. Leave plain-text mentions as written (plan correction 7).
 Do not reword anything else on the line.
 
 - [ ] **Step 4: Freeze headers**
@@ -594,7 +613,9 @@ git add -f $L/progress.md $L/task-1-report.md $L/task-2-report.md $L/final-fix-r
 
 - [ ] **Step 6: Run the acceptance checks**
 
-- The Step 1 command. Expected: no line naming a pre-move path.
+- The Step 1 command piped through `command grep '](' `. Expected: no output, so no markdown
+  link names a pre-move path. The plain-text hits that remain are all in `docs/DECISION-LOG.md`,
+  `docs/progress/dev-notes.md` or `docs/progress/sessions/`. List them in the report.
 - The link acceptance command. Expected: empty output.
 - The ledger check:
 
@@ -633,7 +654,7 @@ diffs and briefs stay out, as git and the plan already hold them."
 - Rewrite: `docs/progress/plans/README.md`
 
 **Interfaces:**
-- Consumes: the archive paths from Task 4 and the findings path from Task 1.
+- Consumes: the archive paths from Task 4.
 - Produces: the records convention in `docs/progress/plans/README.md`. Task 6 copies its table
   into CLAUDE.md. Also ADR numbers 018–022, which Task 6 does not reference.
 
@@ -679,16 +700,30 @@ Expected now:
   ```
 
   PR #60 has no plan files; give its PR link and fix commit only.
+- **"How to Update This File" (≈414–420).** Replace it with three lines:
+  - Merged a piece of work: add one Work index line (see `plans/README.md`).
+  - Finished a release: update the release table.
+  - Found a bug or idea: log it in `file-ideas.md`.
+- **"Related Documents" (≈424–430).**
+  - Keep INDEX.md and file-ideas.md.
+  - Replace the dev-notes, actions and sessions bullets with:
+    - `plans/` for specs and plans
+    - `findings/` for measured findings
+    - `sessions/` and `dev-notes.md`, marked "historical, frozen 2026-10-11"
+    - `../archive/` for superseded docs
 
 - [ ] **Step 3: DECISION-LOG.md**
 
-Append after ADR-017, matching its layout:
-- Heading `## ADR-0NN: Title (YYYY-MM-DD)`.
-- A `**Status**:` line.
-- `### Decision`, `### Rationale`, `### Rejected` and `### References` subsections.
+Append after ADR-017:
+- Heading in ADR-017's style: `## ADR-0NN: Title (YYYY-MM-DD)`.
+- `**Status**:` and `**Date**:` lines.
+- These subsections: `### Decision`, `### Rationale`, `### Rejected` and `### References`.
 
 Five to fifteen lines each. Use only what the sources say. If a source gives no rejected
 alternative, write "Not recorded" under `### Rejected`.
+
+Do not name the retired commands or `copilot-instructions` in any ADR; Task 7 Step 4 greps
+for them. Say "the project's former planning and session commands" if needed.
 
 | ADR | Topic | Source to read |
 |---|---|---|
@@ -696,7 +731,7 @@ alternative, write "Not recorded" under `### Rejected`.
 | 019 | `master` is branch-protected; all work via PR | `git log -S'branch-protected' --oneline -- CLAUDE.md` and the session it points to; date = that commit |
 | 020 | Presence: channel reuse across remounts and heartbeat resilience (#58, #59) | `plans/2026-07-05-*-design.md` |
 | 021 | One realtime `channel.on` binding per (channel, event), fanned out via a handler registry (#63) | `plans/2026-08-01-realtime-broadcast-listener-leak-fix.md` decision log |
-| 022 | One record per piece of work (2026-10-11) | `plans/2026-10-11-claude-config-and-records-design.md`. Supersedes ADR-017's guideline 3 ("Session notes: … update progress/dev-notes.md"). Add a line under ADR-017's guideline 3: `(Superseded by ADR-022.)` |
+| 022 | One record per piece of work (2026-10-11) | `plans/2026-10-11-claude-config-and-records-design.md`. Supersedes ADR-016's guideline 3 (DECISION-LOG.md:558) ("Session notes: … update progress/dev-notes.md"). Add a line under ADR-016's guideline 3: `(Superseded by ADR-022.)` |
 
 Then:
 - Rename "## Future ADRs" to "## Open ideas (not decisions)".
@@ -803,7 +838,7 @@ one-record-per-work convention and the plan shape."
 wc -l < CLAUDE.md
 for s in 'Next.js 16' 'yarn test:run' '## Capable-tier files' 'src/infrastructure/realtime/' \
   'src/lib/presence-heartbeat-controller.ts' 'docs/progress/plans/' 'docs/guides/PATTERNS.md' \
-  '@utils/' '/create-hook' '/prisma-migrate'; do command grep -qF "$s" CLAUDE.md || echo "MISSING $s"; done
+  '@utils/'; do command grep -qF "$s" CLAUDE.md || echo "MISSING $s"; done
 for s in 'Next.js 15' 'copilot-instructions' 'sessions/' 'session-start' 'fullstack-planner' 'Phase 4.3'; do
   command grep -qF "$s" CLAUDE.md && echo "STALE $s"; done
 ```
@@ -854,15 +889,14 @@ Target 150–200 lines. Sections in this order, with these `##` headings:
    - A pointer to that README for plan shape.
    - "Process (brainstorming → spec → plan → subagent-driven development → branch passes)
      follows the user-level workflow and is not repeated here."
-9. **Commands available**: the six kept commands, one line each, matching their descriptions.
-10. **Common pitfalls**: the current list. Drop the `/architecture-check` cross-reference
+9. **Common pitfalls**: the current list. Drop the `/architecture-check` cross-reference
     wording only if it no longer reads right.
-11. **Debugging order**:
+10. **Debugging order**:
     - The current five-step block, with Supabase logs, SQL, advisors and a UI snapshot.
     - Add anything project-specific from `debug.md` that isn't already here.
     - MCP note: supabase comes from `.mcp.json` (authenticate with `/mcp`); playwright and
       github come from the user-level plugins.
-12. **Working rules**:
+11. **Working rules**:
     - Use yarn scripts.
     - The dev server is assumed running at :3000 (ask the user to start it otherwise).
     - Never commit to `master`; branch from `origin/master`.
@@ -900,7 +934,7 @@ user-level workflow; long-form patterns live in docs/guides."
 - [ ] **Step 1: Test verdict.** Run `yarn test:run` and record files, tests, failures and the
   exit code in the ledger. They must equal the baseline counts the controller records in the
   ledger before dispatching Task 1 (same command, same branch, before any change).
-- [ ] **Step 2: Lint.** Run `yarn lint` and record the exit code. Expected: 0.
+- [ ] **Step 2: Lint.** Run `yarn lint` and record the exit code. Expected: 0. Flat-config ESLint lints none of the .md or .json files this branch touches, so this only proves nothing else broke. The JSON is covered by Task 1 Step 3.
 - [ ] **Step 3: Links.** Run the link acceptance command. Expected: empty output.
 - [ ] **Step 4: Stale references.**
 
