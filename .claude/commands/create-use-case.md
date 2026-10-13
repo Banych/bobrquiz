@@ -1,3 +1,6 @@
+---
+description: Use when adding a new application use case — scaffolds the use-case class, DTO changes, service wiring, the API route and use-case tests for success and not-found paths.
+---
 # Create Use Case
 
 Scaffold a new application use case following the exact patterns used in this codebase.

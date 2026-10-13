@@ -1,3 +1,6 @@
+---
+description: Use when reviewing changes for DDD layer violations — checks imports across domain, application, infrastructure and presentation, entities or Prisma types leaking into UI or DTOs, and wrong Prisma imports.
+---
 # Architecture Check
 
 Review code for DDD layer violations, import rule breaches, and anti-patterns.

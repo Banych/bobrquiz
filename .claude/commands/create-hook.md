@@ -1,3 +1,6 @@
+---
+description: Use when adding a TanStack Query hook in src/hooks — scaffolds the query key factory, the fetcher with the project's error parsing, and an optional Supabase realtime subscription.
+---
 # Create Hook
 
 Scaffold a TanStack Query hook with optional Supabase realtime subscription, following the exact patterns used in this codebase.
@@ -18,8 +21,8 @@ Examples:
 ## Step 1: Read an Existing Hook First
 
 ```
-src/hooks/usePlayerSession.ts   — query + mutation + realtime (most complete)
-src/hooks/useQuizState.ts       — query + realtime without mutation
+src/hooks/use-player-session.ts   — query + mutation + realtime (most complete)
+src/hooks/use-host-quiz-state.ts  — query + realtime without mutation
 ```
 
 ## Step 2: Create the Hook File
