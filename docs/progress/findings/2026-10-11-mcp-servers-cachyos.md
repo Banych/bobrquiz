@@ -18,7 +18,21 @@ config change in `chore/claude-config-and-records`.
 
 ## After
 
-(Filled in by Task 7 from its own `claude mcp list` run.)
+`claude mcp list` on 2026-10-13, Claude Code 2.1.296, branch head `f127da2` (`[mcp-sdk]` lines
+and unrelated plugins left out):
+
+```
+plugin:context7:context7: https://mcp.context7.com/mcp?client=claude-code-plugin (HTTP) - ! Needs authentication
+plugin:github:github: https://api.githubcopilot.com/mcp/ (HTTP) - ✔ Connected
+plugin:playwright:playwright: npx @playwright/mcp@latest - ✔ Connected
+plugin:supabase:supabase: https://mcp.supabase.com/mcp (HTTP) - ! Needs authentication
+supabase: https://mcp.supabase.com/mcp?project_ref=iwnxzdhhrreogxauxehm&features=docs,account,database,debugging,development,functions,branching,storage (HTTP) - ! Needs authentication
+```
+
+- No `cmd` ENOENT line.
+- A session that started before the change, and was continued across it, still reported
+  `context7`, `github` and `playwright` failing with `Executable not found in $PATH: cmd`: a
+  session keeps the `.mcp.json` it started with. Start a new session to pick up the change.
 
 ## Assumed — attack these first
 
