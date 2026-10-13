@@ -21,10 +21,6 @@ components in full, see [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md).
 - Use Supabase RLS (Row-Level Security) policies to restrict database access by user ID and role
 - Never store auth tokens in localStorage; rely on Supabase session cookies
 
-### Implementation reference
-
-See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for the full auth setup guide and RLS policy patterns.
-
 ## Realtime and state
 
 ### Server state
@@ -50,21 +46,22 @@ See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for realtime subscription pat
 
 ### Domain and application layer
 
-- Application use cases catch domain errors and map them to application errors (or re-throw)
+- Domain entities and use cases throw plain `Error` with a descriptive message; the API route maps the message to a status (`/not found/i` -> 404, otherwise 400)
 
 ### API route error mapping
 
 - Catch errors from services and map them to HTTP status codes:
   - `404` if the error message matches `/not found/i`
   - `400` for validation errors (zod parse failures)
-  - `403` for permission errors
-  - `500` for unexpected errors (log to Supabase via MCP: `mcp_supabase_get_logs(service: 'api')`)
+  - `429` for rate-limited requests
+  - `500` for unexpected errors (inspect via MCP: `mcp__supabase__get_logs(service: 'api')`)
+  - `403` is returned by `src/middleware.ts` for non-admin users on admin routes, not by the routes themselves
 - Return a JSON error response with `{ error: string }` structure
 
 ### Client-side error handling
 
 - TanStack Query mutations handle errors via the `onError` callback
-- Display user-friendly messages (toast/snackbar) from the error response
+- Show the hook's `error.message` as inline error text in the component (e.g. `host-quiz-dashboard.tsx`)
 
 ## Performance
 
@@ -93,7 +90,7 @@ See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for realtime subscription pat
 ### Database optimization
 
 - Index frequently queried columns: `quizId`, `playerId` (already in schema)
-- Use the Supabase MCP to check slow queries: `mcp_supabase_get_logs(service: 'postgres')` for slow logs
+- Use the Supabase MCP to check slow queries: `mcp__supabase__get_logs(service: 'postgres')` for slow logs
 - Avoid N+1 queries: Prisma's `include` strategy rebuilds aggregates efficiently
 
 ### Realtime performance
