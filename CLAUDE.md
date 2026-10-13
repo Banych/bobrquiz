@@ -1,4 +1,5 @@
 # CLAUDE.md
+
 ## Project
 
 Real-time quiz game. Next.js 16 (App Router), Prisma v7 with the pg driver adapter, Supabase
@@ -41,7 +42,7 @@ DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a
 that carries it uses that type. Components import DTOs, never entities.
 
 Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/*`,
-`@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`), `@utils/*` (`src/lib/utils/*`),
+`@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`), `@utils/*` (`src/lib/utils/*`: configured, resolves to nothing),
 `@ui/*` (`src/components/ui/*`), `@/*` (`src/*`).
 
 ## Prisma v7 setup (non-standard)
@@ -72,10 +73,11 @@ Tests are written with the code, not after. Every feature needs:
 | User flows (Playwright) | `e2e/` |
 
 - Domain tests: no mocks; a factory helper `makeEntity = () => new Entity(...)` at the top.
-- Use case tests: mock repositories with `vi.fn()`, `vi.clearAllMocks()` in `beforeEach`; assert
+- Use case tests: mock repositories with `vi.fn()`, reset mocks in `beforeEach`; assert
   the exact not-found message, because the API layer maps it to 404.
-- Repository tests: call `resetServices({ force: true })` (from `@application/services/factories`)
-  in `beforeEach` for a fresh Prisma client.
+- Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
+  `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
+  (see `prisma-player-repository.test.ts`).
 - `yarn test:run` must pass before moving to the next task. No `.skip` left behind.
 
 ## Key patterns
@@ -117,7 +119,8 @@ export class DoSomethingUseCase {
 Entities: public properties, synchronous methods, status enums (`QuizStatus`); bad transitions throw.
 
 Realtime names: channel `quiz:{quizId}` (all in a quiz) and `player:{quizId}:{playerId}` (one
-player). Events: `state:update` (full state), `answer:ack`, `player:update`, `question:locked`.
+player). Events include `state:update` (full state), `answer:ack`, `player:update`, `question:locked`,
+`leaderboard:update`.
 Adapters live in `src/infrastructure/realtime/`.
 
 TanStack Query hooks: the key is a const tuple factory (`hostQuizQueryKey(quizId)`); queries use
@@ -130,17 +133,18 @@ nullable columns default with `??` (`record.score ?? 0`), never `undefined`.
 
 Types: no `any`; use domain or DTO types, or `unknown` plus a type guard when a type truly can't be known.
 
-Styling: build class names with `cn()` from `src/lib/utils.ts` and compose UI from the shadcn
+Styling: build class names with `cn()` imported from `@/lib/utils` (`src/lib/utils.ts`) and compose UI from the shadcn
 primitives in `src/components/ui` (`components.json`). Add one with
-`npx shadcn@latest add <component>` (no yarn script covers it). No inline `style` props; theme
+`npx shadcn@latest add <component>` (no yarn script covers it). No inline `style` props except for dynamic values (e.g. a computed width); theme
 tokens live in `src/app/globals.css`.
 
 Long form: `docs/guides/PATTERNS.md`.
 
 ## Capable-tier files
 
-Route any task touching these to `implementer-capable` and `task-reviewer-capable`; regressions in
-this repo have clustered here (#58, #59, #60, #63).
+Route any task touching these to `implementer-capable` and `task-reviewer-capable`: realtime
+subscriptions, presence, timers and provider wiring. Every fix in #58, #59, #60 and #63 touched at
+least one of them.
 
 - `src/infrastructure/realtime/**`
 - `src/hooks/use-presence.tsx`
@@ -149,6 +153,9 @@ this repo have clustered here (#58, #59, #60, #63).
 - `src/hooks/use-countdown-timer.ts`
 - `src/lib/presence-heartbeat-controller.ts`
 - `src/lib/debounce-broadcast.ts`
+- `src/app/providers.tsx`
+- `src/hooks/use-host-quiz-state.ts`
+- `src/hooks/use-player-session.ts`
 
 ## Records
 
@@ -178,22 +185,25 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 401 or redirect loops (`src/middleware.ts`), constraint errors (schema).
 
 1. `mcp__supabase__get_logs(service: 'postgres')`: DB errors.
-2. `get_logs(service: 'auth')` or `'realtime'`: auth and channel errors.
+2. `mcp__supabase__get_logs(service: 'auth')` or `'realtime'`: auth and channel errors.
 3. `mcp__supabase__execute_sql(query: 'SELECT * FROM "Quiz" ORDER BY "createdAt" DESC LIMIT 5')`;
-   `get_advisors(type: 'security')` for RLS after schema changes.
-4. `mcp__playwright__browser_navigate` to `http://localhost:3000`, then `browser_snapshot`.
+   `mcp__supabase__get_advisors(type: 'security')` for RLS after schema changes.
+4. `mcp__plugin_playwright_playwright__browser_navigate` to `http://localhost:3000`, then
+   `mcp__plugin_playwright_playwright__browser_snapshot`.
 
 - API route: check the chain zod validation → `getServices()` → use case → `/not found/i` → 404.
 - Realtime: the channel name must match between publisher and subscriber, and a mutation must
   invalidate its query. Channel setup is in `src/infrastructure/realtime/`.
 - Schema: `yarn prisma:generate` was run; repository mappers handle new fields.
-- Tests: stale mocks, `resetServices({ force: true })`, mock return shapes match the use case.
+- Tests: stale mocks (reset in `beforeEach`), mock return shapes match what the code under test expects.
 - MCP: `supabase` is in `.mcp.json` (authenticate with `/mcp`); playwright, github: user plugins.
 
 ## Working rules
 
 - Use the yarn scripts in `package.json`, not raw CLI calls, when one exists.
-- Assume the dev server runs at `http://localhost:3000`; ask the user to start it if it does not.
+- Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to start
+  it if it does not.
+- Verify UI changes in the browser with the Playwright plugin before calling them done.
 - Never commit to `master` (branch-protected). Branch from `origin/master`, open a PR.
 - No `Co-Authored-By` or other AI attribution in commits or PRs.
 - Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
