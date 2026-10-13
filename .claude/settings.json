@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(npx prisma *)",
+      "Bash(npx playwright *)",
+      "Bash(npx shadcn@latest *)",
+      "Bash(ls:*)",
+      "Bash(grep *)",
+      "mcp__supabase__*",
+      "mcp__plugin_playwright_playwright__*",
+      "mcp__plugin_context7_context7__*",
+      "mcp__plugin_github_github__get_commit",
+      "mcp__plugin_github_github__get_file_contents",
+      "mcp__plugin_github_github__get_label",
+      "mcp__plugin_github_github__get_latest_release",
+      "mcp__plugin_github_github__get_me",
+      "mcp__plugin_github_github__get_release_by_tag",
+      "mcp__plugin_github_github__get_tag",
+      "mcp__plugin_github_github__issue_read",
+      "mcp__plugin_github_github__list_branches",
+      "mcp__plugin_github_github__list_commits",
+      "mcp__plugin_github_github__list_issues",
+      "mcp__plugin_github_github__list_pull_requests",
+      "mcp__plugin_github_github__list_releases",
+      "mcp__plugin_github_github__list_tags",
+      "mcp__plugin_github_github__pull_request_read",
+      "mcp__plugin_github_github__search_code",
+      "mcp__plugin_github_github__search_commits",
+      "mcp__plugin_github_github__search_issues",
+      "mcp__plugin_github_github__search_pull_requests",
+      "mcp__ide__getDiagnostics"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)"
+    ]
+  },
+  "enabledMcpjsonServers": ["supabase"]
+}
