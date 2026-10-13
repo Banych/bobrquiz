@@ -557,6 +557,7 @@ All documentation lives in `docs/**` as Markdown, version-controlled with code. 
 1. **Update docs when code changes**: If you modify architecture, update [ARCHITECTURE.md](ARCHITECTURE.md)
 2. **One ADR per decision**: Timestamp + rationale + trade-offs
 3. **Session notes**: After finishing a work session, update [progress/dev-notes.md](progress/dev-notes.md)
+   (Superseded by ADR-022.)
 4. **Link liberally**: Use relative links so docs are IDE-navigable
 
 ### References
@@ -604,11 +605,129 @@ Reorganize documentation into clear hierarchy:
 
 ---
 
-## Future ADRs
+## ADR-018: Separate Production Supabase Project (2026-07-04)
 
-### TBD: WebSocket on Vercel (R5)
-- Evaluate Vercel Edge limitations
-- Fallback to Fly.io if realtime on Vercel insufficient
+**Status**: ✅ **ACTIVE** (R6)
+**Date**: 2026-07-04
+**Supersedes**: N/A
+
+### Decision
+Production runs on its own Supabase project, `quiz-game-prod`. Preview and Development keep sharing the existing `Quiz-game-dev` project. Only Production's Vercel variables were repointed. `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` were removed from Production only. The new project started empty, with no data copied.
+
+### Rationale
+- Production, Preview and Development had silently shared one Supabase project since the app's first auto-deploy in April 2025, confirmed by hash-comparing every Vercel env var.
+- Local dev, every PR preview and the live site therefore read and wrote the same database, and the test admin account had admin access to what was presented as production.
+- The old project held no real user data (0 quizzes, 2 leftover test players), so a fresh start lost nothing. The plan notes that real data would need a migration instead.
+- The test credentials exist only for Playwright E2E tests, which never run against production.
+
+### Rejected
+- Supabase Branching (keep the current project as production, branch for dev/preview): `list_branches` errored on this project and `create_branch` needs a cost confirmation, so availability and price were uncertain. A second free-tier project was the unambiguous path.
+
+### References
+- [progress/plans/2026-07-03-r6-supabase-prod-isolation.md](progress/plans/2026-07-03-r6-supabase-prod-isolation.md) – Steps, snags and technical decisions
+
+---
+
+## ADR-019: `master` Is Branch-Protected; All Work Goes Through a PR (2026-07-04)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-07-04
+**Supersedes**: N/A
+
+### Decision
+Nothing is committed directly to `master`. It is branch-protected and requires a PR. Work goes on a feature branch and reaches `master` through a PR, treated as a hard rule even though branch protection would enforce it anyway. If `master` is checked out locally with commits on it, create a new branch from HEAD; do not rename `master`.
+
+### Rationale
+- The rule was added to the project's CLAUDE.md in the same commit that recorded the production isolation work (0a21ba5). The commit message gives it no separate reasoning.
+- Context from the same-day plan: every push to `master` auto-deploys to production through Vercel's GitHub integration (see ADR-018). The commit message does not link that to the rule.
+
+### Rejected
+Not recorded.
+
+### References
+- Commit 0a21ba5, "docs: record R6 prod isolation completion, add master-protection rule"
+- [progress/plans/2026-07-03-r6-supabase-prod-isolation.md](progress/plans/2026-07-03-r6-supabase-prod-isolation.md) – Auto-deploy to production on push to `master`
+
+---
+
+## ADR-020: Presence Channel Reuse and Heartbeat Resilience (2026-07-05)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-07-05 (PRs #58, #59)
+**Supersedes**: N/A
+
+### Decision
+- A DB-write failure in `persistPresence()` is re-thrown into the existing retry, backoff and circuit-breaker chain instead of being swallowed. The DB persist cadence is decoupled from the Realtime `track()` cadence (about 20s with jitter against 10s), and the heartbeat slows while the circuit is open. Track and persist loops keep independent failure streaks.
+- `PresenceTrackerProvider` is mounted globally in `AppProviders`, and `usePresenceTracker()` throws instead of returning null.
+- `SupabasePresenceTracker` keeps a channel alive for a 3-second grace period after `unsubscribe()`. A new `subscribe()` for the same quiz cancels the teardown and reuses the channel, and presence callbacks go through a mutable handler object, so `.on()` is never called twice.
+
+### Rationale
+- Heartbeat: the retry chain already existed but never saw DB failures, so the host aged a healthy player to disconnected and removed them with no player-side feedback. Re-throwing reuses all of it.
+- Provider: it was never rendered, so no heartbeat ran in production at all. The nullable hook return type hid that.
+- Channel reuse: `realtime-js` throws on `.on()` after `subscribe()`, and `RealtimeClient.channel(topic)` dedupes by topic until an async close handshake finishes, so deleting the map entry synchronously was not enough.
+- A residual race (a new `subscribe()` landing during the in-flight teardown after the grace period) is accepted: closing it needs an async `subscribe()`, which breaks the interface.
+
+### Rejected
+- Server-side presence aggregation (cron or worker batching `lastSeenAt`): needs always-on infrastructure Vercel's serverless model lacks. Revisit if player counts grow well beyond a handful per game.
+- Slowing both loops: only the persist call loads Postgres.
+- Mounting the provider only in the player route group: the global mount matches `RealtimeClientProvider`.
+- Synchronous `teardown()` before recreating the channel (could not confirm it detaches from the internal registry) and never tearing down (no cleanup path).
+
+### References
+- [progress/plans/2026-07-05-presence-heartbeat-resilience-design.md](progress/plans/2026-07-05-presence-heartbeat-resilience-design.md)
+- [progress/plans/2026-07-05-presence-tracker-provider-design.md](progress/plans/2026-07-05-presence-tracker-provider-design.md)
+- [progress/plans/2026-07-05-presence-channel-reuse-design.md](progress/plans/2026-07-05-presence-channel-reuse-design.md)
+
+---
+
+## ADR-021: One Realtime Binding per (Channel, Event), Fanned Out via a Handler Registry (2026-08-01)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-08-01 (PR #63)
+**Supersedes**: N/A
+
+### Decision
+`SupabaseRealtimeClient` makes exactly one real `channel.on()` call per unique `(channelName, event)` pair. That binding fans out to a `Set` of handlers, and `subscribe()` and `unsubscribe()` add to and delete from the set. The public `RealtimeClient` interface is unchanged. The per-channel listener count that decides when to call `channel.unsubscribe()` stays.
+
+### Rationale
+- Before, every `subscribe()` call bound a new real listener, and `@supabase/realtime-js` exposes no public `channel.off()` to remove one. One player tab accumulated about 180 stacked `answer:ack` handlers in about 5 minutes, each triggering a DB round-trip per broadcast.
+- The registry uses only the documented `on`, `subscribe` and `unsubscribe` methods.
+- `usePlayerSession`'s query key was also memoized, since its per-second effect churn was the trigger. This is defense in depth, not the fix.
+
+### Rejected
+- Filtering `RealtimeChannel.bindings` to remove one callback: it depends on undocumented internals that could break silently on a dependency bump.
+
+### References
+- [progress/plans/2026-08-01-realtime-broadcast-listener-leak-fix.md](progress/plans/2026-08-01-realtime-broadcast-listener-leak-fix.md) – Goal, architecture and decision log
+
+---
+
+## ADR-022: One Record per Piece of Work (2026-10-11)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-10-11
+**Supersedes**: ADR-016 guideline 3 (session notes in `progress/dev-notes.md`)
+
+### Decision
+Each piece of work leaves a spec, a plan, a committed ledger (`progress.md` and `*-report.md`, force-added) and one index line in `progress/PROGRESS.md`. `DECISION-LOG.md` gets an entry only for a decision that outlives the work. There are no new session files and no new `dev-notes.md` lines; both are frozen history. Specs and plans stay in `docs/progress/plans/`.
+
+### Rationale
+- The same work was written up three to six times. The PR #63 fix was told in its plan, a session file, PROGRESS.md, dev-notes.md and two ledger reports, while PRs #58-#60 had no summary at all.
+- In the PR #63 sample, every useful line in the session file was already in the plan or the ledger.
+- Only `progress.md` and `*-report.md` are committed from a ledger: the review diffs are regenerable and the task briefs re-paste the plan (about 2,200 of the ~2,455 ledger lines).
+
+### Rejected
+- Keeping session files as a summary.
+- Moving specs and plans to the superpowers defaults (`docs/superpowers/`): it splits the design history at 2026-10 or costs a move of 21 files and their links.
+- Fixing staleness only: it removes neither the duplication nor the competing workflow.
+
+### References
+- [progress/plans/2026-10-11-claude-config-and-records-design.md](progress/plans/2026-10-11-claude-config-and-records-design.md)
+- [progress/plans/README.md](progress/plans/README.md) – The convention as a table
+
+---
+
+## Open ideas (not decisions)
 
 ### TBD: Audit Logging (R6)
 - Database table for admin actions (create/update/delete quiz, question, player)

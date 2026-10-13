@@ -1,6 +1,8 @@
 # Progress Tracking Index
 
-This document indexes all releases, completed work, and session notes. Use this to find what's been built and what's planned next.
+Index of releases and merged work. Each piece of work gets one line under "Work index":
+date — title — PR — links to its spec, plan and ledger. Details live in those files, not
+here. Entries before 2026-10-11 are the older, longer format and are kept as written.
 
 ## Release Status
 
@@ -12,21 +14,27 @@ This document indexes all releases, completed work, and session notes. Use this 
 | **R3**  | Player MVP         | Join/answer flows, WebSocket sync, session persistence | ✅ Complete | ~2025-12-19     |
 | **R4**  | Content Admin      | CRUD (quiz/question), media uploads, auth gate         | ✅ Complete | 2025-12-21      |
 | **R5**  | Realtime & Scoring | Speed-based scoring, round transitions, reconnection   | ✅ Complete | 2026-02-01      |
-| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3, 5 done; Prod isolation done; 4, rest of 6 not started) | ~2026-03-31     |
+| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3 and 5 done; Phase 6: prod isolation (2026-07-04) and branding (#55) done, launch polish designed (#57) but not built; Phase 4 not started) | —               |
 
 ---
 
-## Session Notes (Chronological)
+## Work index (latest first)
 
-**Latest First** – Find detailed work notes by date:
+Find work by date:
 
-### 2026-08-01: Realtime Broadcast-Listener Leak Fix 🚧
+### 2026-08-01: Realtime Broadcast-Listener Leak Fix ✅
 - **Focus**: `SupabaseRealtimeClient` was silently stacking a new real `channel.on()` broadcast binding every time a consuming hook's effect re-ran, since `@supabase/realtime-js` exposes no public `channel.off()` to detach one. Found live-testing the "too many connections (~200)" production incident — one player tab left open during a live question accumulated ~180 stacked `answer:ack` handlers over ~5 minutes, each firing a real DB round-trip per broadcast.
 - **Deliverables**: rewrote `SupabaseRealtimeClient`'s internal tracking to bind exactly one real listener per `(channel, event)` pair, fanning out to a handler `Set` (class now exported for direct testing); memoized `usePlayerSession`'s query key so its realtime effects stop tearing down/rebuilding every second during an active countdown.
 - **Closing pass**: whole-branch review found the new regression test passed even against the reverted pre-fix code, because the test mock's listener storage (a `Map<event, callback>`) silently discarded stacked bindings instead of accumulating them like real `bindings` do. Fixed the mock and rewrote the regression test to match the actual incident shape (a stable second subscriber holding the channel open while a different event churns); verified it now fails against the old buggy implementation and passes against the fix.
-- **Status**: In progress — 14/14 realtime-client tests passing, full suite and lint clean; manual multi-tab Playwright verification (Success Criterion #5) still pending.
+- **Status**: Complete — 14/14 realtime-client tests, full suite and lint clean, manual multi-tab check done (f9d4673).
 - Plan: [plans/2026-08-01-realtime-broadcast-listener-leak-fix.md](plans/2026-08-01-realtime-broadcast-listener-leak-fix.md)
 - File: [sessions/2026-08-01-realtime-broadcast-listener-leak-fix.md](sessions/2026-08-01-realtime-broadcast-listener-leak-fix.md)
+- Ledger: [.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md](../../.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md)
+- PR: [#63](https://github.com/Banych/bobrquiz/pull/63)
+
+- **2026-07-05** — Host leaderboard realtime update (`leaderboard:update` subscription wired up on the host dashboard) — [PR #60](https://github.com/Banych/bobrquiz/pull/60) — fix commit b66389b, no spec or plan
+- **2026-07-05** — Presence tracker provider mount and channel reuse — [PR #59](https://github.com/Banych/bobrquiz/pull/59) — [design](plans/2026-07-05-presence-tracker-provider-design.md) · [plan](plans/2026-07-05-presence-tracker-provider-implementation.md) · [design](plans/2026-07-05-presence-channel-reuse-design.md) · [plan](plans/2026-07-05-presence-channel-reuse-implementation.md)
+- **2026-07-05** — Presence heartbeat resilience — [PR #58](https://github.com/Banych/bobrquiz/pull/58) — [design](plans/2026-07-05-presence-heartbeat-resilience-design.md) · [plan](plans/2026-07-05-presence-heartbeat-resilience-implementation.md)
 
 ### 2026-07-04: Bobr Quiz Visual Branding ✅
 - **Focus**: Full visual branding pass — cartoon beaver mascot, brown/amber color
@@ -413,18 +421,17 @@ See [file-ideas.md](file-ideas.md) for tracked follow-ups per file.
 
 ## How to Update This File
 
-1. **Completed a session?** Add entry to the chronological list above (most recent first)
-2. **Finished a release?** Move checkbox to ✅ and update status/completion date
-3. **New action items?** Add to [actions/](../archive/actions/) folder with numbered file (08-*, 09-*, etc.)
-4. **Found a bug or idea?** Log in [file-ideas.md](file-ideas.md) with follow-up file + action
-5. **Daily work notes?** Append to [dev-notes.md](dev-notes.md) with timestamp
+1. Merged a piece of work: add one Work index line (see [plans/README.md](plans/README.md)).
+2. Finished a release: update the release table.
+3. Found a bug or idea: log it in [file-ideas.md](file-ideas.md).
 
 ---
 
 ## Related Documents
 
 - [INDEX.md](../INDEX.md) – Documentation navigation hub
-- [dev-notes.md](dev-notes.md) – Detailed execution log (timestamps, bug fixes)
 - [file-ideas.md](file-ideas.md) – Technical debt and follow-ups per file
-- [actions/](../archive/actions/) – Release checklists and action items
-- [sessions/](sessions/) – Dated session notes (goals, approach, results)
+- [plans/](plans/) – Specs and plans
+- [findings/](findings/) – Measured findings
+- [sessions/](sessions/) and [dev-notes.md](dev-notes.md) – historical, frozen 2026-10-11
+- [../archive/](../archive/) – Superseded docs
