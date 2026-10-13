@@ -1,5 +1,9 @@
 # Dev Progress Log
 
+> **Frozen 2026-10-11 — historical, no new entries.** Each piece of work is now recorded once:
+> spec and plan in `docs/progress/plans/`, ledger in `.superpowers/sdd/<plan>/`, and one line
+> in `docs/progress/PROGRESS.md`. See `docs/progress/plans/README.md`.
+
 ## 2026-07-04 (R6: Isolate Production Supabase from Dev/Preview ✅)
 - **Context**: the app had been auto-deploying to production since April 2025 via Vercel's GitHub integration, sharing one Supabase project ("Quiz-game-dev") across Production/Preview/Development — confirmed via hash comparison that every credential was identical across all three Vercel environments. A test admin account had live admin access to what was presented as "production."
 - **Fix**: provisioned a standalone `quiz-game-prod` Supabase project (ref `noyjptzwsagwofwsevwm`, free tier), applied all 7 Prisma migrations (schema ships with RLS already enabled), recreated the `quiz-media` storage bucket + its 3 policies, created a real admin Auth user for the existing `ADMIN_EMAILS` value, then repointed Vercel's **Production environment only** at the new project. Removed `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` from Production; left them in Preview/Development.

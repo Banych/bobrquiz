@@ -45,7 +45,7 @@ Welcome! This is your navigation hub for all documentation. Use this to find exa
 - **[PROGRESS.md](progress/PROGRESS.md)** – Index of releases, session notes, completed items
 - **[progress/dev-notes.md](progress/dev-notes.md)** – Execution log, recent changes, current phase
 - **[progress/sessions/](progress/sessions/)** – Dated session notes (manual work, debugging, learnings)
-- **[progress/actions/](progress/actions/)** – Release checklists and feature action items
+- **[progress/actions/](archive/actions/)** – Release checklists and feature action items
 
 ### Visual References
 - **[mockups/](mockups/)** – UX mockups and layout references

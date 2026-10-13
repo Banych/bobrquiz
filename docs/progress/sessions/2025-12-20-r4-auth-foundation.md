@@ -127,7 +127,7 @@ src/app/(admin)/
 
 ### 7. ✅ Update Infrastructure Documentation
 
-**File:** [docs/03-infrastructure-layer.md](../../03-infrastructure-layer.md)
+**File:** [docs/03-infrastructure-layer.md](../../archive/03-infrastructure-layer.md)
 
 Added new section: **Authentication & Authorization (Added R4)**
 
@@ -421,7 +421,7 @@ ORDER BY "createdAt" DESC;
 - [src/infrastructure/repositories/prisma-quiz.repository.ts](../../../src/infrastructure/repositories/prisma-quiz.repository.ts) - Implemented admin methods
 - [src/application/services/quiz-service.ts](../../../src/application/services/quiz-service.ts) - Added admin service methods
 - [src/application/services/factories.ts](../../../src/application/services/factories.ts) - Wired up new use cases
-- [docs/03-infrastructure-layer.md](../../03-infrastructure-layer.md) - Added auth section
+- [docs/03-infrastructure-layer.md](../../archive/03-infrastructure-layer.md) - Added auth section
 - [package.json](../../../package.json) - Added `@supabase/ssr@0.8.0`
 - [yarn.lock](../../../yarn.lock) - Updated lockfile
 
@@ -496,7 +496,7 @@ Successfully completed R4 foundation by implementing both Supabase Auth and Quiz
 ### Modified Files
 - [.env.example](.env.example) - Added `ADMIN_EMAILS`
 - [src/lib/env-validation.ts](../../../src/lib/env-validation.ts) - Added `ADMIN_EMAILS` validation
-- [docs/03-infrastructure-layer.md](../../03-infrastructure-layer.md) - Added auth section
+- [docs/03-infrastructure-layer.md](../../archive/03-infrastructure-layer.md) - Added auth section
 - [package.json](../../../package.json) - Added `@supabase/ssr@0.8.0`
 - [yarn.lock](../../../yarn.lock) - Updated lockfile
 

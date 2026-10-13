@@ -216,7 +216,7 @@ This document indexes all releases, completed work, and session notes. Use this 
 - P95 latencies exceed targets (acceptable for <100 players, optimization path documented)
 
 **Action Files**:
-- [actions/07-r5-realtime-scoring-implementation.md](actions/07-r5-realtime-scoring-implementation.md) – Detailed implementation plan
+- [actions/07-r5-realtime-scoring-implementation.md](../archive/actions/07-r5-realtime-scoring-implementation.md) – Detailed implementation plan
 
 ### R4: Content Admin (Complete ✅)
 
@@ -229,7 +229,7 @@ This document indexes all releases, completed work, and session notes. Use this 
 - ⏭️ Audit log (deferred to R6)
 
 **Reference**:
-- [actions/06-r4-wrap-up.md](actions/06-r4-wrap-up.md) – R4 retrospective
+- [actions/06-r4-wrap-up.md](../archive/actions/06-r4-wrap-up.md) – R4 retrospective
 
 ### R3: Player MVP (Complete ✅)
 
@@ -415,7 +415,7 @@ See [file-ideas.md](file-ideas.md) for tracked follow-ups per file.
 
 1. **Completed a session?** Add entry to the chronological list above (most recent first)
 2. **Finished a release?** Move checkbox to ✅ and update status/completion date
-3. **New action items?** Add to [actions/](actions/) folder with numbered file (08-*, 09-*, etc.)
+3. **New action items?** Add to [actions/](../archive/actions/) folder with numbered file (08-*, 09-*, etc.)
 4. **Found a bug or idea?** Log in [file-ideas.md](file-ideas.md) with follow-up file + action
 5. **Daily work notes?** Append to [dev-notes.md](dev-notes.md) with timestamp
 
@@ -426,5 +426,5 @@ See [file-ideas.md](file-ideas.md) for tracked follow-ups per file.
 - [INDEX.md](../INDEX.md) – Documentation navigation hub
 - [dev-notes.md](dev-notes.md) – Detailed execution log (timestamps, bug fixes)
 - [file-ideas.md](file-ideas.md) – Technical debt and follow-ups per file
-- [actions/](actions/) – Release checklists and action items
+- [actions/](../archive/actions/) – Release checklists and action items
 - [sessions/](sessions/) – Dated session notes (goals, approach, results)

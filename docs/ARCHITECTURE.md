@@ -359,22 +359,22 @@ docs/
 ├── INDEX.md                          # Navigation hub (this structure)
 ├── ARCHITECTURE.md                   # Architecture decisions (this file)
 ├── DECISION-LOG.md                   # Architecture decision records (ADRs)
-├── PROGRESS.md                       # Release & session tracking
 ├── plan.md                           # Roadmap & release goals
+├── archive/                          # Superseded docs, kept for history
 ├── guides/
 │   ├── SETUP.md                      # Initial project setup
 │   ├── DDD-STRUCTURE.md              # Building domain/app layers
 │   ├── DATA-LAYER.md                 # Prisma & repositories
 │   ├── PRESENTATION-LAYER.md         # Routes, hooks, components
-│   └── MEDIA-UPLOADS.md              # Image upload feature
+│   ├── MEDIA-UPLOADS.md              # Image upload feature
+│   └── PATTERNS.md                   # Auth, realtime, error and performance patterns
 ├── progress/
-│   ├── sessions/
-│   │   ├── 2025-12-20-admin-question-crud-rewrite.md
-│   │   └── ... (dated session files)
-│   ├── actions/
-│   │   ├── 01-define-dto-catalog.md
-│   │   └── ... (release checklist items)
-│   └── dev-notes.md                  # Execution log
+│   ├── PROGRESS.md                   # Release & session tracking
+│   ├── plans/                        # Spec and plan per piece of work
+│   ├── findings/                     # Dated findings records
+│   ├── sessions/                     # Dated session notes (historical)
+│   ├── dev-notes.md                  # Execution log (historical)
+│   └── file-ideas.md                 # Technical debt and follow-ups per file
 └── mockups/                          # UX reference images
 ```
 
@@ -706,7 +706,7 @@ When a field needs to be added (e.g., `isPublished` to `QuizDTO`):
 ## Related Documents
 
 - [DECISION-LOG.md](DECISION-LOG.md) – Architecture decision records with timestamps
-- [PROGRESS.md](PROGRESS.md) – Release tracking and session index
+- [PROGRESS.md](progress/PROGRESS.md) – Release tracking and session index
 - [plan.md](plan.md) – Roadmap and release goals
 - [guides/SETUP.md](guides/SETUP.md) – Initial project setup
 - [guides/DATA-LAYER.md](guides/DATA-LAYER.md) – Prisma & repository patterns

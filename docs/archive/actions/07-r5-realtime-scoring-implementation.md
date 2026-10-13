@@ -1,6 +1,6 @@
 # Action 07 – R5 Realtime & Scoring Implementation Plan
 
-**Status**: 📋 Planned for R5
+**Status**: ✅ Superseded by docs/progress/plans/2026-01-31-r5-completion-plan.md (R5 complete 2026-02-01)
 **Started**: TBD
 **Target Completion**: TBD
 
