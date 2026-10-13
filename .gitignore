@@ -51,5 +51,6 @@ next-env.d.ts
 
 # Supabase CLI local link state (machine-specific, not project config)
 supabase/.temp/
+
 # Per-machine Claude Code overrides (shared settings live in .claude/settings.json)
 .claude/settings.local.json
