@@ -42,10 +42,11 @@ Welcome! This is your navigation hub for all documentation. Use this to find exa
 - **[guides/MEDIA-UPLOADS.md](guides/MEDIA-UPLOADS.md)** – Image upload feature, Supabase Storage setup
 
 ### Progress Tracking
-- **[PROGRESS.md](progress/PROGRESS.md)** – Index of releases, session notes, completed items
-- **[progress/dev-notes.md](progress/dev-notes.md)** – Execution log, recent changes, current phase
-- **[progress/sessions/](progress/sessions/)** – Dated session notes (manual work, debugging, learnings)
-- **[progress/actions/](archive/actions/)** – Release checklists and feature action items
+- **[progress/PROGRESS.md](progress/PROGRESS.md)** – Index of releases and merged work, one line per piece of work
+- **[progress/plans/](progress/plans/)** – Specs and plans for each piece of work; [README](progress/plans/README.md) has the convention
+- **[progress/findings/](progress/findings/)** – Measured findings (timings, platform behaviour)
+- **[progress/sessions/](progress/sessions/)** and **[progress/dev-notes.md](progress/dev-notes.md)** – Historical, frozen 2026-10-11
+- **[archive/](archive/)** – Superseded docs, including the old release action notes
 
 ### Visual References
 - **[mockups/](mockups/)** – UX mockups and layout references
