@@ -639,7 +639,7 @@ Nothing is committed directly to `master`. It is branch-protected and requires a
 
 ### Rationale
 - The rule was added to the project's CLAUDE.md in the same commit that recorded the production isolation work (0a21ba5). The commit message gives it no separate reasoning.
-- Context from the same-day plan: every push to `master` auto-deploys to production through Vercel's GitHub integration (see ADR-018). The commit message does not link that to the rule.
+- Context from the same-day plan: every push to `master` auto-deploys to production through Vercel's GitHub integration (per the 2026-07-03 isolation plan). The commit message does not link that to the rule.
 
 ### Rejected
 Not recorded.
