@@ -25,7 +25,8 @@ yarn prisma:migrate       # Create/apply migrations; prisma:seed and seed:demo s
 Next.js API route → zod DTO validation → use case/service → domain entity → Prisma repository → Postgres
 ```
 
-- **Domain** (`src/domain/**`): pure logic: entities, value objects, aggregates, events, repo interfaces.
+- **Domain** (`src/domain/**`): pure logic: entities, value objects, aggregates, events, repo
+  interfaces.
 - **Application** (`src/application/**`): use cases orchestrate the domain, return DTOs.
 - **Infrastructure** (`src/infrastructure/**`): Prisma repositories, realtime, auth, storage.
 - **Presentation** (`src/app/**`, `src/components/**`, `src/hooks/**`): DTOs only.
@@ -42,8 +43,9 @@ DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a
 that carries it uses that type. Components import DTOs, never entities.
 
 Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/*`,
-`@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`), `@utils/*` (`src/lib/utils/*`: configured, resolves to nothing),
-`@ui/*` (`src/components/ui/*`), `@/*` (`src/*`).
+`@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`),
+`@utils/*` (`src/lib/utils/*`: configured, resolves to nothing), `@ui/*` (`src/components/ui/*`),
+`@/*` (`src/*`).
 
 ## Prisma v7 setup (non-standard)
 
@@ -116,12 +118,12 @@ export class DoSomethingUseCase {
 }
 ```
 
-Entities: public properties, synchronous methods, status enums (`QuizStatus`); bad transitions throw.
+Entities: public properties, synchronous methods, status enums (`QuizStatus`); bad transitions
+throw.
 
 Realtime names: channel `quiz:{quizId}` (all in a quiz) and `player:{quizId}:{playerId}` (one
-player). Events include `state:update` (full state), `answer:ack`, `player:update`, `question:locked`,
-`leaderboard:update`.
-Adapters live in `src/infrastructure/realtime/`.
+player). Events include `state:update` (full state), `answer:ack`, `player:update`,
+`question:locked`, `leaderboard:update`. Adapters live in `src/infrastructure/realtime/`.
 
 TanStack Query hooks: the key is a const tuple factory (`hostQuizQueryKey(quizId)`); queries use
 `staleTime: 5_000` and `refetchInterval: 5_000`; fetch errors parse
@@ -131,12 +133,13 @@ TanStack Query hooks: the key is a const tuple factory (`hostQuizQueryKey(quizId
 Repositories: always `upsert` (no separate create/update); batches go through `$transaction`;
 nullable columns default with `??` (`record.score ?? 0`), never `undefined`.
 
-Types: no `any`; use domain or DTO types, or `unknown` plus a type guard when a type truly can't be known.
+Types: no `any`; use domain or DTO types, or `unknown` plus a type guard when a type truly can't
+be known.
 
-Styling: build class names with `cn()` imported from `@/lib/utils` (`src/lib/utils.ts`) and compose UI from the shadcn
-primitives in `src/components/ui` (`components.json`). Add one with
-`npx shadcn@latest add <component>` (no yarn script covers it). No inline `style` props except for dynamic values (e.g. a computed width); theme
-tokens live in `src/app/globals.css`.
+Styling: build class names with `cn()` imported from `@/lib/utils` (`src/lib/utils.ts`) and
+compose UI from the shadcn primitives in `src/components/ui` (`components.json`). Add one with
+`npx shadcn@latest add <component>` (no yarn script covers it). No inline `style` props except for
+dynamic values (e.g. a computed width); theme tokens live in `src/app/globals.css`.
 
 Long form: `docs/guides/PATTERNS.md`.
 
@@ -195,14 +198,15 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 - Realtime: the channel name must match between publisher and subscriber, and a mutation must
   invalidate its query. Channel setup is in `src/infrastructure/realtime/`.
 - Schema: `yarn prisma:generate` was run; repository mappers handle new fields.
-- Tests: stale mocks (reset in `beforeEach`), mock return shapes match what the code under test expects.
+- Tests: stale mocks (reset in `beforeEach`), mock return shapes match what the code under test
+  expects.
 - MCP: `supabase` is in `.mcp.json` (authenticate with `/mcp`); playwright, github: user plugins.
 
 ## Working rules
 
 - Use the yarn scripts in `package.json`, not raw CLI calls, when one exists.
-- Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to start
-  it if it does not.
+- Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to
+  start it if it does not.
 - Verify UI changes in the browser with the Playwright plugin before calling them done.
 - Never commit to `master` (branch-protected). Branch from `origin/master`, open a PR.
 - No `Co-Authored-By` or other AI attribution in commits or PRs.
