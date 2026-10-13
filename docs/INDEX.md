@@ -38,6 +38,7 @@ Welcome! This is your navigation hub for all documentation. Use this to find exa
 - **[guides/DDD-STRUCTURE.md](guides/DDD-STRUCTURE.md)** – Define domain entities, value objects, aggregates, repositories
 - **[guides/DATA-LAYER.md](guides/DATA-LAYER.md)** – Prisma schema, migrations, repository implementations
 - **[guides/PRESENTATION-LAYER.md](guides/PRESENTATION-LAYER.md)** – API routes, hooks, realtime adapter, components
+- **[guides/PATTERNS.md](guides/PATTERNS.md)** – Auth, realtime and state, error handling, performance patterns (long form of CLAUDE.md's key patterns)
 - **[guides/MEDIA-UPLOADS.md](guides/MEDIA-UPLOADS.md)** – Image upload feature, Supabase Storage setup
 
 ### Progress Tracking
