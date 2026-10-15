@@ -50,3 +50,18 @@ whose request never succeeded.
 - The same runs also showed a slow sign-in (form still on "Signing in..." after 5 s) and a
   question list stuck on "Loading questions..." for 15 s, once each, with a valid session. Cause
   unknown; recorded only.
+
+## 2026-10-15 — resolved: the auth spec has its own admin account
+
+Ruling (user, 2026-10-15): a separate admin account for `e2e/admin-auth.spec.ts`, so logout
+keeps its global scope. The spec reads `TEST_AUTH_ADMIN_EMAIL` / `TEST_AUTH_ADMIN_PASSWORD`
+(also in `ADMIN_EMAILS`) and refuses to run when that email equals `TEST_ADMIN_EMAIL`. Branch
+`test/e2e-auth-account`; ledger `.superpowers/sdd/2026-10-15-e2e-auth-account/progress.md`.
+
+- Same four-step sequence, logout now on the auth account: step 4 (the shared saved session
+  after logout) passed.
+- Full `yarn test:e2e`: 24 passed, 15 failed (all among master's 16), 1 flaky (invalid
+  credentials, passed on retry), 0 did not run. The logout test ran and passed; no admin test
+  lost its session.
+- The "Consequences for later runs" note above no longer applies once this merges: the logout
+  test running is no longer a reason for admin failures.
