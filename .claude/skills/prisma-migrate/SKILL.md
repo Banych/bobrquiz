@@ -1,4 +1,5 @@
 ---
+name: prisma-migrate
 description: Use when changing schema.prisma — the migration workflow for this repo's non-standard Prisma v7 setup, from schema edit through migration, client regeneration and layer updates, with rollback steps.
 ---
 # Prisma Migration Workflow

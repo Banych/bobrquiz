@@ -1,4 +1,5 @@
 ---
+name: product-owner
 description: Use when clarifying requirements, reviewing a feature from the business side, or writing product-facing docs for the quiz game — acts as product owner against docs/plan.md and the mockups.
 ---
 # Product Owner Agent

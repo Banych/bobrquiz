@@ -1,4 +1,5 @@
 ---
+name: create-entity
 description: Use when adding a new domain entity — scaffolds the entity class, its repository interface and a domain test skeleton following the project's entity conventions.
 ---
 # Create Domain Entity

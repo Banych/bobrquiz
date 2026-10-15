@@ -1,4 +1,5 @@
 ---
+name: create-hook
 description: Use when adding a TanStack Query hook in src/hooks — scaffolds the query key factory, the fetcher with the project's error parsing, and an optional Supabase realtime subscription.
 ---
 # Create Hook
