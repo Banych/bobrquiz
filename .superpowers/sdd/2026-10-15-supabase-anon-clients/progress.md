@@ -50,4 +50,25 @@ so no GoTrueClient is created — rejected: documented for third-party auth, sti
 - yarn lint: exit 0, 5 warnings (pre-existing files). tsc: exit 0 (covers the e2e spec).
   yarn build: exit 0 with .env.local (linked).
 - Commits checked for attribution trailers by the controller: 0.
-- Pending: E2E (dev server in this worktree), task-reviewer-capable.
+- E2E and review: see below.
+
+## Review
+- task-reviewer-capable on b7bdc30..9ad763b: APPROVED. Its finding, taken in a fix round:
+  `getSupabaseRealtimeClient()` cached only a non-null client, so with the env vars missing in the
+  browser every call re-ran the factory and its dev warning. Fixed in 95abf0f (a `resolved` flag
+  caches null too; the reset clears it; one new unit test). Scoped re-review: APPROVED.
+  Tamper checks clean.
+
+## E2E (2026-10-15, dev server from this worktree)
+- Full run: 16 passed, 21 failed, 3 did not run. 7 failures not in master's 16, 2 of master's
+  passing. Cause confirmed, not this change: the auth spec's logout test calls a global
+  `signOut()` that revokes the admin session every other admin test shares; on master that test
+  never ran (the serial spec stops at the failing invalid-credentials test). Evidence and the
+  four-step confirmation: `docs/progress/findings/2026-10-15-e2e-logout-revokes-admin-session.md`.
+- Admin specs without the auth spec (`--retries=0`): 15 passed, 1 failed (active-quiz buttons,
+  one of master's 16). The anonymous case of the new spec passed in the full run; the admin case
+  passed whenever the session was live.
+- Dev log over the whole server lifetime (all runs above): 0 "Multiple GoTrueClient" lines
+  (the lucide-react run had 302).
+- Deferred, needs a ruling (premise: changing logout scope changes user-facing behaviour, and
+  it is not this branch's bug): stop the logout test revoking the shared session.
