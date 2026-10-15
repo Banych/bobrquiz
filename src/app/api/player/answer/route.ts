@@ -4,6 +4,7 @@ import { getServices } from '@application/services/factories';
 import { broadcastAnswerAck } from '@infrastructure/realtime/broadcast-player-events';
 import { broadcastLeaderboard } from '@infrastructure/realtime/broadcast-leaderboard';
 import { getGlobalBroadcaster } from '@lib/debounce-broadcast';
+import { enforceRateLimit } from '@lib/rate-limit';
 
 const SubmitAnswerBodySchema = z.object({
   quizId: z.string().min(1),
@@ -24,6 +25,18 @@ const leaderboardBroadcaster = getGlobalBroadcaster(async (quizId: string) => {
 });
 
 export async function POST(request: Request) {
+  const rateLimit = enforceRateLimit(request, 'player-answer', {
+    limit: 30,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' } satisfies ErrorResponse,
+      { status: 429 }
+    );
+  }
+
   try {
     const payload = await request.json();
     const parsed = SubmitAnswerBodySchema.parse(payload);

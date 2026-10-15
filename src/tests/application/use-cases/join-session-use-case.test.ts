@@ -75,6 +75,39 @@ describe('JoinSessionUseCase', () => {
     expect(quizRepository.findByJoinCode).toHaveBeenCalledWith('JOIN123');
   });
 
+  it('redacts question content and omits cross-player answers', async () => {
+    const aggregate = buildAggregate();
+    const player = new Player('player-1', 'Alice', 'quiz-123');
+
+    quizRepository.findByJoinCode.mockResolvedValue(aggregate);
+    playerRepository.findById.mockResolvedValue(player);
+
+    const result = await useCase.execute('JOIN123');
+
+    expect(result.answers).toBeUndefined();
+    // No question has been started yet, so the single question is redacted
+    expect(result.questions[0]?.text).toBe('');
+    expect(result.questions[0]?.options).toBeUndefined();
+  });
+
+  it('excludes Removed players from the returned roster', async () => {
+    const aggregate = buildAggregate();
+    aggregate.addPlayer('player-2');
+    const active = new Player('player-1', 'Alice', 'quiz-123');
+    const removed = new Player('player-2', 'Bob', 'quiz-123');
+    removed.removeFromGame('kicked');
+
+    quizRepository.findByJoinCode.mockResolvedValue(aggregate);
+    playerRepository.findById.mockImplementation(async (id) =>
+      id === 'player-1' ? active : removed
+    );
+
+    const result = await useCase.execute('JOIN123');
+
+    expect(result.players).toHaveLength(1);
+    expect(result.players[0]?.id).toBe('player-1');
+  });
+
   it('throws when join code is missing', async () => {
     await expect(useCase.execute('')).rejects.toThrow('Join code is required.');
   });

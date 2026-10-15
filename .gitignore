@@ -28,7 +28,6 @@
 # misc
 .DS_Store
 *.pem
-/docs/superpowers/
 src/infrastructure/database/prisma/generated/
 
 # debug
@@ -46,3 +45,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*
+
+# Supabase CLI local link state (machine-specific, not project config)
+supabase/.temp/
+
+# Per-machine Claude Code overrides (shared settings live in .claude/settings.json)
+.claude/settings.local.json
+
+# Plan workspaces (ledger, briefs, review diffs); commit a ledger with git add -f
+/.superpowers/

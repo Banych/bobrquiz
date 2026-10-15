@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { QuizDTO } from '@application/dtos/quiz.dto';
+import type { LeaderboardEntryDTO, QuizDTO } from '@application/dtos/quiz.dto';
 import type { RoundSummaryDTO } from '@application/dtos/round-summary.dto';
 import { useRealtimeClient } from '@hooks/use-realtime-client';
 
@@ -77,6 +77,20 @@ export const useHostQuizState = ({
         queryClient.setQueryData(hostQuizQueryKey(quizId), updatedState);
       }
     );
+
+    return unsubscribe;
+  }, [channelName, queryClient, quizId, realtimeClient]);
+
+  useEffect(() => {
+    const unsubscribe = realtimeClient.subscribe<{
+      leaderboard: LeaderboardEntryDTO[];
+    }>(channelName, 'leaderboard:update', ({ leaderboard }) => {
+      queryClient.setQueryData(
+        hostQuizQueryKey(quizId),
+        (current: QuizDTO | undefined) =>
+          current ? { ...current, leaderboard } : current
+      );
+    });
 
     return unsubscribe;
   }, [channelName, queryClient, quizId, realtimeClient]);

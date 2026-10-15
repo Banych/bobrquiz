@@ -1,6 +1,8 @@
 # Progress Tracking Index
 
-This document indexes all releases, completed work, and session notes. Use this to find what's been built and what's planned next.
+Index of releases and merged work. Each piece of work gets one line under "Work index":
+date — title — PR — links to its spec, plan and ledger. Details live in those files, not
+here. Entries before 2026-10-11 are the older, longer format and are kept as written.
 
 ## Release Status
 
@@ -12,13 +14,81 @@ This document indexes all releases, completed work, and session notes. Use this 
 | **R3**  | Player MVP         | Join/answer flows, WebSocket sync, session persistence | ✅ Complete | ~2025-12-19     |
 | **R4**  | Content Admin      | CRUD (quiz/question), media uploads, auth gate         | ✅ Complete | 2025-12-21      |
 | **R5**  | Realtime & Scoring | Speed-based scoring, round transitions, reconnection   | ✅ Complete | 2026-02-01      |
-| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | � Active   | ~2026-03-31     |
+| **R6**  | Polish & Launch    | Accessibility, responsive tweaks, audit log, analytics | 🚧 Active (Phases 1–3 and 5 done; Phase 6: prod isolation (2026-07-04) and branding (#55) done, launch polish designed (#57) but not built; Phase 4 not started) | —               |
 
 ---
 
-## Session Notes (Chronological)
+## Work index (latest first)
 
-**Latest First** – Find detailed work notes by date:
+Find work by date:
+
+### 2026-10-15: Routine Dependency Bumps ✅
+- **2026-10-15** — Six stale Dependabot PRs replaced: react and react-dom 19.3.1 together, tanstack query 5.104.3, tailwind-merge 3.7.0, tw-animate-css 1.4.0, Playwright 1.64.1, `@types/node` `^22` to match CI — [PR #67](https://github.com/Banych/bobrquiz/pull/67) — [ledger](../../.superpowers/sdd/2026-10-15-routine-dep-bumps/progress.md)
+
+### 2026-10-15: Dev Dependency Security ✅
+- **2026-10-15** — 43 dev-tooling Dependabot alerts cleared: all seven exact `resolutions` pins removed, prisma 7.10.1, vitest 4.1.12, tsx 4.23.15, ESLint group, stale lockfile entries re-resolved (vite 6 → 8); only `braces` left, which has no fixed release — [PR #66](https://github.com/Banych/bobrquiz/pull/66) — [findings](findings/2026-10-15-dev-deps-security.md) · [ledger](../../.superpowers/sdd/2026-10-15-dev-deps-security/progress.md)
+
+### 2026-10-15: Next.js Security Upgrade ✅
+- **2026-10-15** — next 16.2.6 → 16.3.8 for the open advisories (critical RCE in `next/og` `ImageResponse` was reachable via the dynamic icon routes), postcss pin removed, test type errors fixed — [PR #65](https://github.com/Banych/bobrquiz/pull/65) — [findings](findings/2026-10-15-next-security-upgrade.md) · [ledger](../../.superpowers/sdd/2026-10-15-next-security/progress.md)
+
+### 2026-10-15: Claude Config and Progress Records ✅
+- **2026-10-15** — One record per piece of work, CLAUDE.md rewritten as project facts, Copilot files and five commands removed, MCP servers moved to user plugins, shared permissions narrowed — [PR #64](https://github.com/Banych/bobrquiz/pull/64) — [design](plans/2026-10-11-claude-config-and-records-design.md) · [plan](plans/2026-10-11-claude-config-and-records-plan.md) · [ledger](../../.superpowers/sdd/2026-10-11-claude-config-and-records-plan/progress.md)
+
+### 2026-08-01: Realtime Broadcast-Listener Leak Fix ✅
+- **Focus**: `SupabaseRealtimeClient` was silently stacking a new real `channel.on()` broadcast binding every time a consuming hook's effect re-ran, since `@supabase/realtime-js` exposes no public `channel.off()` to detach one. Found live-testing the "too many connections (~200)" production incident — one player tab left open during a live question accumulated ~180 stacked `answer:ack` handlers over ~5 minutes, each firing a real DB round-trip per broadcast.
+- **Deliverables**: rewrote `SupabaseRealtimeClient`'s internal tracking to bind exactly one real listener per `(channel, event)` pair, fanning out to a handler `Set` (class now exported for direct testing); memoized `usePlayerSession`'s query key so its realtime effects stop tearing down/rebuilding every second during an active countdown.
+- **Closing pass**: whole-branch review found the new regression test passed even against the reverted pre-fix code, because the test mock's listener storage (a `Map<event, callback>`) silently discarded stacked bindings instead of accumulating them like real `bindings` do. Fixed the mock and rewrote the regression test to match the actual incident shape (a stable second subscriber holding the channel open while a different event churns); verified it now fails against the old buggy implementation and passes against the fix.
+- **Status**: Complete — 14/14 realtime-client tests, full suite and lint clean, manual multi-tab check done (f9d4673).
+- Plan: [plans/2026-08-01-realtime-broadcast-listener-leak-fix.md](plans/2026-08-01-realtime-broadcast-listener-leak-fix.md)
+- File: [sessions/2026-08-01-realtime-broadcast-listener-leak-fix.md](sessions/2026-08-01-realtime-broadcast-listener-leak-fix.md)
+- Ledger: [.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md](../../.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md)
+- PR: [#63](https://github.com/Banych/bobrquiz/pull/63)
+
+### 2026-07-05: Presence and leaderboard fixes ✅
+- **2026-07-05** — Host leaderboard realtime update (`leaderboard:update` subscription wired up on the host dashboard) — [PR #60](https://github.com/Banych/bobrquiz/pull/60) — fix commit b66389b, no spec or plan
+- **2026-07-05** — Presence tracker provider mount and channel reuse — [PR #59](https://github.com/Banych/bobrquiz/pull/59) — [design](plans/2026-07-05-presence-tracker-provider-design.md) · [plan](plans/2026-07-05-presence-tracker-provider-implementation.md) · [design](plans/2026-07-05-presence-channel-reuse-design.md) · [plan](plans/2026-07-05-presence-channel-reuse-implementation.md)
+- **2026-07-05** — Presence heartbeat resilience — [PR #58](https://github.com/Banych/bobrquiz/pull/58) — [design](plans/2026-07-05-presence-heartbeat-resilience-design.md) · [plan](plans/2026-07-05-presence-heartbeat-resilience-implementation.md)
+
+### 2026-07-04: Bobr Quiz Visual Branding ✅
+- **Focus**: Full visual branding pass — cartoon beaver mascot, brown/amber color
+  retheme, generated favicon/apple-icon/OG-image/PWA-manifest assets (all via
+  `next/og`, zero new dependencies), mascot placed on hero/join/admin/404.
+- **Deliverables**: mascot went through 3 iterations — an approved hand-drawn
+  geometric mark (per spec) was rejected twice on visual review as too crude, replaced
+  with a real vector trace (vectorizer.io) of a ChatGPT-generated reference image in
+  an Angry-Beavers-inspired style. Join screen's dark slate/purple/emerald theme
+  retheme'd to stone/amber (added mid-session, not in original plan) after user
+  feedback that it clashed with the brand.
+- **Bugs found and fixed**: Satori (via `next/og`) can't render a React Fragment —
+  crashed `/icon`/`/apple-icon` with a 500, hit twice (once per mascot rewrite) and
+  fixed both times by using `<g>` instead of `<>`; an unjustified
+  `dynamic = 'force-dynamic'` export that disabled static optimization on the icon
+  routes; 32 Prettier errors implementers missed by only running `yarn test`; a
+  missing `metadataBase` that would've broken OG image URLs in production.
+- **Status**: Complete — 448 tests passing, lint clean, build passing, full manual
+  Playwright verification including an authenticated admin-header check.
+- Plan: [plans/2026-07-04-bobr-quiz-branding-implementation.md](plans/2026-07-04-bobr-quiz-branding-implementation.md)
+- File: [sessions/2026-07-04-bobr-quiz-branding.md](sessions/2026-07-04-bobr-quiz-branding.md)
+- PR: [#55](https://github.com/Banych/bobrquiz/pull/55)
+
+### 2026-07-04: R6 — Isolate Production Supabase from Dev/Preview ✅
+- **Focus**: Production, Preview, and Development had been silently sharing one Supabase project ("Quiz-game-dev") since the app's first auto-deploy in April 2025 — confirmed via hash comparison of every Vercel env var. A test admin account had live admin access to production.
+- **Deliverables**: standalone `quiz-game-prod` Supabase project (schema, RLS, storage bucket + policies, admin Auth user all recreated to match); Vercel Production repointed at it exclusively; `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` removed from Production only.
+- **Verified live, not just via config**: real browser login to the production admin UI, created a test quiz, confirmed via direct SQL it exists in the new project and is absent from the old one; 439 tests still passing.
+- **Notable**: two Vercel CLI gotchas hit mid-execution — `env rm NAME <env>` on a variable shared across environments deletes it entirely rather than narrowing scope (had to restore Dev/Preview from local `.env`), and `preview`/`production` env vars default to Vercel's write-only "Sensitive" type (can't be read back to verify — confirmed via a functional test instead).
+- Plan: [plans/2026-07-03-r6-supabase-prod-isolation.md](plans/2026-07-03-r6-supabase-prod-isolation.md)
+
+### 2026-07-03: docs/plan.md Reconciliation ✅
+- **Focus**: `docs/plan.md`'s R6 Phase 2/3 checklists were stale — fully unchecked despite the work being built and shipped in earlier sessions (2026-02-07, 2026-03-07). Verified each item against the actual codebase (files, components, Prisma schema) rather than trusting prior checkbox state.
+- **Findings**: Phase 3 (Questions/Media/Audit admin pages, host landing page, QR code join) is built, but narrower than originally scoped — e.g. audit log only covers quiz lifecycle events (not all CRUD), questions page has no bulk ops or type/status filter, media library has no "view usage" tracking. Phase 2 accessibility/responsive work was a deliberately trimmed targeted-fixes pass (documented in its own plan file's "Out of Scope"), not the full audit originally scoped — axe-core, WCAG AA audit, skip links, and screen-reader testing were never done. "Pause quiz mid-game" (Phase 3 host control) is confirmed still not built. Phase 1.6's E2E spec status was left explicitly unverified rather than guessed, since checking it required installing Playwright's CLI test-runner browser binaries (separate from the already-working MCP Playwright tool) for no benefit beyond a checkbox.
+- **Status**: Complete — doc-only change, no code touched.
+
+### 2026-07-03: R6 Phase 5 — Security Hardening (Trimmed) ✅
+- **Focus**: Trimmed the original Phase 5 scope against evidence (Supabase security/performance advisors both clean), then fixed a real issue the advisors don't catch: player-facing quiz state leaked all questions' content and every player's raw answers via join response, polled session endpoint, and realtime broadcast
+- **Deliverables**: `mapQuizToPlayerFacingDTO` redaction mapper applied in `JoinSessionUseCase`/`GetPlayerSessionUseCase` and a new `state:update:player` broadcast event (host's `state:update` untouched); in-memory rate limiter (`src/lib/rate-limit.ts`) on join/add-player/answer endpoints
+- **Deferred** (no evidence of need): Redis caching, Edge Function heartbeat, DB indexing, deployment runbook — revisit at Phase 6 launch or if real load data shows a bottleneck
+- **Status**: Complete — 432 tests passing (+18 new), build passing, manual Playwright MCP verification
+- **File**: [plans/2026-07-03-r6-phase5-security-hardening.md](plans/2026-07-03-r6-phase5-security-hardening.md)
 
 ### 2026-05-09: Maintenance — Security Upgrades & Tooling ✅
 - **Focus**: Address 101 Dependabot security alerts, ESLint 10 migration, CI fixes, tooling improvements
@@ -167,7 +237,7 @@ This document indexes all releases, completed work, and session notes. Use this 
 - P95 latencies exceed targets (acceptable for <100 players, optimization path documented)
 
 **Action Files**:
-- [actions/07-r5-realtime-scoring-implementation.md](actions/07-r5-realtime-scoring-implementation.md) – Detailed implementation plan
+- [actions/07-r5-realtime-scoring-implementation.md](../archive/actions/07-r5-realtime-scoring-implementation.md) – Detailed implementation plan
 
 ### R4: Content Admin (Complete ✅)
 
@@ -180,7 +250,7 @@ This document indexes all releases, completed work, and session notes. Use this 
 - ⏭️ Audit log (deferred to R6)
 
 **Reference**:
-- [actions/06-r4-wrap-up.md](actions/06-r4-wrap-up.md) – R4 retrospective
+- [actions/06-r4-wrap-up.md](../archive/actions/06-r4-wrap-up.md) – R4 retrospective
 
 ### R3: Player MVP (Complete ✅)
 
@@ -364,18 +434,17 @@ See [file-ideas.md](file-ideas.md) for tracked follow-ups per file.
 
 ## How to Update This File
 
-1. **Completed a session?** Add entry to the chronological list above (most recent first)
-2. **Finished a release?** Move checkbox to ✅ and update status/completion date
-3. **New action items?** Add to [actions/](actions/) folder with numbered file (08-*, 09-*, etc.)
-4. **Found a bug or idea?** Log in [file-ideas.md](file-ideas.md) with follow-up file + action
-5. **Daily work notes?** Append to [dev-notes.md](dev-notes.md) with timestamp
+1. Merged a piece of work: add one Work index line (see [plans/README.md](plans/README.md)).
+2. Finished a release: update the release table.
+3. Found a bug or idea: log it in [file-ideas.md](file-ideas.md).
 
 ---
 
 ## Related Documents
 
 - [INDEX.md](../INDEX.md) – Documentation navigation hub
-- [dev-notes.md](dev-notes.md) – Detailed execution log (timestamps, bug fixes)
 - [file-ideas.md](file-ideas.md) – Technical debt and follow-ups per file
-- [actions/](actions/) – Release checklists and action items
-- [sessions/](sessions/) – Dated session notes (goals, approach, results)
+- [plans/](plans/) – Specs and plans
+- [findings/](findings/) – Measured findings
+- [sessions/](sessions/) and [dev-notes.md](dev-notes.md) – historical, frozen 2026-10-11
+- [../archive/](../archive/) – Superseded docs

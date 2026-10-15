@@ -7,12 +7,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
+import { BeaverMascot } from '@components/brand/beaver-mascot';
 
 export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
+          <BeaverMascot size={64} className="mx-auto mb-2" />
           <CardTitle className="text-6xl font-bold text-muted-foreground">
             404
           </CardTitle>

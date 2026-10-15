@@ -221,8 +221,8 @@ model AuditLog {
 
 ## References
 - Plan: [docs/plan.md](../../plan.md) - R4 and R5 goals
-- Structure: [docs/structure.md](../../structure.md) - DDD-lite architecture
-- Infrastructure Guide: [docs/03-infrastructure-layer.md](../../03-infrastructure-layer.md) - Supabase Storage patterns
+- Structure: [docs/structure.md](../../archive/structure.md) - DDD-lite architecture
+- Infrastructure Guide: [docs/03-infrastructure-layer.md](../../archive/03-infrastructure-layer.md) - Supabase Storage patterns
 - Audit Log Schema: See schema definition above
 - Image Upload Libraries: `browser-image-compression`, `react-dropzone`
 

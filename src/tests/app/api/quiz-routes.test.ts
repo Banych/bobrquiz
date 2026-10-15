@@ -39,6 +39,11 @@ describe('Quiz API routes', () => {
         playerService as unknown as ServiceContainer['playerService'],
       answerService: {} as ServiceContainer['answerService'],
       joinSessionUseCase: {} as ServiceContainer['joinSessionUseCase'],
+      questionService: {} as ServiceContainer['questionService'],
+      auditService: {} as ServiceContainer['auditService'],
+      lockQuestionUseCase: {} as ServiceContainer['lockQuestionUseCase'],
+      getPlayerConnectionStatusUseCase:
+        {} as ServiceContainer['getPlayerConnectionStatusUseCase'],
     });
   });
 
@@ -57,7 +62,7 @@ describe('Quiz API routes', () => {
     });
 
     const response = await getQuizState(new Request('http://localhost'), {
-      params: { quizId: 'quiz-1' },
+      params: Promise.resolve({ quizId: 'quiz-1' }),
     });
 
     const payload = await response.json();
@@ -70,7 +75,7 @@ describe('Quiz API routes', () => {
     quizService.getQuizState.mockRejectedValue(new Error('Quiz not found.'));
 
     const response = await getQuizState(new Request('http://localhost'), {
-      params: { quizId: 'missing' },
+      params: Promise.resolve({ quizId: 'missing' }),
     });
 
     expect(response.status).toBe(404);
@@ -84,7 +89,7 @@ describe('Quiz API routes', () => {
     ]);
 
     const response = await getQuizPlayers(new Request('http://localhost'), {
-      params: { quizId: 'quiz-1' },
+      params: Promise.resolve({ quizId: 'quiz-1' }),
     });
 
     expect(response.status).toBe(200);
@@ -100,7 +105,7 @@ describe('Quiz API routes', () => {
     );
 
     const response = await getQuizPlayers(new Request('http://localhost'), {
-      params: { quizId: 'missing' },
+      params: Promise.resolve({ quizId: 'missing' }),
     });
 
     expect(response.status).toBe(404);

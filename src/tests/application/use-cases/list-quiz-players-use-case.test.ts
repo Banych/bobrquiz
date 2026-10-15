@@ -74,6 +74,21 @@ describe('ListQuizPlayersUseCase', () => {
     expect(playerRepository.listByQuizId).toHaveBeenCalledWith('quiz-1');
   });
 
+  it('excludes Removed players from the result', async () => {
+    const aggregate = buildAggregate();
+    const active = new Player('player-1', 'Alice', 'quiz-1');
+    const removed = new Player('player-2', 'Bob', 'quiz-1');
+    removed.removeFromGame('kicked');
+
+    quizRepository.findById.mockResolvedValue(aggregate);
+    playerRepository.listByQuizId.mockResolvedValue([active, removed]);
+
+    const result = await useCase.execute('quiz-1');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('player-1');
+  });
+
   it('throws when quiz is missing', async () => {
     quizRepository.findById.mockResolvedValue(null);
 

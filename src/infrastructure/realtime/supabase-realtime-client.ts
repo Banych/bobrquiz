@@ -30,9 +30,10 @@ const logChannelIssue = (
 type TrackedChannel = {
   channel: RealtimeChannel;
   listenerCount: number;
+  eventHandlers: Map<string, Set<RealtimeEventHandler>>;
 };
 
-class SupabaseRealtimeClient implements RealtimeClient {
+export class SupabaseRealtimeClient implements RealtimeClient {
   private readonly client: SupabaseClient;
   private readonly channels = new Map<string, TrackedChannel>();
   private readonly closingChannels = new Set<string>();
@@ -46,28 +47,23 @@ class SupabaseRealtimeClient implements RealtimeClient {
     event: string,
     handler: RealtimeEventHandler<TPayload>
   ): RealtimeUnsubscribe {
+    const typedHandler = handler as RealtimeEventHandler;
     const existing = this.channels.get(channelName);
 
     if (existing) {
-      // Reuse existing channel — just add the event listener
-      existing.channel.on('broadcast', { event }, (payload) => {
-        handler(payload.payload as TPayload);
-      });
+      this.bindHandler(existing, event, typedHandler);
       existing.listenerCount++;
-
-      return () => {
-        this.removeListener(channelName);
-      };
+      return () => this.removeListener(channelName, event, typedHandler);
     }
 
-    // Create new channel
     const channel = this.client.channel(channelName, DEFAULT_CHANNEL_CONFIG);
-
-    channel.on('broadcast', { event }, (payload) => {
-      handler(payload.payload as TPayload);
-    });
-
-    this.channels.set(channelName, { channel, listenerCount: 1 });
+    const tracked: TrackedChannel = {
+      channel,
+      listenerCount: 1,
+      eventHandlers: new Map(),
+    };
+    this.channels.set(channelName, tracked);
+    this.bindHandler(tracked, event, typedHandler);
 
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -89,15 +85,50 @@ class SupabaseRealtimeClient implements RealtimeClient {
       }
     });
 
-    return () => {
-      this.removeListener(channelName);
-    };
+    return () => this.removeListener(channelName, event, typedHandler);
   }
 
-  private removeListener(channelName: string): void {
+  /**
+   * Binds exactly one real channel.on('broadcast', ...) listener per
+   * (channel, event) pair, no matter how many times subscribe() is called
+   * for that pair. The real listener fans out to whatever handlers are
+   * currently in the Set, so adding/removing a subscriber is just a Set
+   * mutation -- it never needs to touch the underlying Supabase binding
+   * again. This is what prevents the leak: realtime-js exposes no public
+   * channel.off() to detach a single .on() callback, so the old
+   * one-listener-per-subscribe()-call design could only ever grow.
+   */
+  private bindHandler(
+    tracked: TrackedChannel,
+    event: string,
+    handler: RealtimeEventHandler
+  ): void {
+    let handlers = tracked.eventHandlers.get(event);
+
+    if (!handlers) {
+      const newHandlers = new Set<RealtimeEventHandler>();
+      handlers = newHandlers;
+      tracked.eventHandlers.set(event, newHandlers);
+
+      tracked.channel.on('broadcast', { event }, (payload) => {
+        for (const boundHandler of newHandlers) {
+          boundHandler(payload.payload);
+        }
+      });
+    }
+
+    handlers.add(handler);
+  }
+
+  private removeListener(
+    channelName: string,
+    event: string,
+    handler: RealtimeEventHandler
+  ): void {
     const tracked = this.channels.get(channelName);
     if (!tracked) return;
 
+    tracked.eventHandlers.get(event)?.delete(handler);
     tracked.listenerCount--;
 
     if (tracked.listenerCount <= 0) {

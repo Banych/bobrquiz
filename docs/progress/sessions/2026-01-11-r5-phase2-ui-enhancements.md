@@ -127,7 +127,7 @@ Live point preview uses `useMemo` with proper dependencies to avoid unnecessary 
 
 ## Next Steps (R5 Phase 3)
 
-Based on [07-r5-realtime-scoring-implementation.md](docs/progress/actions/07-r5-realtime-scoring-implementation.md):
+Based on [07-r5-realtime-scoring-implementation.md](../../archive/actions/07-r5-realtime-scoring-implementation.md):
 
 1. **Round Transitions (~2-3 days)**
    - Implement answer locking mechanism (`answersLockedAt` timestamp)

@@ -1,5 +1,6 @@
 import { getServices } from '@application/services/factories';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,11 @@ import {
 import type { QuizListItemDTO } from '@application/dtos/quiz-admin.dto';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Host a Quiz — Bobr Quiz',
+  description: 'Pick a quiz and start a live session.',
+};
 
 export default async function HostPage() {
   const { quizService } = getServices();
