@@ -26,3 +26,8 @@ icon-only controls with no accessible name, on master as well.
 - npx tsc --noEmit -p .: exit 0, 0 errors (covers e2e/).
 - yarn build: exit 0 with placeholder env (worktree has no .env.local).
 - E2E: pending (controller, against the dev server).
+
+## Review
+- task-reviewer on 74748d6: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout unchanged.
+- Confirmed: the back-link label lands on the rendered <a> (Button asChild → Radix Slot merges props into Link); exact:true locators cannot match the "Delete Question" dialog button (case and portal); no other unnamed icon-only control in src/.
+- Minor deferred (out of scope: a visible tooltip is a UI change the approved design did not include): question-list edit/delete buttons lack the title="Edit"/"Delete" tooltips that all-questions-view and quiz-list carry.
