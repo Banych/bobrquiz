@@ -729,10 +729,6 @@ Each piece of work leaves a spec, a plan, a committed ledger (`progress.md` and 
 
 ## Open ideas (not decisions)
 
-### TBD: Audit Logging (R6)
-- Database table for admin actions (create/update/delete quiz, question, player)
-- API route to retrieve audit trail per quiz
-
 ### TBD: PostHog Analytics (R6)
 - Instrumentation for user journeys
 - Decide: event-driven (action logs in API) vs. client-side tracking

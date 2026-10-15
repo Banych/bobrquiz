@@ -101,4 +101,5 @@ See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for realtime subscription pat
 
 ### Implementation reference
 
-See `docs/progress/sessions/` for real examples of optimization decisions and measured impact.
+See the plans in `docs/progress/plans/` (and the historical `docs/progress/sessions/`) for real
+examples of optimization decisions and measured impact.

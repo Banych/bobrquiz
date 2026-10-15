@@ -25,7 +25,7 @@ This document captures the DDD-lite architecture, tech stack decisions, and laye
 
 | Layer               | Choice                                            | Rationale                                                              |
 | ------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Frontend**        | Next.js 15 (App Router) + React 19                | Server/client components, streaming, built-in API routes               |
+| **Frontend**        | Next.js 16 (App Router) + React 19                | Server/client components, streaming, built-in API routes               |
 | **Styling**         | Tailwind 4 + shadcn UI                            | Token-driven design, accessible primitives, rapid iteration            |
 | **State**           | TanStack Query + Supabase Realtime                | Server state cache + WebSocket events for <300ms latency               |
 | **ORM**             | Prisma v7 + driver adapter (`@prisma/adapter-pg`) | Type safety, migrations, adapter pattern for Vercel Edge compatibility |
@@ -369,7 +369,7 @@ docs/
 │   ├── MEDIA-UPLOADS.md              # Image upload feature
 │   └── PATTERNS.md                   # Auth, realtime, error and performance patterns
 ├── progress/
-│   ├── PROGRESS.md                   # Release & session tracking
+│   ├── PROGRESS.md                   # Release status & work index
 │   ├── plans/                        # Spec and plan per piece of work
 │   ├── findings/                     # Dated findings records
 │   ├── sessions/                     # Dated session notes (historical)
