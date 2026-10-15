@@ -229,3 +229,23 @@ Must pass before considering the use case complete.
 - [ ] API route created with standard error handling pattern
 - [ ] Tests: success path, not found (verifies error message), invalid state
 - [ ] `yarn test:run src/tests/application/` passes
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15). Its paths, scripts and names were checked
+against the code by the review of PR #64; that is a read, not a run.
+
+**Assumed — attack these first**
+
+- `start-quiz.use-case.ts` and `submit-answer.use-case.ts` exist in `src/application/use-cases/`
+  and match the class-with-`execute()` style (lines 26-27).
+- Repository interfaces are imported from `@domain/repositories/I[Entity]Repository` (lines 37
+  and 170).
+- The not-found message `[Entity] with ID ${id} not found` is what the API route's `/not found/i`
+  regex maps to 404 (lines 55 and 71).
+- All services are assembled in `getServices()` and `getRepositories()` in
+  `src/application/services/factories.ts`, and service files are named `[entity]-service.ts`
+  (lines 100-131).
+- The route is created at `src/app/api/[entity]/[action]/route.ts` and `getServices()` exposes
+  `[entity]Service` (lines 135-151).
