@@ -178,6 +178,7 @@ export function ImageUpload({
               variant="destructive"
               size="icon"
               className="absolute top-2 right-2"
+              aria-label="Remove image"
               onClick={handleRemove}
               disabled={isUploading}
             >
