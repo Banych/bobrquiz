@@ -74,9 +74,12 @@ locking") already fails on master and E2E is not in CI.
    the snapshots, call `quizRepository.lockQuestion(quiz.id, question.id, question.answersLockedAt)`.
    On `false`, throw the domain's existing "already locked" error, so a lost race writes no
    snapshots, no audit row and no broadcast (the route maps the error to 400 as today).
-5. **Reset use case** (`reset-quiz.use-case.ts`): after `quiz.reset()` and `save`, call
+5. **Reset use case** (`reset-quiz.use-case.ts`): after `quiz.reset()` and before `save`, call
    `quizRepository.clearQuestionLocks(quiz.id)`. Covers host "Restart quiz" and admin reset, which
-   both go through it.
+   both go through it. Clear first (planning, 2026-10-15): if the clear failed after the save, the
+   quiz would be Pending with a stale lock on question 1, and reset refuses a Pending quiz, so it
+   could not be retried; a failed save after the clear leaves an Active or Completed quiz with no
+   locks, and reset can be retried.
 6. **Unchanged:** the host hook, the player UI, realtime, the answer route. After the fix, a late
    answer gets the existing 400 "Answers are locked for this question." as its submission message.
 
