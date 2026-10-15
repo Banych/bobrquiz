@@ -1,4 +1,5 @@
 ---
+name: create-entity
 description: Use when adding a new domain entity — scaffolds the entity class, its repository interface and a domain test skeleton following the project's entity conventions.
 ---
 # Create Domain Entity
@@ -181,3 +182,20 @@ Must pass before moving to Application layer.
 - [ ] Repository interface uses `null` (not `undefined`) for missing entities
 - [ ] Tests: creation + each invariant, each command (success + wrong state)
 - [ ] `yarn test:run src/tests/domain/` passes
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- `src/domain/entities/quiz.ts` and `player.ts` exist and use public properties, enum status and
+  synchronous methods (lines 26-30).
+- Domain repository interfaces live in `src/domain/repositories/[entity-name]-repository.ts` and
+  are named `I[EntityName]Repository` (lines 102-107).
+- Entities are mapped from Prisma records with `record.status as [EntityName]Status` in the
+  repository mapper (line 97).
+- State-transition errors follow the format `'[Entity] can only X if it is in Y status.'` (line
+  94).
+- `yarn test:run src/tests/domain/entities/[entity-name].test.ts` runs a single file (line 170).

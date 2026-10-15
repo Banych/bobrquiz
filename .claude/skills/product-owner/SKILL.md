@@ -1,4 +1,5 @@
 ---
+name: product-owner
 description: Use when clarifying requirements, reviewing a feature from the business side, or writing product-facing docs for the quiz game — acts as product owner against docs/plan.md and the mockups.
 ---
 # Product Owner Agent
@@ -87,3 +88,16 @@ Acceptance Criteria:
 - Web search for research
 - Playwright for manual testing (if MCP configured)
 - Supabase for data inspection (if MCP configured)
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- `docs/plan.md`, `docs/ARCHITECTURE.md`, `docs/progress/PROGRESS.md` and `docs/mockups/` exist
+  (lines 36-39).
+- Specs and plans live in `docs/progress/plans/` (line 44).
+- `docs/plan.md` is the roadmap the skill is meant to maintain (lines 26 and 36).
+- The Playwright and Supabase MCP servers are configured for this repo (lines 89-90).

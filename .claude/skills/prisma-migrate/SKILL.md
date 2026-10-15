@@ -1,4 +1,5 @@
 ---
+name: prisma-migrate
 description: Use when changing schema.prisma — the migration workflow for this repo's non-standard Prisma v7 setup, from schema edit through migration, client regeneration and layer updates, with rollback steps.
 ---
 # Prisma Migration Workflow
@@ -104,3 +105,24 @@ npx prisma migrate reset --schema src/infrastructure/database/prisma/schema.pris
 yarn prisma:seed
 ```
 Runs `src/infrastructure/database/prisma/seed.ts`
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- `yarn prisma:migrate -- --name describe_your_change` creates and applies a migration in
+  `src/infrastructure/database/prisma/migrations/` (lines 51-54).
+- The generated client lives at `./generated/client` and is imported through
+  `@infrastructure/database/prisma/generated-client` (lines 18-19).
+- `yarn prisma:generate` is required after every schema change and its absence breaks imports
+  (lines 58-61).
+- Repository implementations are in `src/infrastructure/repositories/` and DTO mappers in
+  `src/application/mappers/` (lines 71 and 77).
+- `npx prisma migrate status` and `migrate reset` with `--schema
+  src/infrastructure/database/prisma/schema.prisma` work against this repo's configuration
+  (lines 90-93).
+- `resetServices({ force: true })` exists and resets the service container in tests (line 101).
+- `yarn prisma:seed` runs `src/infrastructure/database/prisma/seed.ts` (lines 105-107).

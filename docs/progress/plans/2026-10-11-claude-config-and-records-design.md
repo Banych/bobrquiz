@@ -182,6 +182,10 @@ session file is history and keeps its mention).
 
 Descriptions follow the "Use when …" form so the skill listing shows when each applies.
 
+**Superseded 2026-10-15 (user):** the six kept commands moved to `.claude/skills/<name>/SKILL.md`
+as skills, each with an Observed-vs-assumed section and a `FINDINGS.md`. See
+[ADR-023](../../DECISION-LOG.md#adr-023-project-procedures-live-as-skills-not-commands-2026-10-15).
+
 ### 4. Tooling
 
 - `.mcp.json`: keep `supabase` only.

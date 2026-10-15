@@ -124,3 +124,17 @@ Ruling: the three final-*.md review reports are committed with the ledger alongs
 Task 7 Step 8: ledger force-added (progress.md, task-1..6-report.md, final-whole-branch-review.md, final-fixwave-rereview.md, final-fixwave-round2-rereview.md)
 Task 7 Step 10: PR text approved by the user 2026-10-15; pushed and opened PR #64 (https://github.com/Banych/bobrquiz/pull/64) with the exact approved body; merge-ready commit sets spec + plan status "✅ Complete — PR #64" and adds the PROGRESS Work index line (links verified unfiltered). Merge waits for the user.
 Finding (git 2.55.0, 2026-10-15): with /.superpowers/ ignored, `git add <tracked ledger file>` stages it but prints the ignored-path hint and exits 1, breaking an `&& git commit` chain; `git add -f` (as the CLAUDE.md records row says) avoids it.
+
+## Follow-up 2026-10-15: commands → skills (bounded, user-approved in-chat design)
+User ruling 2026-10-15: project procedures become skills ("commands are old"); replaces spec §3's "keep as commands". Branch claude-skills-from-commands from chore/claude-config-and-records (7743bd8), to merge back --no-ff into PR #64.
+Ruling: architecture-check stays a skill, not an agent — agent shape deferred until real runs show its use (premise: no recorded run yet) — cost if wrong: main-session context on long checks
+5ccf723 refactor(claude): move project commands to skills — git mv ×6 + name: field (first commit missed the unstaged name lines; amended before any push)
+Observed 2026-10-15 (Claude Code 2.1.296): this running session's skill list showed all six from .claude/skills/ right after the move, without a restart
+Dispatched implementer (sonnet pin) with skills-brief.md for Observed-vs-assumed sections + FINDINGS.md (BASE 5ccf723)
+ac83c9f docs(claude): add observed-vs-assumed records to skills (implementer, DONE_WITH_CONCERNS: claims unverified by design; controller checked: 12 files +216, append-only to SKILL.md bodies, no trailers; resetServices exists at factories.ts:272, player:kicked real)
+fa387ff docs: ADR-023 + spec §3 superseded note
+Skills review (task-reviewer, 7743bd8..fa387ff): CHANGES_REQUESTED — I1 create-use-case imports I[Entity]Repository paths that don't exist (real: kebab-case, import type); I2 create-hook "every hook uses 5_000" false (use-host-quiz-players uses 5000 + configurable); M3 prisma-migrate `--` form unrun (note only); M4 Observed lines over-claimed a PR #64 path check; M5 ADR-023 discovery claim unattributed. Tamper check clean (HEAD fa387ff, status = controller's progress.md only, ledger listing unchanged). Renames verified pure; YAML parses.
+Ruling: fixed I1/I2 in the skill bodies (known-false claims are fixed, not listed as assumed; the I1 bullet dropped since the path is now the real one), M4 Observed lines reduced to what happened, M5 ADR-023 attributes the observation to this session's run; M3 stays an assumed bullet — cost if wrong: none
+Fix round 1: f1a4856
+Skills fix round 1 re-review: APPROVED (all findings addressed; its "line citations shifted" note checked and wrong — create-use-case lines 55/71 still hold the not-found message). Tamper check clean (HEAD f1a4856).
+Skills follow-up: complete (5ccf723..f1a4856); merging into chore/claude-config-and-records for PR #64

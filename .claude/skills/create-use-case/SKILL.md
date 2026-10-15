@@ -1,4 +1,5 @@
 ---
+name: create-use-case
 description: Use when adding a new application use case — scaffolds the use-case class, DTO changes, service wiring, the API route and use-case tests for success and not-found paths.
 ---
 # Create Use Case
@@ -33,7 +34,7 @@ File: `src/application/use-cases/[verb-noun].use-case.ts`
 **IMPORTANT:** Use cases in this codebase are **classes** that **throw errors** — NOT functions returning Result objects.
 
 ```typescript
-import { I[Entity]Repository } from '@domain/repositories/I[Entity]Repository';
+import type { I[Entity]Repository } from '@domain/repositories/[entity]-repository';
 
 export class [VerbNoun]UseCase {
   constructor(
@@ -166,7 +167,7 @@ File: `src/tests/application/use-cases/[verb-noun].use-case.test.ts`
 ```typescript
 import { describe, it, expect, beforeEach, vi, type Mocked } from 'vitest';
 import { [VerbNoun]UseCase } from '@application/use-cases/[verb-noun].use-case';
-import type { I[Entity]Repository } from '@domain/repositories/I[Entity]Repository';
+import type { I[Entity]Repository } from '@domain/repositories/[entity]-repository';
 import { [Entity] } from '@domain/entities/[entity]';
 
 const make[Entity] = (): [Entity] => new [Entity]('entity-1', /* valid props */);
@@ -228,3 +229,20 @@ Must pass before considering the use case complete.
 - [ ] API route created with standard error handling pattern
 - [ ] Tests: success path, not found (verifies error message), invalid state
 - [ ] `yarn test:run src/tests/application/` passes
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- `start-quiz.use-case.ts` and `submit-answer.use-case.ts` exist in `src/application/use-cases/`
+  and match the class-with-`execute()` style (lines 26-27).
+- The not-found message `[Entity] with ID ${id} not found` is what the API route's `/not found/i`
+  regex maps to 404 (lines 55 and 71).
+- All services are assembled in `getServices()` and `getRepositories()` in
+  `src/application/services/factories.ts`, and service files are named `[entity]-service.ts`
+  (lines 100-131).
+- The route is created at `src/app/api/[entity]/[action]/route.ts` and `getServices()` exposes
+  `[entity]Service` (lines 135-151).

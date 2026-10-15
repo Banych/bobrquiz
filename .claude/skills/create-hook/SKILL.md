@@ -1,4 +1,5 @@
 ---
+name: create-hook
 description: Use when adding a TanStack Query hook in src/hooks — scaffolds the query key factory, the fetcher with the project's error parsing, and an optional Supabase realtime subscription.
 ---
 # Create Hook
@@ -90,8 +91,8 @@ export const use[Entity] = ({ id, initialData }: Use[Entity]Options) => {
     queryKey,
     queryFn: () => fetch[Entity](id),
     initialData,
-    staleTime: 5_000,      // matches all hooks in the codebase
-    refetchInterval: 5_000, // matches all hooks in the codebase
+    staleTime: 5_000,      // same as use-host-quiz-state and use-player-session
+    refetchInterval: 5_000, // same as use-host-quiz-state and use-player-session
   });
 
   const updateMutation = useMutation({
@@ -191,3 +192,21 @@ Always match the channel/event names used in `src/infrastructure/realtime/`.
 - [ ] Mutation `onSuccess` calls `invalidateQueries` with the query key
 - [ ] Hook returns spread of queryResult + mutation helpers as `const`
 - [ ] Channel/event names match those in `src/infrastructure/realtime/`
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- `use-player-session.ts` and `use-host-quiz-state.ts` exist in `src/hooks/` and hold the
+  patterns described (lines 25-26).
+- `useRealtimeClient` is exported from `@hooks/use-realtime-client` and its `subscribe<T>(channel,
+  event, handler)` returns an unsubscribe function (lines 120 and 140-147).
+- Five seconds for `staleTime` and `refetchInterval` suits a new hook, as it does the main query
+  hooks (lines 94-95); `use-host-quiz-players` makes its interval configurable instead.
+- The channel and event names listed (including `player:kicked`) match those in
+  `src/infrastructure/realtime/` (lines 156-170).
+- `fetch` with `cache: 'no-store'` and the `.catch(() => ({}))` error parse is the pattern the
+  existing hooks use (lines 47-57).

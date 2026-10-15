@@ -1,4 +1,5 @@
 ---
+name: architecture-check
 description: Use when reviewing changes for DDD layer violations — checks imports across domain, application, infrastructure and presentation, entities or Prisma types leaking into UI or DTOs, and wrong Prisma imports.
 ---
 # Architecture Check
@@ -149,3 +150,24 @@ yarn test:run    # Ensure nothing broke
 yarn build       # Catch remaining type errors
 yarn lint        # Check import order and style
 ```
+
+## Observed vs assumed
+
+**Observed** — none yet. No run of this skill against the repo has been recorded since it
+moved from `.claude/commands/` (2026-10-15).
+
+**Assumed — attack these first**
+
+- Each `grep -r` in Checks 1-5 prints a line for every import breach under the named directory,
+  so empty output means no breach; a planted `from '@application/x'` in `src/domain/` is caught
+  by Check 1 (lines 27-36).
+- The Quick Full Sweep prints `CLEAN` only when the code is clean; a mistyped or missing path
+  also prints `CLEAN` because of `2>/dev/null ... || echo "CLEAN"` (lines 110-121).
+- Check 2 finds every entity or aggregate import in `src/components/`, `src/hooks/` and
+  `src/app/api/`; the Quick Full Sweep also scans all of `src/app/` (lines 42-50 and 113-114).
+- Check 5 catches every cross-layer relative import; its patterns are `../../domain/`,
+  `../../application/` and `../../..` only (lines 78-80).
+- Check 7 finds a route handler that reads `params` without awaiting it; a handler with
+  `const { id } = params;` has no `params.` text for the grep to match (lines 99-103).
+- Plain `grep -r` over `src/` visits every source file, with no ignore-file filtering (lines
+  27-34).
