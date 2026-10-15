@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Routine Dependency Bumps ✅
+- **2026-10-15** — Six stale Dependabot PRs replaced: react and react-dom 19.3.1 together, tanstack query 5.104.3, tailwind-merge 3.7.0, tw-animate-css 1.4.0, Playwright 1.64.1, `@types/node` `^22` to match CI — [PR #67](https://github.com/Banych/bobrquiz/pull/67) — [ledger](../../.superpowers/sdd/2026-10-15-routine-dep-bumps/progress.md)
+
 ### 2026-10-15: Dev Dependency Security ✅
 - **2026-10-15** — 43 dev-tooling Dependabot alerts cleared: all seven exact `resolutions` pins removed, prisma 7.10.1, vitest 4.1.12, tsx 4.23.15, ESLint group, stale lockfile entries re-resolved (vite 6 → 8); only `braces` left, which has no fixed release — [PR #66](https://github.com/Banych/bobrquiz/pull/66) — [findings](findings/2026-10-15-dev-deps-security.md) · [ledger](../../.superpowers/sdd/2026-10-15-dev-deps-security/progress.md)
 

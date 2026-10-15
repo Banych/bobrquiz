@@ -42,3 +42,5 @@ No findings record: nothing was measured beyond the standard checks; the two Dep
 - Minor 2 (new transitive tree): @tanstack/query-devtools 5.104.3 now declares solid-js, @kobalte/core, @solid-primitives/*, goober and others as dependencies (5.100.9 had none); 49 new lock entries in the diff. The devtools render only when NODE_ENV !== production, through dynamic(..., { ssr: false }) at src/app/providers.tsx:9-14 and :46.
 - Minor 3 (Node drift): local checks ran on Node v24.18.1; CI runs Node 22 and will run lint, unit tests and build on the PR.
 - Reviewer gap closed: all 31 @radix-ui packages with a react peer accept ^19.0 (3 have no react peer).
+
+PR #67 opened with the approved text (user: "approve"); work index line added. Merge and closing #36, #38, #39, #42, #43, #47 wait for the user.
