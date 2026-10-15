@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: E2E Auth Spec Account ✅
+- **2026-10-15** — the auth E2E spec logs in as its own admin (`TEST_AUTH_ADMIN_*`), so its logout no longer revokes the shared admin session; guard against reusing the shared email — [PR #74](https://github.com/Banych/bobrquiz/pull/74) — [ledger](../../.superpowers/sdd/2026-10-15-e2e-auth-account/progress.md) — [findings](findings/2026-10-15-e2e-logout-revokes-admin-session.md)
+
 ### 2026-10-15: Supabase Anonymous Clients ✅
 - **2026-10-15** — realtime and presence clients get their own auth storage keys, no session or token refresh, and one cached instance; no more duplicate GoTrueClient warnings — [PR #73](https://github.com/Banych/bobrquiz/pull/73) — [ledger](../../.superpowers/sdd/2026-10-15-supabase-anon-clients/progress.md) — [E2E logout findings](findings/2026-10-15-e2e-logout-revokes-admin-session.md)
 
