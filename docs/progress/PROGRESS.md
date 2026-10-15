@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Supabase Anonymous Clients ✅
+- **2026-10-15** — realtime and presence clients get their own auth storage keys, no session or token refresh, and one cached instance; no more duplicate GoTrueClient warnings — [PR #73](https://github.com/Banych/bobrquiz/pull/73) — [ledger](../../.superpowers/sdd/2026-10-15-supabase-anon-clients/progress.md) — [E2E logout findings](findings/2026-10-15-e2e-logout-revokes-admin-session.md)
+
 ### 2026-10-15: lucide-react 1.x ✅
 - **2026-10-15** — lucide-react 1.57.0 with no source change; five icons redrawn upstream, icons without a label now aria-hidden — [PR #69](https://github.com/Banych/bobrquiz/pull/69) — [ledger](../../.superpowers/sdd/2026-10-15-lucide-react-1/progress.md)
 
