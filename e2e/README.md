@@ -68,6 +68,7 @@ yarn playwright show-report
 ## Test Structure
 
 - **`auth.setup.ts`** - Global authentication setup (runs first)
+- **`admin-auth.spec.ts`** - Login, logout and redirect tests (own account, `TEST_AUTH_ADMIN_*`)
 - **`host-dashboard.spec.ts`** - Host quiz control panel tests
 - **`player-join.spec.ts`** - Player join flow tests
 - **`admin-question-crud.spec.ts`** - Question CRUD tests (requires auth)
@@ -75,6 +76,7 @@ yarn playwright show-report
 ## Debugging Tips
 
 1. **Auth failures**: Check that `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` are correct and the user exists in Supabase
+   (for `admin-auth.spec.ts`: `TEST_AUTH_ADMIN_EMAIL` and `TEST_AUTH_ADMIN_PASSWORD`; its login tests skip when they are unset)
 2. **Timeout errors**: Increase timeout in `playwright.config.ts` or specific tests
 3. **Flaky tests**: Use `page.waitForURL()`, `page.waitForSelector()`, or `expect().toBeVisible()` to wait for async operations
 4. **View test traces**: After failure, open HTML report and click on failed test to see trace viewer
