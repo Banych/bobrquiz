@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: lucide-react 1.x ✅
+- **2026-10-15** — lucide-react 1.57.0 with no source change; five icons redrawn upstream, icons without a label now aria-hidden — [PR #69](https://github.com/Banych/bobrquiz/pull/69) — [ledger](../../.superpowers/sdd/2026-10-15-lucide-react-1/progress.md)
+
 ### 2026-10-15: TypeScript 6 ✅
 - **2026-10-15** — typescript `~6.0.3` (tilde: typescript-eslint supports <6.1), no tsconfig change — [PR #68](https://github.com/Banych/bobrquiz/pull/68) — [ledger](../../.superpowers/sdd/2026-10-15-typescript-6/progress.md)
 
