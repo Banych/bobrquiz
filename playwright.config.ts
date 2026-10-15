@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
-// Load environment variables from .env file for tests
-dotenv.config();
+// Load test env from .env.local (where the docs put it), then .env; the first file wins and
+// variables already set in the shell win over both
+dotenv.config({ path: ['.env.local', '.env'], quiet: true });
 
 /**
  * Playwright configuration for E2E tests
