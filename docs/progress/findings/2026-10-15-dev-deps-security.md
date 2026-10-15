@@ -5,9 +5,10 @@ Ledger: `.superpowers/sdd/2026-10-15-dev-deps-security/progress.md`.
 
 ## What drove it
 
-Dependabot alerts left open after the Next.js upgrade (PR #65): 43 alerts, 0 critical, 16 high,
-all in development tooling except `source-map-js` (build-time CSS) and `@hono/node-server`. Advisory
-IDs per package are in the ledger, among them:
+Dependabot alerts left open after the Next.js upgrade (PR #65): 43 alerts, all on `yarn.lock`
+(16 high, 24 medium, 3 low, none critical). All are in development tooling except
+`source-map-js` (build-time CSS) and `@hono/node-server`. Advisory IDs per package are in the
+ledger, among them:
 - `hono` (18 advisories) and `@hono/node-server` GHSA-frvp-7c67-39w9, `fast-uri` (7) and `mysql2`
   GHSA-3f6p-5ww8-9rcr: prisma's dev tooling.
 - `vite` CVE-2026-53571 and CVE-2026-53632; `vitest` and `@vitest/mocker` CVE-2026-84373.
@@ -29,7 +30,9 @@ IDs per package are in the ledger, among them:
   - `prisma`, `@prisma/client` and `@prisma/adapter-pg` 7.8.0 → 7.10.1
   - `vitest` 4.1.5 → 4.1.12
   - `tsx` 4.21.0 → 4.23.15 (`esbuild` 0.27 → 0.28.2)
-  - the ESLint group within its ranges, which covers Dependabot PR #61
+  - the ESLint group within its ranges. This supersedes Dependabot PR #61: all five of its packages
+    are now at or above its targets (for example `eslint` 10.12.0 against 10.8.0, and
+    `eslint-config-next` 16.4.1 against 16.2.12).
 - **Stale yarn 1 lockfile entries re-resolved** by deleting them and running `yarn install`:
   - `fast-uri` 3.1.8
   - `source-map-js` 1.2.2
@@ -56,8 +59,8 @@ IDs per package are in the ledger, among them:
 ## Unresolved
 
 - `braces`: wait for an upstream release.
-- The 16 failing E2E tests on master, the intermittent unit test (this branch's verdict run passed; not
-  investigated) and the E2E setup traps listed in the
+- The 16 failing E2E tests on master, the intermittent unit test (1 failure in 15 runs on
+  2026-10-15; this branch's verdict run passed) and the E2E setup traps listed in the
   [Next.js upgrade findings](2026-10-15-next-security-upgrade.md). This record closes that
   record's "Dev-only alerts" item.
 - The seed script (`yarn prisma:seed`, run with `tsx`) was not run, because it writes to the shared
