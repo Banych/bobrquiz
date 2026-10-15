@@ -28,11 +28,14 @@ The same upgrade fixes these:
 ## What broke and how it was fixed
 
 - **A `resolutions` pin kept a vulnerable copy.**
-  - `package.json` pinned `postcss: 8.5.14`. It was added in `ea6bc82` (2026-05-09) to lift
-    Next's bundled `postcss` to a patched version.
+  - `package.json` pinned `postcss: 8.5.14`. It was added in `ea6bc82` (2026-05-09) under "Add
+    yarn resolutions for transitive CVEs". The commit doesn't record why it was exact.
   - Yarn 1 then merged next 16.3.8's exact `postcss@8.5.23` into the 8.5.14 entry, so
     `node_modules/next/node_modules/postcss` stayed at 8.5.14.
   - Fix: the pin is removed. Next 16.3.8 pins a patched version itself.
+- **Lint packages moved with it.** `eslint-config-next` resolved to 16.4.1 within `^16.3.8`, which
+  brings `@next/eslint-plugin-next` 16.4.1 and `typescript-eslint` 8.59.2 → 8.71.2. All are
+  minor bumps, and lint passes.
 - **Stale lockfile entries.** Yarn 1 reuses an existing entry that satisfies a range. The old
   `postcss`, `nanoid` and `baseline-browser-mapping` entries were deleted from `yarn.lock` and
   re-resolved with `yarn install`.
