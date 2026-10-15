@@ -38,12 +38,27 @@ sweeps fixture quizzes older than 30 minutes. The specs move off the shared seed
    sweep only what is old and prefixed, errors carry status and body).
 5. **Quizzes the admin quiz spec creates through the UI get the fixture prefix**, so the sweep
    removes them instead of leaving them in the dev database.
+6. **The sweep reads a quiz's age from its title, not from `createdAt`** (plan check,
+   2026-10-15). `GET /api/admin/quizzes` returns the time of the request as every quiz's
+   `createdAt` (`src/application/use-cases/list-all-quizzes.use-case.ts:22`), so the spec's
+   "`createdAt` more than 30 minutes old" never matches. Fixture titles end in
+   `<label> <Date.now()>-<suffix>`; the sweep parses that number and skips any prefixed title
+   without one. The UI-created admin quiz titles (deviation 5) carry the same timestamp. The
+   fake `createdAt` is a separate item, not fixed here.
+7. **Small signature changes:** `createAdminApi()` takes no argument (`request.newContext` is
+   imported from `@playwright/test`), and titles get a 4-character random suffix after the
+   timestamp so two parallel calls in the same millisecond still differ.
 
 ## Global constraints
 
 - One quiz per test; never share a quiz between tests or files.
 - Fixture quiz titles start with exactly `E2E fixture ` (the sweep matches this prefix).
-- The sweep deletes only prefixed quizzes whose `createdAt` is more than 30 minutes old.
+- The sweep deletes only prefixed quizzes whose title timestamp is more than 30 minutes old
+  (deviation 6); a prefixed title without a parsable timestamp is left alone.
+- `yarn lint` runs Prettier (`printWidth: 80`) and the React hooks rules on `e2e/` too: before
+  the lint step, run `yarn eslint --fix <the files you touched>`, and never name a fixture
+  callback's second parameter `use` or `useX` (the rules-of-hooks rule reports it; call it
+  `provide`).
 - Every admin API call checks the response and throws `<METHOD> <path> failed: <status> <body>`.
 - App code changes: only the one `data-testid` (deviation 2). `yarn test:run` stays green.
 - Run tests through `yarn test:e2e …`; the dev server must run from this worktree at
@@ -55,15 +70,19 @@ sweeps fixture quizzes older than 30 minutes. The specs move off the shared seed
 1. **A test that fails or times out mid-way** must still have its quiz deleted, including an
    Active one (delete refuses Active; the helper resets first). Pinned by Task 1 test
    "deletes an Active quiz".
-2. **A sweep running in another run or on the other machine** must not delete quizzes in use.
-   Pinned by Task 1 test "sweep leaves young quizzes alone".
+2. **A sweep running in another run or on the other machine** must not delete quizzes in use,
+   and must delete the stale ones. Pinned by Task 1 tests "sweep deletes stale prefixed quizzes
+   and keeps fresh ones" and "sweep skips prefixed titles without a timestamp". Two sweeps racing
+   on the same quiz: a 404 from DELETE counts as already gone.
 3. **A failed API call** (bad payload, expired admin session) must fail loudly with status and
    body, not continue with `undefined`, and must not leak a half-built quiz. Pinned by Task 1 test
    "a failed step throws and removes the quiz".
 4. **Two tests in parallel with the same label** must get different titles (rows are found by
    title). Pinned by Task 1 test "titles are unique per call".
-5. **The join rate limit** (10 joins per 60 s per IP) with retries. Not unit-testable; Task 5
-   checks the runs for 429 responses.
+5. **The join rate limit** (10 joins per 60 s per IP) with retries. Not unit-testable; a
+   refused join shows `Too many requests, please slow down.` in the page, never a status in
+   Playwright's output, so Tasks 3 and 5 grep the saved run output and
+   `test-results/**/error-context.md` for `Too many requests`.
 
 ## File structure
 
@@ -146,14 +165,23 @@ export function createTestQuiz(api: APIRequestContext, options: CreateQuizOption
 
 /**
  * GET /api/admin/quizzes/{id}: 404 → return (already gone). Status 'Active' →
- * POST /api/admin/quizzes/{id}/reset. Then DELETE /api/admin/quizzes/{id}.
+ * POST /api/admin/quizzes/{id}/reset. Then DELETE /api/admin/quizzes/{id}; a 404 there also
+ * means already gone (another sweep won the race).
  */
 export function deleteTestQuiz(api: APIRequestContext, quizId: string): Promise<void>;
 
 /**
+ * The creation time encoded in a fixture title: the number in the last ` <digits>` or
+ * ` <digits>-<suffix>` at the end of the title; null when there is none.
+ * 'E2E fixture host 1760000000000-ab12' → 1760000000000; 'E2E fixture host' → null.
+ */
+export function fixtureTimestamp(title: string): number | null;
+
+/**
  * GET /api/admin/quizzes; deletes (deleteTestQuiz) every quiz whose title starts with titlePrefix
- * and whose createdAt is more than olderThanMs before now. Returns the number deleted.
- * Defaults: titlePrefix FIXTURE_TITLE_PREFIX, olderThanMs STALE_FIXTURE_AGE_MS.
+ * and whose fixtureTimestamp is not null and more than olderThanMs before now. Returns the
+ * number deleted. Defaults: titlePrefix FIXTURE_TITLE_PREFIX, olderThanMs STALE_FIXTURE_AGE_MS.
+ * (The list's createdAt is the request time, so it is not used: deviation 6.)
  */
 export function sweepFixtureQuizzes(
   api: APIRequestContext,
@@ -177,8 +205,8 @@ export { expect } from '@playwright/test';
 Facts the implementation relies on (from the spec): create returns 201 `{ id }`; the question body
 is `{ text, type, options?, correctAnswers, points? }`; `GET /api/admin/quizzes/{id}` returns the
 quiz state with `status` ('Pending' | 'Active' | 'Completed') and `joinCode`; the list items carry
-`id`, `title`, `status`, `createdAt` (ISO); delete refuses an Active quiz; reset accepts Active or
-Completed. Every request goes through one private helper that throws
+`id`, `title`, `status` (their `createdAt` is the request time, deviation 6); delete refuses an
+Active quiz; reset accepts Active or Completed. Every request goes through one private helper that throws
 `${method} ${path} failed: ${status} ${body}` on a non-2xx response.
 
 **Config change** (`playwright.config.ts`, `projects`):
@@ -222,6 +250,7 @@ import {
   FIXTURE_TITLE_PREFIX,
   createTestQuiz,
   deleteTestQuiz,
+  fixtureTimestamp,
   sweepFixtureQuizzes,
 } from './support/quiz-fixtures';
 
@@ -315,33 +344,56 @@ test.describe('quiz fixtures', () => {
     ).toEqual([]);
   });
 
-  test('sweep deletes old prefixed quizzes only', async ({ adminApi, createQuiz }) => {
-    const label = uniqueLabel('fixture-sweep');
-    const other = await createQuiz({ label: uniqueLabel('fixture-keep'), questions: [] });
-    await createTestQuiz(adminApi, { label, questions: [] });
-    await createTestQuiz(adminApi, { label, questions: [], start: false });
-
-    const deleted = await sweepFixtureQuizzes(adminApi, {
-      titlePrefix: `${FIXTURE_TITLE_PREFIX}${label}`,
-      olderThanMs: 0,
-    });
-
-    expect(deleted).toBe(2);
-    const response = await adminApi.get(`/api/admin/quizzes/${other.id}`);
-    expect(response.ok()).toBe(true);
+  test('reads the timestamp from a fixture title', () => {
+    expect(fixtureTimestamp('E2E fixture host 1760000000000-ab12')).toBe(1760000000000);
+    expect(fixtureTimestamp('E2E fixture admin-quiz-crud 1760000000000')).toBe(1760000000000);
+    expect(fixtureTimestamp('E2E fixture host')).toBeNull();
+    expect(fixtureTimestamp('E2E fixture host 1760000000000 extra')).toBeNull();
   });
 
-  test('sweep leaves young quizzes alone', async ({ adminApi, createQuiz }) => {
-    const label = uniqueLabel('fixture-young');
-    const quiz = await createQuiz({ label, questions: [] });
+  test('sweep deletes stale prefixed quizzes and keeps fresh ones', async ({
+    adminApi,
+    createQuiz,
+  }) => {
+    const label = uniqueLabel('fixture-sweep');
+    const staleAt = Date.now() - 31 * 60_000;
+    // Created directly so its title carries a timestamp 31 minutes old; if the sweep fails to
+    // delete it, the next run's cleanup project does
+    const created = await adminApi.post('/api/admin/quizzes', {
+      data: { title: `${FIXTURE_TITLE_PREFIX}${label} ${staleAt}-old1`, timePerQuestion: 30 },
+    });
+    expect(created.status()).toBe(201);
+    const stale = (await created.json()) as { id: string };
+    const fresh = await createQuiz({ label, questions: [] });
 
     const deleted = await sweepFixtureQuizzes(adminApi, {
       titlePrefix: `${FIXTURE_TITLE_PREFIX}${label}`,
     });
 
-    expect(deleted).toBe(0);
-    const response = await adminApi.get(`/api/admin/quizzes/${quiz.id}`);
-    expect(response.ok()).toBe(true);
+    expect(deleted).toBe(1);
+    expect((await adminApi.get(`/api/admin/quizzes/${stale.id}`)).status()).toBe(404);
+    expect((await adminApi.get(`/api/admin/quizzes/${fresh.id}`)).ok()).toBe(true);
+  });
+
+  test('sweep skips prefixed titles without a timestamp', async ({ adminApi }) => {
+    const label = uniqueLabel('fixture-untimed');
+    const created = await adminApi.post('/api/admin/quizzes', {
+      data: { title: `${FIXTURE_TITLE_PREFIX}${label} no timestamp`, timePerQuestion: 30 },
+    });
+    expect(created.status()).toBe(201);
+    const quiz = (await created.json()) as { id: string };
+
+    try {
+      const deleted = await sweepFixtureQuizzes(adminApi, {
+        titlePrefix: `${FIXTURE_TITLE_PREFIX}${label}`,
+        olderThanMs: 0,
+      });
+
+      expect(deleted).toBe(0);
+      expect((await adminApi.get(`/api/admin/quizzes/${quiz.id}`)).ok()).toBe(true);
+    } finally {
+      await deleteTestQuiz(adminApi, quiz.id);
+    }
   });
 });
 ```
@@ -357,11 +409,13 @@ Expected: the run fails because `./support/quiz-fixtures` does not exist (module
 - [ ] **Step 4: Run them to see them pass**
 
 Run: `yarn test:e2e e2e/quiz-fixtures.spec.ts --retries=0`
-Expected: `9 passed` (setup `authenticate`, setup `fetch quiz info` — still present until Task 4 —
-cleanup `delete stale fixture quizzes`, and the 7 tests above; if the count differs, report the
-list). The output contains a `[CLEANUP] deleted <n> stale fixture quizzes` line.
+Expected: `11 passed` (setup `authenticate`, setup `fetch quiz info` — still present until
+Task 4; dependency projects ignore the file filter — cleanup `delete stale fixture quizzes`, and
+the 8 tests above; if the count differs, report the list). The output contains a
+`[CLEANUP] deleted <n> stale fixture quizzes` line.
 
-Run: `yarn lint` and `yarn -s tsc --noEmit -p .`
+Run: `yarn eslint --fix e2e/support/quiz-fixtures.ts e2e/quiz-fixtures.spec.ts e2e/stale-quizzes.cleanup.ts playwright.config.ts`,
+then `yarn lint` and `yarn -s tsc --noEmit -p .`
 Expected: exit 0 both (lint warnings only in files this task did not touch).
 
 - [ ] **Step 5: Commit**
@@ -452,8 +506,8 @@ test.describe('Host Dashboard', () => {
       timeout: 5000,
     });
 
-    // Timer started
-    await expect(page.getByRole('timer')).toBeVisible();
+    // Timer running: the timer element shows "Remaining" or "Elapsed", "Timer Paused" otherwise
+    await expect(page.getByRole('timer')).toContainText(/remaining|elapsed/i);
 
     // Controls for an Active quiz
     await expect(
@@ -712,9 +766,10 @@ test.describe('Player Connection Status', () => {
 
     await page.goto(`/quiz/${quiz.id}`);
 
+    // The players query retries twice (1 s, then 2 s) before showing the error
     await expect(
       page.getByText('Failed to load player connection status')
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test('handles quiz not found', async ({ page }) => {
@@ -893,9 +948,13 @@ test.describe('Player Reconnection Flow', () => {
 
 - [ ] **Step 5: Run the player specs**
 
-Run: `yarn test:e2e e2e/player-connection-status.spec.ts e2e/player-reconnection.spec.ts e2e/player-join.spec.ts --retries=0`
-Expected: `15 passed` (2 setup, 1 cleanup, 4 connection-status, 5 reconnection, 3 player-join).
-No `429` in the output (`grep -c 429` on the saved output is 0).
+Run (before the lint step, `yarn eslint --fix` on the files you touched):
+`yarn test:e2e e2e/player-connection-status.spec.ts e2e/player-reconnection.spec.ts e2e/player-join.spec.ts --retries=0 2>&1 | tee <scratch>/task3-e2e.txt`,
+then `command grep -c 'Too many requests' <scratch>/task3-e2e.txt` and
+`command grep -rl 'Too many requests' test-results/ || true`.
+Expected: `15 passed` (2 setup, 1 cleanup, 4 connection-status, 5 reconnection, 3 player-join);
+both greps find nothing (the first prints `0`). Report the counts from the run's own summary
+line, not from the pipe's exit status.
 
 Run: `yarn test:run`
 Expected: exit 0, same counts as master (the `data-testid` changes no unit test).
@@ -972,7 +1031,9 @@ git commit -m "test(e2e): give player specs their own quizzes"
   - `git grep -n -E "getQuizId|getJoinCode|getQuizInfo|quiz-info|TEST_QUIZ_ID|TEST_JOIN_CODE" -- e2e playwright.config.ts .gitignore`
     must print nothing.
 
-- [ ] **Step 4: `e2e/README.md`** — in "Test Structure", replace any `quiz.setup.ts` line with:
+- [ ] **Step 4: `e2e/README.md`** — change line 11 ("All test projects depend on the setup
+  project…") to say the order is `setup` → `cleanup` → `chromium` and chromium uses the saved
+  auth state; in "Test Structure", add:
   - `support/quiz-fixtures.ts` — `createQuiz` fixture: each test that needs a quiz gets its own,
     created through the admin API and deleted after the test (titles start with `E2E fixture `);
   - `stale-quizzes.cleanup.ts` — `cleanup` project: deletes fixture quizzes older than 30
@@ -1007,8 +1068,8 @@ git commit -m "test(e2e): move admin specs to the fixture, drop the shared quiz"
 
 - [ ] Two full `yarn test:e2e` runs back to back (default retries). Expected: 0 failed in both;
   any flaky test is named with its error.
-- [ ] `grep -c ' 429 '` on both outputs and on `.next/dev/logs/next-development.log` lines from
-  the runs: 0.
+- [ ] Each run saved with `2>&1 | tee` to the scratchpad; `Too many requests` appears in neither
+  output nor in `test-results/**/error-context.md` (filter password lines when reading those).
 - [ ] After the runs, `GET /api/admin/quizzes` (through the admin API) lists no quiz whose title
   starts with `E2E fixture ` except ones from a run in progress (report the count).
 - [ ] `yarn test:run`, `yarn lint`, `tsc`: exit 0.
