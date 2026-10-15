@@ -3,10 +3,10 @@ import { createServerClient } from '@supabase/ssr';
 import { isAdminUser } from '@/infrastructure/auth/supabase-auth-client';
 
 /**
- * Middleware to protect admin routes with Supabase Auth.
+ * Proxy (Next 16's name for middleware) to protect admin routes with Supabase Auth.
  * Checks for valid session and verifies user is in admin allowlist.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   console.log('[MIDDLEWARE] Processing request for:', pathname);
