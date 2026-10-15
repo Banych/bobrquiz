@@ -33,3 +33,5 @@ of `tests/load/concurrent-players.js`, which lint warns about)
 - task-reviewer on 5807dd9: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout unchanged.
 - The tsconfig ruling confirmed from source: node_modules/typescript/lib/typescript.js 22397-22411, `doubleAsteriskRegexFragment` uses `[^/.]` per segment ("does not match subdirectories that start with a . character").
 - Minor (no change): the decoy measurements cannot be re-run by a read-only reviewer since the decoy was removed; the static evidence supports them.
+
+PR #70 opened with the approved text (user: "approve"); work index line added. Merge waits for the user.
