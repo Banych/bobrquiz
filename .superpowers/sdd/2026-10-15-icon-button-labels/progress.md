@@ -37,3 +37,5 @@ icon-only controls with no accessible name, on master as well.
 - yarn test:e2e: 16 passed, 16 failed, 2 flaky, 4 did not run (1.7m). Failing list vs master baseline: 0 new, 0 fixed, 16 in both.
 - The 2 flaky tests: admin-question-crud "should create a multiple-choice question" and "should edit a question". Both failed the first attempt at AdminQuizDetailPage.ts:118 (Create Question dialog still open after 5 s; unchanged code) and passed on retry. They ran 4th and 6th against a freshly started dev server with a new .next (cold Turbopack compile); cause not proven.
 - Re-run warm, retries off: `yarn test:e2e e2e/admin-question-crud.spec.ts --retries=0` → 10 passed (11.7s), exit 0, including edit and delete through the new name-based locators.
+
+PR #72 opened with the approved text (user: "approve"); work index line added. Merge waits for the user.
