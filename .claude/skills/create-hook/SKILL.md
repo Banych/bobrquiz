@@ -91,8 +91,8 @@ export const use[Entity] = ({ id, initialData }: Use[Entity]Options) => {
     queryKey,
     queryFn: () => fetch[Entity](id),
     initialData,
-    staleTime: 5_000,      // matches all hooks in the codebase
-    refetchInterval: 5_000, // matches all hooks in the codebase
+    staleTime: 5_000,      // same as use-host-quiz-state and use-player-session
+    refetchInterval: 5_000, // same as use-host-quiz-state and use-player-session
   });
 
   const updateMutation = useMutation({
@@ -196,8 +196,7 @@ Always match the channel/event names used in `src/infrastructure/realtime/`.
 ## Observed vs assumed
 
 **Observed** — none yet. No run of this skill against the repo has been recorded since it
-moved from `.claude/commands/` (2026-10-15). Its paths, scripts and names were checked
-against the code by the review of PR #64; that is a read, not a run.
+moved from `.claude/commands/` (2026-10-15).
 
 **Assumed — attack these first**
 
@@ -205,7 +204,8 @@ against the code by the review of PR #64; that is a read, not a run.
   patterns described (lines 25-26).
 - `useRealtimeClient` is exported from `@hooks/use-realtime-client` and its `subscribe<T>(channel,
   event, handler)` returns an unsubscribe function (lines 120 and 140-147).
-- Every existing hook uses `staleTime: 5_000` and `refetchInterval: 5_000` (lines 94-95).
+- Five seconds for `staleTime` and `refetchInterval` suits a new hook, as it does the main query
+  hooks (lines 94-95); `use-host-quiz-players` makes its interval configurable instead.
 - The channel and event names listed (including `player:kicked`) match those in
   `src/infrastructure/realtime/` (lines 156-170).
 - `fetch` with `cache: 'no-store'` and the `.catch(() => ({}))` error parse is the pattern the

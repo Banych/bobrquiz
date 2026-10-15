@@ -744,7 +744,8 @@ section and keeps a `FINDINGS.md` beside it, per the user-level skill-writing ru
   the rest of their tooling lives.
 - A skill folder can hold supporting files (templates, scripts) next to the procedure.
 - Discovery is unchanged: the commands already appeared in the skill list with their
-  descriptions, and the moved skills appeared there too.
+  descriptions, and the moved skills appeared there too, in the session that made the move
+  (Claude Code 2.1.296, CachyOS, 2026-10-15; recorded in the plan ledger).
 
 ### Rejected
 - Keeping commands (the 2026-10-11 spec's choice): it works, but it splits procedures across two

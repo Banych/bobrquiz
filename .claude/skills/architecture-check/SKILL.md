@@ -154,8 +154,7 @@ yarn lint        # Check import order and style
 ## Observed vs assumed
 
 **Observed** — none yet. No run of this skill against the repo has been recorded since it
-moved from `.claude/commands/` (2026-10-15). Its paths, scripts and names were checked
-against the code by the review of PR #64; that is a read, not a run.
+moved from `.claude/commands/` (2026-10-15).
 
 **Assumed — attack these first**
 

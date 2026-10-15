@@ -34,7 +34,7 @@ File: `src/application/use-cases/[verb-noun].use-case.ts`
 **IMPORTANT:** Use cases in this codebase are **classes** that **throw errors** — NOT functions returning Result objects.
 
 ```typescript
-import { I[Entity]Repository } from '@domain/repositories/I[Entity]Repository';
+import type { I[Entity]Repository } from '@domain/repositories/[entity]-repository';
 
 export class [VerbNoun]UseCase {
   constructor(
@@ -167,7 +167,7 @@ File: `src/tests/application/use-cases/[verb-noun].use-case.test.ts`
 ```typescript
 import { describe, it, expect, beforeEach, vi, type Mocked } from 'vitest';
 import { [VerbNoun]UseCase } from '@application/use-cases/[verb-noun].use-case';
-import type { I[Entity]Repository } from '@domain/repositories/I[Entity]Repository';
+import type { I[Entity]Repository } from '@domain/repositories/[entity]-repository';
 import { [Entity] } from '@domain/entities/[entity]';
 
 const make[Entity] = (): [Entity] => new [Entity]('entity-1', /* valid props */);
@@ -233,15 +233,12 @@ Must pass before considering the use case complete.
 ## Observed vs assumed
 
 **Observed** — none yet. No run of this skill against the repo has been recorded since it
-moved from `.claude/commands/` (2026-10-15). Its paths, scripts and names were checked
-against the code by the review of PR #64; that is a read, not a run.
+moved from `.claude/commands/` (2026-10-15).
 
 **Assumed — attack these first**
 
 - `start-quiz.use-case.ts` and `submit-answer.use-case.ts` exist in `src/application/use-cases/`
   and match the class-with-`execute()` style (lines 26-27).
-- Repository interfaces are imported from `@domain/repositories/I[Entity]Repository` (lines 37
-  and 170).
 - The not-found message `[Entity] with ID ${id} not found` is what the API route's `/not found/i`
   regex maps to 404 (lines 55 and 71).
 - All services are assembled in `getServices()` and `getRepositories()` in
