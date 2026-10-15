@@ -34,6 +34,7 @@ describe('CreateQuizUseCase', () => {
       title: 'Test Quiz',
       timePerQuestion: 30,
       allowSkipping: false,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY',
     });
 
     expect(result).toBe('quiz-123');
@@ -55,12 +56,14 @@ describe('CreateQuizUseCase', () => {
       title: 'Quiz 1',
       timePerQuestion: 30,
       allowSkipping: false,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY',
     });
 
     await createQuizUseCase.execute({
       title: 'Quiz 2',
       timePerQuestion: 30,
       allowSkipping: false,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY',
     });
 
     const calls = vi.mocked(mockQuizRepository.create).mock.calls;
@@ -81,6 +84,7 @@ describe('CreateQuizUseCase', () => {
       title: 'My Quiz',
       timePerQuestion: 45,
       allowSkipping: true,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY',
     });
 
     const createCall = vi.mocked(mockQuizRepository.create).mock.calls[0][0];
@@ -114,6 +118,7 @@ describe('CreateQuizUseCase', () => {
         title: 'Test Quiz',
         timePerQuestion: 30,
         allowSkipping: false,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
       });
       await new Promise((r) => setImmediate(r));
 
@@ -139,6 +144,7 @@ describe('CreateQuizUseCase', () => {
           title: 'Test Quiz',
           timePerQuestion: 30,
           allowSkipping: false,
+          scoringAlgorithm: 'EXPONENTIAL_DECAY',
         })
       ).resolves.not.toThrow();
     });

@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Next.js Security Upgrade ✅
+- **2026-10-15** — next 16.2.6 → 16.3.8 for the open advisories (critical RCE in `next/og` `ImageResponse` was reachable via the dynamic icon routes), postcss pin removed, test type errors fixed — [PR #65](https://github.com/Banych/bobrquiz/pull/65) — [findings](findings/2026-10-15-next-security-upgrade.md) · [ledger](../../.superpowers/sdd/2026-10-15-next-security/progress.md)
+
 ### 2026-10-15: Claude Config and Progress Records ✅
 - **2026-10-15** — One record per piece of work, CLAUDE.md rewritten as project facts, Copilot files and five commands removed, MCP servers moved to user plugins, shared permissions narrowed — [PR #64](https://github.com/Banych/bobrquiz/pull/64) — [design](plans/2026-10-11-claude-config-and-records-design.md) · [plan](plans/2026-10-11-claude-config-and-records-plan.md) · [ledger](../../.superpowers/sdd/2026-10-11-claude-config-and-records-plan/progress.md)
 
