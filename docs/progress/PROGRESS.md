@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Playwright Env From .env.local ✅
+- **2026-10-15** — Playwright loads `.env.local` (then `.env`), so E2E runs no longer need the test accounts exported by hand; shell variables still win — [PR #75](https://github.com/Banych/bobrquiz/pull/75) — [ledger](../../.superpowers/sdd/2026-10-15-playwright-env-local/progress.md)
+
 ### 2026-10-15: E2E Auth Spec Account ✅
 - **2026-10-15** — the auth E2E spec logs in as its own admin (`TEST_AUTH_ADMIN_*`), so its logout no longer revokes the shared admin session; guard against reusing the shared email — [PR #74](https://github.com/Banych/bobrquiz/pull/74) — [ledger](../../.superpowers/sdd/2026-10-15-e2e-auth-account/progress.md) — [findings](findings/2026-10-15-e2e-logout-revokes-admin-session.md)
 
