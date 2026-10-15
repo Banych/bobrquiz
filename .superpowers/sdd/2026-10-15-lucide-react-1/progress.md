@@ -27,3 +27,25 @@ design approved in chat (user: "approve", 2026-10-15) after a throwaway probe in
   the ESLint config ignores. After removing the lucide probe worktree, the TS 6 worktree remains.
 - yarn build: exit 0 (25/25 static pages).
 - yarn audit: braces only, unchanged.
+
+## End-to-end and visual checks
+- Dev server restarted by the user on this branch: curl / /login /icon-192.png → 200.
+- yarn test:e2e: 18 passed, 16 failed, 4 did not run (1.5m). Failing list compared with the master
+  baseline: 0 new, 0 fixed, 16 in both.
+- Glyph diff of the 26 imported names, 0.487.0 (`npm pack`) against 1.57.0 (icon node paths,
+  `key` fields ignored): 5 redrawn — Trash2 (now the alias of `trash`), MonitorPlay, Zap, Upload,
+  Trophy; the other 21 are identical. Rendered side by side at 64px: each keeps its shape; the
+  differences are small path refinements, hard to tell apart at that size.
+- Browser (Playwright MCP): `/` renders Zap, Trophy and QrCode; console 0 errors, 2 warnings
+  (Supabase "Multiple GoTrueClient instances", pre-existing, below).
+
+## Dev server log, observed during this branch's run (out of scope, pre-existing)
+`.next/dev/logs/next-development.log` after the restart and the E2E run, WARN/ERROR grouped:
+- ~298 WARN "Multiple GoTrueClient instances detected in the same browser context" (browser,
+  mirrored by the server). Several Supabase clients share one auth storage key: the auth client
+  (`src/infrastructure/auth/supabase-auth-client.ts`, created per call in the admin layout, login
+  page and storage), plus `createClient` in `src/infrastructure/realtime/presence-tracker.ts:316`
+  and `supabase-realtime-client.ts:235`. This branch changes no source file.
+- 2 ERROR "Login error: AuthApiError: Invalid login credentials" from the login page's
+  console.error: the admin-auth E2E test submits wrong credentials on purpose.
+- 1 WARN: the `middleware` file convention is deprecated in Next 16; rename to `proxy`.
