@@ -37,3 +37,5 @@ Bounded; design approved in chat (user: "approve", 2026-10-15). Source: the dev 
 - Warm-up with curl: / 200, /login 200, /admin 307 → /login?redirect=%2Fadmin, /admin/quizzes 307 → /login?redirect=%2Fadmin%2Fquizzes, /api/admin/quizzes 401, /icon-192.png 200. The proxy guards on the Node runtime as the middleware did on edge.
 - yarn test:e2e: 18 passed, 16 failed, 4 did not run (1.4m). Failing list vs master baseline: 0 new, 0 fixed, 16 in both. admin-auth and admin CRUD specs pass as on master.
 - Dev log: 0 lines matching the middleware deprecation warning before and after the run.
+
+PR #71 opened with the approved text (user: "approve"); work index line added. Merge waits for the user.

@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Middleware to Proxy ✅
+- **2026-10-15** — `src/middleware.ts` → `src/proxy.ts` for Next 16 (Node runtime), first unit tests for the admin guard — [PR #71](https://github.com/Banych/bobrquiz/pull/71) — [ledger](../../.superpowers/sdd/2026-10-15-middleware-to-proxy/progress.md)
+
 ### 2026-10-15: lucide-react 1.x ✅
 - **2026-10-15** — lucide-react 1.57.0 with no source change; five icons redrawn upstream, icons without a label now aria-hidden — [PR #69](https://github.com/Banych/bobrquiz/pull/69) — [ledger](../../.superpowers/sdd/2026-10-15-lucide-react-1/progress.md)
 
