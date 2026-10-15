@@ -211,7 +211,7 @@ To find your values, go to **Supabase Dashboard → Project Settings**:
 
 ### Admin Login Flow
 
-1. **Middleware** (`middleware.ts`) protects `/admin/*` routes
+1. **Proxy** (`src/proxy.ts`) protects `/admin/*` routes
 2. **Check 1**: Must be authenticated (Supabase session cookie exists)
 3. **Check 2**: Email must be in `ADMIN_EMAILS` allowlist
 4. **Redirect**: Unauthenticated users → `/login`, non-admin → 403 Forbidden
