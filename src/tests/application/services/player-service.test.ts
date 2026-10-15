@@ -5,6 +5,7 @@ import { UpdatePlayerStatusUseCase } from '@application/use-cases/update-player-
 import { UpdatePlayerPresenceUseCase } from '@application/use-cases/update-player-presence.use-case';
 import { ListQuizPlayersUseCase } from '@application/use-cases/list-quiz-players.use-case';
 import { GetPlayerSessionUseCase } from '@application/use-cases/get-player-session.use-case';
+import { RemovePlayerUseCase } from '@application/use-cases/remove-player.use-case';
 import { Player, PlayerStatus } from '@domain/entities/player';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
 import type { PlayerDTO } from '@application/dtos/player.dto';
@@ -17,6 +18,7 @@ describe('PlayerService', () => {
   let findPlayerByIdUseCase: Mocked<FindPlayerByIdUseCase>;
   let listQuizPlayersUseCase: Mocked<ListQuizPlayersUseCase>;
   let getPlayerSessionUseCase: Mocked<GetPlayerSessionUseCase>;
+  let removePlayerUseCase: Mocked<RemovePlayerUseCase>;
   let playerService: PlayerService;
 
   beforeEach(() => {
@@ -44,13 +46,18 @@ describe('PlayerService', () => {
       execute: vi.fn(),
     } as unknown as Mocked<GetPlayerSessionUseCase>;
 
+    removePlayerUseCase = {
+      execute: vi.fn(),
+    } as unknown as Mocked<RemovePlayerUseCase>;
+
     playerService = new PlayerService(
       addPlayerUseCase,
       updatePlayerStatusUseCase,
       updatePlayerPresenceUseCase,
       findPlayerByIdUseCase,
       listQuizPlayersUseCase,
-      getPlayerSessionUseCase
+      getPlayerSessionUseCase,
+      removePlayerUseCase
     );
   });
 

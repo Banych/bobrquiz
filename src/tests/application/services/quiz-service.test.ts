@@ -14,6 +14,7 @@ import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
+import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import type { RoundSummaryDTO } from '@application/dtos/round-summary.dto';
 
 type QuizStateDTO = Awaited<ReturnType<GetQuizStateUseCase['execute']>>;
@@ -39,6 +40,7 @@ describe('QuizService', () => {
   let updateQuizUseCase: Mocked<UpdateQuizUseCase>;
   let deleteQuizUseCase: Mocked<DeleteQuizUseCase>;
   let listAllQuizzesUseCase: Mocked<ListAllQuizzesUseCase>;
+  let resetQuizUseCase: Mocked<ResetQuizUseCase>;
   let quizService: QuizService;
 
   beforeEach(() => {
@@ -90,6 +92,10 @@ describe('QuizService', () => {
       execute: vi.fn(),
     } as unknown as Mocked<ListAllQuizzesUseCase>;
 
+    resetQuizUseCase = {
+      execute: vi.fn(),
+    } as unknown as Mocked<ResetQuizUseCase>;
+
     quizService = new QuizService(
       startQuizUseCase,
       endQuizUseCase,
@@ -102,7 +108,8 @@ describe('QuizService', () => {
       createQuizUseCase,
       updateQuizUseCase,
       deleteQuizUseCase,
-      listAllQuizzesUseCase
+      listAllQuizzesUseCase,
+      resetQuizUseCase
     );
   });
 
