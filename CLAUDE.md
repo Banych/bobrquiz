@@ -38,9 +38,10 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
-One exception: `@application/services/factories` is the composition root. It imports
+Two exceptions: `@application/services/factories` is the composition root. It imports
 infrastructure to wire the services, and API routes and server-component pages call its
-`getServices()`.
+`getServices()`. API routes also import the realtime broadcasters
+(`@infrastructure/realtime/broadcast-*`) directly (ADR-024).
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook

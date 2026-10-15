@@ -752,10 +752,39 @@ section and keeps a `FINDINGS.md` beside it, per the user-level skill-writing ru
   mechanisms.
 - Turning `architecture-check` into a read-only agent now: no recorded run shows how it is used
   yet. Revisit once it has been run on real diffs.
+  - 2026-10-15 note: one whole-tree run is now recorded (`.claude/skills/architecture-check/FINDINGS.md`).
+    Its noise was 48 false hits from accepted exceptions, now excluded. The user kept the
+    deferral: still no run on a single diff.
 
 ### References
 - [progress/plans/2026-10-11-claude-config-and-records-design.md](progress/plans/2026-10-11-claude-config-and-records-design.md) – §3
 - `~/.claude/rules/skill-writing.md` – the Observed-vs-assumed and `FINDINGS.md` rule
+
+---
+
+## ADR-024: API Routes Call the Realtime Broadcasters Directly (2026-10-15)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-10-15
+
+### Decision
+API routes may import `@infrastructure/realtime/broadcast-*` and call the broadcaster after the
+service call, alongside `getServices()`. This is the second exception to "Presentation imports
+from `@application/dtos/*` only", next to the `factories` composition root.
+
+### Rationale
+- User ruling (2026-10-15): an accepted pattern, not a violation.
+- It is how every broadcasting route works today: 11 imports across 9 route files, since realtime
+  was integrated (12e4e32, 2025-12-08). A route broadcasts the state it got back from the service
+  (e.g. `quiz/[quizId]/advance`: `advanceToNextQuestion`, then `getQuizState`, then
+  `broadcastQuizState`).
+
+### Rejected
+- Reporting the imports as layer violations in `architecture-check`: they were 11 of the 48 hits
+  on a tree with no real breach.
+
+### References
+- `.claude/skills/architecture-check/FINDINGS.md` – the run that surfaced it
 
 ---
 
