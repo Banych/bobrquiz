@@ -138,3 +138,5 @@ Ruling: fixed I1/I2 in the skill bodies (known-false claims are fixed, not liste
 Fix round 1: f1a4856
 Skills fix round 1 re-review: APPROVED (all findings addressed; its "line citations shifted" note checked and wrong — create-use-case lines 55/71 still hold the not-found message). Tamper check clean (HEAD f1a4856).
 Skills follow-up: complete (5ccf723..f1a4856); merging into chore/claude-config-and-records for PR #64
+Merged claude-skills-from-commands into chore/claude-config-and-records (5482d78). Verification on the merge: yarn lint exit 0 (5 pre-existing warnings); link check — the three "new" entries are the same code-block false positives the baseline holds under .claude/commands/, moved with the files.
+Finding 2026-10-15: yarn test:run on 5482d78 failed once (Test Files 1 failed | 64 passed | 1 skipped; Tests 1 failed | 465 passed | 1 skipped; exit 1), then passed 13 runs in a row (466 passed | 1 skipped, exit 0). The failing test was not captured (output was filtered). No src/tests/e2e change on this branch, so a pre-existing flaky test; name unknown — capture the full output on the next failure.
