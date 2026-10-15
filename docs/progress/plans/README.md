@@ -1,113 +1,37 @@
-# Planning Files
+# Plans and specs
 
-This directory contains **structured planning documents** for features, phases, and major work items. Each plan serves as a living document that tracks implementation progress, technical decisions, and success criteria.
+Every piece of work that adds or changes behaviour, and every non-trivial fix, leaves exactly
+these records:
 
-## Purpose
+| Artifact | Path | Written when |
+|---|---|---|
+| Spec | `docs/progress/plans/YYYY-MM-DD-<topic>-design.md` | end of brainstorming, approved before planning |
+| Plan | `docs/progress/plans/YYYY-MM-DD-<topic>-plan.md` | writing-plans, checked by plan-checker before task 1 |
+| Ledger | `.superpowers/sdd/<plan>/progress.md` and `*-report.md`, added with `git add -f` | during execution; diffs and briefs stay uncommitted |
+| Index line | `docs/progress/PROGRESS.md` → "Work index" | when the PR merges |
+| ADR | `docs/DECISION-LOG.md` | only for a decision that outlives the work |
 
-Planning files serve as:
-- **Scrum board replacements** - Track tasks, steps, and completion status
-- **Technical specifications** - Document architecture decisions and implementation details
-- **Progress tracking** - Check off steps as they're completed during implementation
-- **Knowledge transfer** - Future developers can see what was built and why
-- **Retrospective material** - Review estimates vs. actuals for process improvement
+No session files and no `dev-notes.md` lines; both are frozen history.
 
-## File Naming Convention
+## Plan shape
 
-```
-YYYY-MM-DD-phase-or-feature-name.md
-```
+- A plan carries interfaces (the names and types neighbouring tasks rely on), the test code,
+  and the exact acceptance commands with their expected output.
+- Full implementation code goes only in tasks routed to `implementer-transcribe`. Every other
+  task describes what to build and how it is checked, not the code.
+- Each task names its agent:
+  - `implementer-transcribe`: haiku; the plan carries the complete code.
+  - `implementer`: sonnet; integration or judgment.
+  - `implementer-capable`: opus; any capable-tier file listed in `CLAUDE.md`.
+- The test verdict command is `yarn test:run`. It is run by the main session, and its counts
+  go in the ledger.
 
-**Examples:**
-- `2026-01-31-r5-phase4.3-player-reconnection.md`
-- `2026-02-15-admin-bulk-import-questions.md`
-- `2026-03-01-r6-phase1-leaderboard-persistence.md`
+## Status line
 
-## Template Structure
+Specs and plans carry one status line under the title:
+- `Approved design, pending implementation plan`
+- `In progress`
+- `✅ Complete — PR #NN`
+- `Superseded by <path>`
 
-Each planning file should include:
-
-1. **Header** - Date, status, assignee, time estimate, dependencies
-2. **Overview** - Current state, what's missing, context
-3. **Goals** - High-level objectives (with checkboxes)
-4. **Implementation Steps** - Detailed tasks with checkboxes for each step
-5. **Technical Decisions** - Architecture choices and trade-offs
-6. **Success Criteria** - Functional and non-functional requirements
-7. **Files Changed** - New files and modifications
-8. **Time Estimates** - Breakdown by task
-9. **Notes & Observations** - Implementation notes as work progresses
-10. **Completion Checklist** - Final quality gates
-
-## Status Values
-
-Use emoji prefixes for quick visual scanning:
-
-- 📋 **Planning** - Not started, still designing
-- 🚧 **In Progress** - Active implementation
-- ✅ **Complete** - All steps done, tests passing
-- ⏸️ **Paused** - Blocked or deprioritized
-- ❌ **Cancelled** - Won't implement
-
-## Workflow
-
-### 1. Planning Phase
-- Create planning file with all steps outlined
-- Set status to 📋 Planning
-- Review with team (if applicable)
-- Add to session file as reference
-
-### 2. Implementation Phase
-- Update status to 🚧 In Progress
-- Check off steps as you complete them
-- Add notes/observations in real-time
-- Update time estimates if scope changes
-
-### 3. Completion Phase
-- Check final completion checklist
-- Update status to ✅ Complete
-- Document actual time vs. estimate
-- Write summary in session file
-
-### 4. Retrospective
-- Review what went well/poorly
-- Update planning template if needed
-- Archive completed plans (keep for reference)
-
-## Integration with Session Files
-
-Session files (`docs/progress/sessions/*.md`) should:
-- Reference planning files at the top
-- Summarize what was completed each day
-- Link to specific plan steps when documenting decisions
-- Avoid duplicating entire plans (keep them DRY)
-
-**Example session file header:**
-```markdown
-# R5 Phase 4.3 Implementation Session
-
-**Date:** 2026-01-31
-**Plan:** [Phase 4.3 Player Reconnection](../plans/2026-01-31-r5-phase4.3-player-reconnection.md)
-**Status:** 🚧 In Progress (Step 3/7)
-
-## Today's Progress
-- [x] Step 1: useNetworkStatus hook ✅
-- [x] Step 2: Update usePresence with retry logic ✅
-- [ ] Step 3: useReconnection hook (in progress)
-```
-
-## Best Practices
-
-1. **Create plans BEFORE coding** - Avoid "plan as you go" unless it's a small bug fix
-2. **Keep steps atomic** - Each checkbox should be completable in <1 hour
-3. **Update in real-time** - Check off steps immediately, don't batch at end of day
-4. **Document decisions** - Capture WHY, not just WHAT (future you will thank you)
-5. **Be honest with estimates** - Track actual time to improve future planning
-6. **Link to related docs** - Reference ADRs, architecture docs, prior sessions
-
-## Examples
-
-See existing planning files in this directory:
-- [2026-01-31-r5-phase4.3-player-reconnection.md](2026-01-31-r5-phase4.3-player-reconnection.md)
-
----
-
-**Note:** This system replaces ad-hoc "I'll just start coding" with structured planning. It's designed to work with the iterative development approach documented in `.github/copilot-instructions.md`.
+Update it in the commit that changes it.
