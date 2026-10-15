@@ -289,14 +289,31 @@ const getClientEnv = () => {
   return { url, anonKey } as const;
 };
 
+/**
+ * auth-js counts GoTrueClient instances per storage key and warns
+ * ("Multiple GoTrueClient instances detected") from the second one on.
+ * supabase-js's default key is the one the @supabase/ssr auth client uses,
+ * so this anonymous client gets a key of its own (distinct from the
+ * realtime client's too).
+ */
+const PRESENCE_ANON_STORAGE_KEY = 'bobrquiz-presence-anon';
+
 let cachedTracker: IPresenceTracker | null = null;
 
 /**
  * Creates or returns a cached presence tracker instance.
  * Uses Supabase Presence API when credentials are available,
  * otherwise returns a no-op tracker.
+ *
+ * On the server it returns an uncached no-op tracker: the module-level
+ * cache would otherwise share one Supabase client across SSR requests, and
+ * presence is only ever used from client effects.
  */
 export const getPresenceTracker = (): IPresenceTracker => {
+  if (typeof window === 'undefined') {
+    return new NoopPresenceTracker();
+  }
+
   if (cachedTracker) {
     return cachedTracker;
   }
@@ -316,7 +333,9 @@ export const getPresenceTracker = (): IPresenceTracker => {
   const client = createClient(url, anonKey, {
     auth: {
       persistSession: false,
+      autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: PRESENCE_ANON_STORAGE_KEY,
     },
     realtime: {
       params: {

@@ -222,7 +222,16 @@ const getClientEnv = () => {
   return { url, anonKey } as const;
 };
 
-export const createSupabaseRealtimeClient = (): RealtimeClient | null => {
+/**
+ * auth-js counts GoTrueClient instances per storage key and warns
+ * ("Multiple GoTrueClient instances detected") from the second one on.
+ * supabase-js's default key is the one the @supabase/ssr auth client uses,
+ * so this anonymous client gets a key of its own (distinct from the
+ * presence client's too).
+ */
+const REALTIME_ANON_STORAGE_KEY = 'bobrquiz-realtime-anon';
+
+const createSupabaseRealtimeClient = (): RealtimeClient | null => {
   const { url, anonKey } = getClientEnv();
 
   if (!url || !anonKey) {
@@ -235,7 +244,9 @@ export const createSupabaseRealtimeClient = (): RealtimeClient | null => {
   const client = createClient(url, anonKey, {
     auth: {
       persistSession: false,
+      autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: REALTIME_ANON_STORAGE_KEY,
     },
     realtime: {
       params: {
@@ -245,4 +256,40 @@ export const createSupabaseRealtimeClient = (): RealtimeClient | null => {
   });
 
   return new SupabaseRealtimeClient(client);
+};
+
+let cachedClient: RealtimeClient | null = null;
+let resolved = false;
+
+/**
+ * Creates or returns the cached realtime client, so React Strict Mode's
+ * double-invoked initializers and remounts share one Supabase client.
+ * Returns null when the Supabase env vars are missing; that result is
+ * cached too, so the missing-env warning is logged once.
+ *
+ * On the server it returns null without creating or caching anything: the
+ * module-level cache would otherwise share one Supabase client across SSR
+ * requests, and realtime is only ever used from client effects.
+ */
+export const getSupabaseRealtimeClient = (): RealtimeClient | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (!resolved) {
+    cachedClient = createSupabaseRealtimeClient();
+    resolved = true;
+  }
+
+  return cachedClient;
+};
+
+/**
+ * Resets the cached client, including a cached missing-env null (useful for
+ * testing).
+ */
+export const resetSupabaseRealtimeClient = (): void => {
+  cachedClient?.disconnect();
+  cachedClient = null;
+  resolved = false;
 };

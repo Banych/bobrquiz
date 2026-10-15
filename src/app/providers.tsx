@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { RealtimeClientProvider } from '@hooks/use-realtime-client';
@@ -14,7 +14,7 @@ const ReactQueryDevtools = dynamic(
   { ssr: false }
 );
 import { createNoopRealtimeClient } from '@infrastructure/realtime/noop-realtime-client';
-import { createSupabaseRealtimeClient } from '@infrastructure/realtime/supabase-realtime-client';
+import { getSupabaseRealtimeClient } from '@infrastructure/realtime/supabase-realtime-client';
 import { getPresenceTracker } from '@infrastructure/realtime/presence-tracker';
 
 const createQueryClient = () =>
@@ -34,9 +34,9 @@ const createQueryClient = () =>
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   const [presenceTracker] = useState(getPresenceTracker);
-  const realtimeClient = useMemo(() => {
-    return createSupabaseRealtimeClient() ?? createNoopRealtimeClient();
-  }, []);
+  const [realtimeClient] = useState(
+    () => getSupabaseRealtimeClient() ?? createNoopRealtimeClient()
+  );
 
   return (
     <PresenceTrackerProvider tracker={presenceTracker}>
