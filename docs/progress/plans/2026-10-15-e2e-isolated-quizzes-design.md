@@ -1,7 +1,7 @@
 # E2E isolated quizzes — design
 
 **Date:** 2026-10-15
-**Status:** Approved design, pending implementation plan
+**Status:** In progress
 **Branch:** `test/e2e-isolated-quizzes` (from `origin/master` at eddd33f)
 
 ## Why
