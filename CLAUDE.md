@@ -191,7 +191,7 @@ repeated here.
 ## Debugging order
 
 Find the layer first: API 500 (application/infrastructure), stale UI (realtime or TanStack Query),
-401 or redirect loops (`src/middleware.ts`), constraint errors (schema).
+401 or redirect loops (`src/proxy.ts`), constraint errors (schema).
 
 1. `mcp__supabase__get_logs(service: 'postgres')`: DB errors.
 2. `mcp__supabase__get_logs(service: 'auth')` or `'realtime'`: auth and channel errors.
