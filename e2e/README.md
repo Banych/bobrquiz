@@ -19,9 +19,19 @@ Add these to your `.env.local` file:
 TEST_ADMIN_EMAIL="your-test-user@example.com"
 TEST_ADMIN_PASSWORD="your-test-password"
 
-# Make sure test user is in admin allowlist
-ADMIN_EMAILS="your-test-user@example.com,other-admin@example.com"
+# Second admin, used only by admin-auth.spec.ts (must also be in ADMIN_EMAILS)
+TEST_AUTH_ADMIN_EMAIL="your-auth-test-user@example.com"
+TEST_AUTH_ADMIN_PASSWORD="your-auth-test-password"
+
+# Make sure both test users are in admin allowlist
+ADMIN_EMAILS="your-test-user@example.com,your-auth-test-user@example.com"
 ```
+
+`admin-auth.spec.ts` has its own account because its logout test signs out every session of
+the user it logs in as (Supabase's `signOut()` defaults to the global scope). With the shared
+account it would revoke the session the other admin tests use, and they would land on `/login`.
+The spec refuses to run if the two emails are the same; without the auth-spec variables its
+login tests are skipped.
 
 ## Creating a Test User
 
@@ -32,7 +42,9 @@ ADMIN_EMAILS="your-test-user@example.com,other-admin@example.com"
    - Use email/password auth
    - Set email to match `TEST_ADMIN_EMAIL`
    - Set password to match `TEST_ADMIN_PASSWORD`
-3. Add the email to `ADMIN_EMAILS` in `.env.local`
+   - Turn on "Auto Confirm User"
+3. Repeat for the auth-spec user (`TEST_AUTH_ADMIN_EMAIL`, `TEST_AUTH_ADMIN_PASSWORD`)
+4. Add both emails to `ADMIN_EMAILS` in `.env.local` and restart the dev server
 
 ## Running Tests
 

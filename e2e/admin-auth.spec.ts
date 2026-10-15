@@ -5,9 +5,21 @@ const authTest = test.extend({
   storageState: { cookies: [], origins: [] },
 });
 
-const adminEmail = process.env.TEST_ADMIN_EMAIL;
-const adminPassword = process.env.TEST_ADMIN_PASSWORD;
+// A separate admin account: the logout test signs out every session of the user it
+// logs in as (supabase signOut defaults to scope 'global'), which would revoke the
+// session auth.setup.ts saves for the other admin tests if both used one account.
+const adminEmail = process.env.TEST_AUTH_ADMIN_EMAIL;
+const adminPassword = process.env.TEST_AUTH_ADMIN_PASSWORD;
 const hasCredentials = !!(adminEmail && adminPassword);
+
+if (
+  adminEmail &&
+  adminEmail.toLowerCase() === process.env.TEST_ADMIN_EMAIL?.toLowerCase()
+) {
+  throw new Error(
+    'TEST_AUTH_ADMIN_EMAIL must differ from TEST_ADMIN_EMAIL: the logout test would revoke the shared admin session.'
+  );
+}
 
 authTest.describe.configure({ mode: 'serial' });
 
@@ -46,7 +58,7 @@ authTest.describe('Admin Authentication', () => {
     async ({ page }) => {
       authTest.skip(
         !hasCredentials,
-        'TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD env vars required'
+        'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
       );
 
       await page.goto('http://localhost:3000/login');
@@ -78,7 +90,7 @@ authTest.describe('Admin Authentication', () => {
   authTest('should logout and redirect to login page', async ({ page }) => {
     authTest.skip(
       !hasCredentials,
-      'TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD env vars required'
+      'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
     );
 
     // Login first
@@ -103,7 +115,7 @@ authTest.describe('Admin Authentication', () => {
     async ({ page }) => {
       authTest.skip(
         !hasCredentials,
-        'TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD env vars required'
+        'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
       );
 
       // Try to access /admin/quizzes without being logged in
@@ -130,7 +142,7 @@ authTest.describe('Admin Authentication', () => {
   authTest('should persist session across page reloads', async ({ page }) => {
     authTest.skip(
       !hasCredentials,
-      'TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD env vars required'
+      'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
     );
 
     // Login
