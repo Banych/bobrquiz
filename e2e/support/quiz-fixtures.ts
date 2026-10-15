@@ -110,7 +110,13 @@ export async function createTestQuiz(
     }
     return { id, joinCode, title };
   } catch (error) {
-    await deleteTestQuiz(api, id).catch(() => undefined);
+    await deleteTestQuiz(api, id).catch((cleanupError: unknown) => {
+      console.warn(
+        `[FIXTURE] cleanup of quiz ${id} failed: ${
+          cleanupError instanceof Error ? cleanupError.message : cleanupError
+        }`
+      );
+    });
     throw error;
   }
 }
@@ -124,7 +130,8 @@ export async function deleteTestQuiz(
   if (state.status === 404) return;
   const { status } = JSON.parse(state.body) as { status?: string };
   if (status === 'Active') {
-    await call(api, 'POST', `${path}/reset`);
+    const reset = await call(api, 'POST', `${path}/reset`, undefined, [404]);
+    if (reset.status === 404) return;
   }
   await call(api, 'DELETE', path, undefined, [404]);
 }
@@ -174,8 +181,21 @@ export const test = base.extend<
       created.push(quiz);
       return quiz;
     });
+    const errors: unknown[] = [];
     for (const quiz of created) {
-      await deleteTestQuiz(adminApi, quiz.id);
+      try {
+        await deleteTestQuiz(adminApi, quiz.id);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length > 0) {
+      throw new AggregateError(
+        errors,
+        `fixture teardown failed for ${errors.length} quiz(zes): ${errors
+          .map((error) => (error instanceof Error ? error.message : error))
+          .join('; ')}`
+      );
     }
   },
 });
