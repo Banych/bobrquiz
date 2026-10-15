@@ -129,12 +129,12 @@ export class AdminQuizDetailPage {
       correctIndexes?: number[];
     }
   ) {
-    // Find and click edit button (first icon-only button in the row)
+    // Find and click the row's edit button
     const row = this.getQuestionRow(currentText);
-    const editButton = row
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first();
+    const editButton = row.getByRole('button', {
+      name: 'Edit question',
+      exact: true,
+    });
     await editButton.click();
 
     // Wait for edit dialog and verify pre-filled data
@@ -191,12 +191,12 @@ export class AdminQuizDetailPage {
    * Delete a question
    */
   async deleteQuestion(questionText: string) {
-    // Find and click delete button (second icon-only button in the row)
+    // Find and click the row's delete button
     const row = this.getQuestionRow(questionText);
-    const deleteButton = row
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .nth(1);
+    const deleteButton = row.getByRole('button', {
+      name: 'Delete question',
+      exact: true,
+    });
     await deleteButton.click();
 
     // Confirm deletion

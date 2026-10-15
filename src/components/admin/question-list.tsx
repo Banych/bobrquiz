@@ -126,6 +126,7 @@ export function QuestionList({ quizId }: QuestionListProps) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Edit question"
                       onClick={() => setEditingQuestion(question)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -133,6 +134,7 @@ export function QuestionList({ quizId }: QuestionListProps) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Delete question"
                       onClick={() => setDeletingQuestion(question)}
                     >
                       <Trash2 className="h-4 w-4" />
