@@ -35,3 +35,10 @@ security branches.
 - yarn test:e2e: 18 passed, 16 failed, 4 did not run (1.3m). Failing list compared with the master baseline (trailing whitespace stripped): 0 new, 0 fixed, 16 in both.
 
 No findings record: nothing was measured beyond the standard checks; the two Dependabot problems (#43 splitting react from react-dom, #47 targeting Node 25) are rulings above.
+
+## Review
+- task-reviewer on 79e8b93: APPROVED, 0 critical, 0 important, 3 minor. Tamper check: HEAD and clean status unchanged, ledger dir listing unchanged.
+- Minor 1 (lint list): the 5 warnings are no-html-link-for-pages at src/app/(admin)/admin/layout.tsx:49, no-img-element at src/components/host/live/question-view.tsx:69, and import/no-anonymous-default-export in three tests/load/*.js files. The branch changes no file under src/ or e2e/ and no ESLint package, so none can be new.
+- Minor 2 (new transitive tree): @tanstack/query-devtools 5.104.3 now declares solid-js, @kobalte/core, @solid-primitives/*, goober and others as dependencies (5.100.9 had none); 49 new lock entries in the diff. The devtools render only when NODE_ENV !== production, through dynamic(..., { ssr: false }) at src/app/providers.tsx:9-14 and :46.
+- Minor 3 (Node drift): local checks ran on Node v24.18.1; CI runs Node 22 and will run lint, unit tests and build on the PR.
+- Reviewer gap closed: all 31 @radix-ui packages with a react peer accept ^19.0 (3 have no react peer).
