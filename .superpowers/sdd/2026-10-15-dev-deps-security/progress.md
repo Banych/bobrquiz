@@ -40,3 +40,4 @@ Review (task-reviewer, sonnet) on 1e32be5: APPROVED, 0 critical, 0 important. Ta
 Minor 1 fixed: alert totals evidenced by gh api repos/Banych/bobrquiz/dependabot/alerts?state=open (2026-10-15, master): 43 total, all yarn.lock; high 16, medium 24, low 3.
 Unevidenced PR #61 claim checked: gh pr view 61 targets @eslint/eslintrc 3.3.6, eslint 10.8.0, eslint-config-next 16.2.12, eslint-plugin-prettier 5.5.6, eslint-plugin-react-refresh 0.5.3; lock at HEAD has 3.3.7, 10.12.0, 16.4.1, 5.5.7, 0.5.7. Record now says it supersedes #61.
 Minor 3 fixed: flaky-test line carries the 1-in-15 count. Minors 4 and 5 need no change (intermediate ledger state; yarn 1 dev flag).
+PR #66 opened with the approved text (user: "approve"); work index line added to docs/progress/PROGRESS.md. Merge waits for the user.
