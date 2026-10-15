@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Middleware to Proxy ✅
+- **2026-10-15** — `src/middleware.ts` → `src/proxy.ts` for Next 16 (Node runtime), first unit tests for the admin guard — [PR #71](https://github.com/Banych/bobrquiz/pull/71) — [ledger](../../.superpowers/sdd/2026-10-15-middleware-to-proxy/progress.md)
+
 ### 2026-10-15: Ignore Agent Worktrees ✅
 - **2026-10-15** — git and ESLint ignore `.claude/worktrees/`; no tsconfig change (TypeScript skips dot-directories) — [PR #70](https://github.com/Banych/bobrquiz/pull/70) — [ledger](../../.superpowers/sdd/2026-10-15-ignore-worktrees/progress.md)
 
