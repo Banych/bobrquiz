@@ -58,7 +58,10 @@ TO authenticated
 USING (bucket_id = 'quiz-media');
 ```
 
-**Note**: These allow any authenticated user; admin middleware gates actual access to admin-only routes.
+**Warning**: These allow any authenticated user to upload or delete, through the Storage API
+directly. The admin check only guards the app's own pages and routes. They are safe only while
+signups stay disabled in the Supabase project and every account is an admin. See
+[the 2026-10-15 findings](../progress/findings/2026-10-15-storage-policies-any-user.md).
 
 ### 3. Verify Bucket Configuration
 

@@ -188,6 +188,9 @@ repeated here.
 2. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
 3. `yarn test` enters watch mode in an interactive terminal (it runs once without a TTY); use
    `yarn test:run` for verdicts.
+4. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
+   any authenticated user upload and delete, and only admin accounts exist
+   (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
 
 ## Debugging order
 

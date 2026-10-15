@@ -208,8 +208,8 @@ Runs are named by their ledger: `.superpowers/sdd/2026-10-15-architecture-check-
 - Infrastructure imports in the presentation layer are checked in `src/app/api/` only. Outside
   it, 8 lines in 6 files import `@infrastructure/` today (`src/app/providers.tsx`, three admin
   components using `@infrastructure/storage/supabase-storage`, `src/hooks/use-presence.tsx`,
-  `src/hooks/use-realtime-client.tsx`). No check reports them, and nobody has ruled whether they
-  are violations (2026-10-15).
+  `src/hooks/use-realtime-client.tsx`). No check reports them yet. Ruled violations (2026-10-15),
+  except `providers.tsx` as the browser's composition root; the code fix extends the checks.
 - `--exclude-dir=generated` skips only the Prisma client; it would also skip any other
   directory named `generated` under `src/` (none exists today).
 - No run on a single diff yet (the case ADR-023 waits for before an agent is considered).
