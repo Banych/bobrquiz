@@ -27,6 +27,15 @@ textbox at question 1 (multiple choice), and "disable Lock Question after lockin
 re-enabled while the parallel "advance" test moved the same quiz on. Each run also adds one
 "E2E-Setup-…" player to the quiz, and the reconnection tests add five more.
 
+> **Correction (2026-10-15, plan check and root-cause investigation):** the "disable Lock Question
+> after locking" failure is not caused by the shared quiz. The lock is never saved
+> (`prisma-quiz.repository.ts:144-171` writes no Question, `prisma-question-mapper.ts:20-39` drops
+> `answersLockedAt`), so Lock re-enables after every refetch, on an isolated quiz too. Fixed on its
+> own branch, `fix/persist-answer-lock` (user's choice, option B); the two lock tests here pass
+> only once that is merged. Likewise "createdAt more than 30 minutes old" in Design 3 cannot work:
+> the quiz list returns the request time as `createdAt`; the plan's sweep reads the age from the
+> fixture title instead (plan, deviation 6).
+
 **2. Tests behind the UI (4 tests; the host-dashboard one is also among the 12).**
 - `host-dashboard.spec.ts:74`: `getByText(/\d{2}:\d{2}/)` matches two elements.
 - `player-connection-status.spec.ts:121`: `getByText('Connected')` also matches the newer
