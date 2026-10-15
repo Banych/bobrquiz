@@ -152,12 +152,25 @@ export async function sweepFixtureQuizzes(
   const cutoff = Date.now() - olderThanMs;
 
   let deleted = 0;
+  const errors: string[] = [];
   for (const quiz of quizzes) {
     if (!quiz.title.startsWith(titlePrefix)) continue;
     const createdAt = fixtureTimestamp(quiz.title);
     if (createdAt === null || createdAt >= cutoff) continue;
-    await deleteTestQuiz(api, quiz.id);
-    deleted += 1;
+    try {
+      await deleteTestQuiz(api, quiz.id);
+      deleted += 1;
+    } catch (error) {
+      errors.push(
+        `${quiz.id}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(
+      errors.map((message) => new Error(message)),
+      `fixture sweep failed to delete ${errors.length} quiz(zes) (${deleted} deleted): ${errors.join('; ')}`
+    );
   }
   return deleted;
 }
