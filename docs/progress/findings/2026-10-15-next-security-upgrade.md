@@ -71,6 +71,7 @@ The 16 E2E tests that fail on master too:
 - `playwright.config.ts` loads `.env` only (`dotenv.config()`). The `TEST_ADMIN_EMAIL` and
   `TEST_ADMIN_PASSWORD` credentials live in `.env.local`, so auth setup fails unless they are
   exported into the environment.
+  (Fixed 2026-10-15, `fix/playwright-env-local`: the config now loads `.env.local`, then `.env`.)
 - A Playwright update needs `yarn playwright install chromium` (it downloads into
   `~/.cache/ms-playwright` with no sudo). Without it, every test fails at browser launch.
 - A fresh worktree needs `yarn prisma:generate` before `yarn dev`. Otherwise every API route
