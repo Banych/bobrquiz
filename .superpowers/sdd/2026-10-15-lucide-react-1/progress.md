@@ -61,3 +61,5 @@ design approved in chat (user: "approve", 2026-10-15) after a throwaway probe in
   image-upload.tsx:178-185 (remove image), question-list.tsx:127-139 (edit and delete),
   admin/quizzes/[quizId]/page.tsx:55-57 (back link). all-questions-view, quiz-list, media-library
   and the dialog close button have names.
+
+PR #69 opened with the approved text (user: "approve"); work index line added. Merge waits for the user.
