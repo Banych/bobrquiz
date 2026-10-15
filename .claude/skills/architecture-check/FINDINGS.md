@@ -43,6 +43,12 @@ deliberate.
 **Change:** none yet. Listed under Assumed; whether these are violations or accepted patterns
 waits for the user's call.
 
+2026-10-15 note: ruled. All 8 are violations, to be fixed in code: the realtime interfaces move
+to the application layer and the admin storage calls move behind API routes. `providers.tsx`
+stays an exception as the browser's composition root. The checks get extended in that work.
+Checking the storage side found the policies open to any signed-in user
+(`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
+
 ## 2026-10-15 — 48 hits on a clean tree, all accepted exceptions
 
 **Ran:** architecture-check, by hand, Checks 1-7 against bobrquiz at 039249c (whole `src/`)
