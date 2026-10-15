@@ -28,3 +28,8 @@ of `tests/load/concurrent-players.js`, which lint warns about)
   exit 1, 2 problems (1 error, 1 warning), the warning on the decoy's `concurrent-players.js:35`.
   `tsc` with the old tsconfig: exit 0, decoy not checked (see ruling).
 - Decoy and temporary configs removed afterwards.
+
+## Review
+- task-reviewer on 5807dd9: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout unchanged.
+- The tsconfig ruling confirmed from source: node_modules/typescript/lib/typescript.js 22397-22411, `doubleAsteriskRegexFragment` uses `[^/.]` per segment ("does not match subdirectories that start with a . character").
+- Minor (no change): the decoy measurements cannot be re-run by a read-only reviewer since the decoy was removed; the static evidence supports them.
