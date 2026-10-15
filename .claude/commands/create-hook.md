@@ -158,10 +158,11 @@ Channel names:
   player:{quizId}:{playerId}        — player-specific events
 
 Event names (entity:action format):
-  state:update     — full state replacement
-  answer:ack       — acknowledgement with result
-  player:update    — player property change
-  question:locked  — question locked notification
+  state:update       — full state replacement
+  answer:ack         — acknowledgement with result
+  player:update      — player property change
+  player:kicked      — player removed by the host
+  question:locked    — question locked notification
   leaderboard:update — leaderboard changed
 ```
 

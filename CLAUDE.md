@@ -39,7 +39,8 @@ Presentation   → imports from @application/dtos/* only (never entities, never 
 ```
 
 One exception: `@application/services/factories` is the composition root. It imports
-infrastructure to wire the services, and API routes call its `getServices()`.
+infrastructure to wire the services, and API routes and server-component pages call its
+`getServices()`.
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook

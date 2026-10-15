@@ -110,7 +110,8 @@ We use `@prisma/adapter-pg` for Vercel Edge compatibility. See **ARCHITECTURE.md
 Supabase Realtime broadcasts quiz updates. TanStack Query caches are manually updated by event handlers. See **ARCHITECTURE.md** → **Data Flow** → **Realtime Event Path**.
 
 ### Iterative Test Development
-Write E2E tests by first manually exploring UI via Playwright MCP, then automating based on observations. See **PROGRESS.md** and **progress/sessions/2025-12-20-admin-question-crud-rewrite.md**.
+Write E2E tests by first manually exploring UI via Playwright MCP, then automating based on observations. See **PROGRESS.md**, and the historical
+**progress/sessions/2025-12-20-admin-question-crud-rewrite.md** for a worked example.
 
 ---
 
