@@ -498,6 +498,35 @@ describe('getSupabaseRealtimeClient', () => {
       expect(getSupabaseRealtimeClient()).toBeNull();
       expect(supabaseMocks.createClient).not.toHaveBeenCalled();
     });
+
+    it('resolves the missing-env case once and does not warn again on later calls', () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      try {
+        expect(getSupabaseRealtimeClient()).toBeNull();
+        expect(getSupabaseRealtimeClient()).toBeNull();
+
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(supabaseMocks.createClient).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('resolves the env again after reset', () => {
+      vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+      expect(getSupabaseRealtimeClient()).toBeNull();
+
+      resetSupabaseRealtimeClient();
+      vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key');
+
+      expect(getSupabaseRealtimeClient()).toBeInstanceOf(
+        SupabaseRealtimeClient
+      );
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('on the server', () => {

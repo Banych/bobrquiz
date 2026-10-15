@@ -259,11 +259,13 @@ const createSupabaseRealtimeClient = (): RealtimeClient | null => {
 };
 
 let cachedClient: RealtimeClient | null = null;
+let resolved = false;
 
 /**
  * Creates or returns the cached realtime client, so React Strict Mode's
  * double-invoked initializers and remounts share one Supabase client.
- * Returns null when the Supabase env vars are missing.
+ * Returns null when the Supabase env vars are missing; that result is
+ * cached too, so the missing-env warning is logged once.
  *
  * On the server it returns null without creating or caching anything: the
  * module-level cache would otherwise share one Supabase client across SSR
@@ -274,20 +276,20 @@ export const getSupabaseRealtimeClient = (): RealtimeClient | null => {
     return null;
   }
 
-  if (cachedClient) {
-    return cachedClient;
+  if (!resolved) {
+    cachedClient = createSupabaseRealtimeClient();
+    resolved = true;
   }
 
-  cachedClient = createSupabaseRealtimeClient();
   return cachedClient;
 };
 
 /**
- * Resets the cached client (useful for testing).
+ * Resets the cached client, including a cached missing-env null (useful for
+ * testing).
  */
 export const resetSupabaseRealtimeClient = (): void => {
-  if (cachedClient) {
-    cachedClient.disconnect();
-    cachedClient = null;
-  }
+  cachedClient?.disconnect();
+  cachedClient = null;
+  resolved = false;
 };
