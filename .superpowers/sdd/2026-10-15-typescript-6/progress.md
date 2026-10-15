@@ -36,3 +36,5 @@ after a throwaway probe in the same worktree.
 ## Review
 - task-reviewer on 14b1564: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout, and the ledger listing, unchanged.
 - Minor fixed: tsconfck added to the compatibility list (above). Minor 2 (test, lint, build counts not re-run by the reviewer): read-only brief; the counts come from this session's runs.
+
+PR #68 opened with the approved text (user: "approve"); work index line added. Merge waits for the user.
