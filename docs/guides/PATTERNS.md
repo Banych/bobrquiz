@@ -7,11 +7,11 @@ components in full, see [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md).
 
 ## Authentication
 
-**Supabase Auth** manages user sessions via Next.js middleware.
+**Supabase Auth** manages user sessions via the Next.js proxy (`src/proxy.ts`, Next 16's name for middleware).
 
 ### Session management
 
-- Middleware in `src/middleware.ts` verifies the JWT and protects the admin routes (`/admin` pages and `/api/admin` endpoints)
+- The proxy verifies the JWT and protects the admin routes (`/admin` pages and `/api/admin` endpoints)
 - Redirect unauthenticated users to login; check the admin allowlist for route access
 
 ### Auth patterns
@@ -55,7 +55,7 @@ See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for realtime subscription pat
   - `400` for validation errors (zod parse failures)
   - `429` for rate-limited requests
   - `500` for unexpected errors (inspect via MCP: `mcp__supabase__get_logs(service: 'api')`)
-  - `403` is returned by `src/middleware.ts` for non-admin users on admin routes, not by the routes themselves
+  - `403` is returned by `src/proxy.ts` for non-admin users on admin routes, not by the routes themselves
 - Return a JSON error response with `{ error: string }` structure
 
 ### Client-side error handling

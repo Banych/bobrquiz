@@ -211,6 +211,7 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
                         type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={`Remove option ${index + 1}`}
                         onClick={() => removeOption(index)}
                       >
                         <X className="h-4 w-4" />

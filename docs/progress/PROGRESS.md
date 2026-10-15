@@ -25,6 +25,15 @@ Find work by date:
 ### 2026-10-15: Supabase Anonymous Clients ✅
 - **2026-10-15** — realtime and presence clients get their own auth storage keys, no session or token refresh, and one cached instance; no more duplicate GoTrueClient warnings — [PR #73](https://github.com/Banych/bobrquiz/pull/73) — [ledger](../../.superpowers/sdd/2026-10-15-supabase-anon-clients/progress.md) — [E2E logout findings](findings/2026-10-15-e2e-logout-revokes-admin-session.md)
 
+### 2026-10-15: Icon Button Labels ✅
+- **2026-10-15** — aria-labels on five icon-only admin controls; E2E page object finds them by name — [PR #72](https://github.com/Banych/bobrquiz/pull/72) — [ledger](../../.superpowers/sdd/2026-10-15-icon-button-labels/progress.md)
+
+### 2026-10-15: Middleware to Proxy ✅
+- **2026-10-15** — `src/middleware.ts` → `src/proxy.ts` for Next 16 (Node runtime), first unit tests for the admin guard — [PR #71](https://github.com/Banych/bobrquiz/pull/71) — [ledger](../../.superpowers/sdd/2026-10-15-middleware-to-proxy/progress.md)
+
+### 2026-10-15: Ignore Agent Worktrees ✅
+- **2026-10-15** — git and ESLint ignore `.claude/worktrees/`; no tsconfig change (TypeScript skips dot-directories) — [PR #70](https://github.com/Banych/bobrquiz/pull/70) — [ledger](../../.superpowers/sdd/2026-10-15-ignore-worktrees/progress.md)
+
 ### 2026-10-15: lucide-react 1.x ✅
 - **2026-10-15** — lucide-react 1.57.0 with no source change; five icons redrawn upstream, icons without a label now aria-hidden — [PR #69](https://github.com/Banych/bobrquiz/pull/69) — [ledger](../../.superpowers/sdd/2026-10-15-lucide-react-1/progress.md)
 

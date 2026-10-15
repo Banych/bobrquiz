@@ -52,7 +52,7 @@ export default function QuizDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/quizzes">
+          <Link href="/admin/quizzes" aria-label="Back to quizzes">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
