@@ -98,6 +98,45 @@ describe('proxy', () => {
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });
 
+  it('reads request cookies and forwards refreshed session cookies', async () => {
+    type Cookie = { name: string; value: string; options?: { path?: string } };
+    type ClientOptions = {
+      cookies: {
+        getAll: () => Cookie[];
+        setAll: (cookies: Cookie[]) => void;
+      };
+    };
+    let seenCookies: Cookie[] = [];
+    createServerClientMock.mockImplementation(
+      (_url: string, _key: string, options: ClientOptions) => ({
+        auth: {
+          getUser: async () => {
+            seenCookies = options.cookies.getAll();
+            options.cookies.setAll([
+              {
+                name: 'sb-session',
+                value: 'refreshed',
+                options: { path: '/' },
+              },
+            ]);
+            return { data: { user: { email: 'admin@example.com' } } };
+          },
+        },
+      })
+    );
+    isAdminUserMock.mockReturnValue(true);
+    const request = makeRequest('/admin/quizzes');
+    request.cookies.set('sb-session', 'stale');
+
+    const response = await proxy(request);
+
+    expect(seenCookies).toEqual([
+      expect.objectContaining({ name: 'sb-session', value: 'stale' }),
+    ]);
+    expect(response.status).toBe(200);
+    expect(response.cookies.get('sb-session')?.value).toBe('refreshed');
+  });
+
   it('redirects an admin page to login when getUser throws', async () => {
     getUserMock.mockRejectedValue(new Error('boom'));
 
