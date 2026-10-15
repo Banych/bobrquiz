@@ -18,6 +18,9 @@
 /playwright/.auth/
 /playwright/.quiz-info.json
 
+# agent worktrees (Claude Code)
+/.claude/worktrees/
+
 # next.js
 /.next/
 /out/
