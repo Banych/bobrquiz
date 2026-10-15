@@ -31,6 +31,12 @@ export default defineConfig({
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
     },
+    // Deletes fixture quizzes left by crashed runs (older than 30 minutes)
+    {
+      name: 'cleanup',
+      testMatch: /.*\.cleanup\.ts/,
+      dependencies: ['setup'],
+    },
     // Authenticated tests - use saved auth state
     {
       name: 'chromium',
@@ -38,7 +44,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
       },
-      dependencies: ['setup'],
+      dependencies: ['cleanup'],
     },
   ],
 
