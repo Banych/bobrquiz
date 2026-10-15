@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
@@ -66,7 +66,10 @@ export const usePlayerSession = ({
   const realtimeClient = useRealtimeClient();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const queryKey = playerSessionQueryKey(quizId, playerId);
+  const queryKey = useMemo(
+    () => playerSessionQueryKey(quizId, playerId),
+    [quizId, playerId]
+  );
   const quizChannelName = `quiz:${quizId}`;
   const playerChannelName = `player:${quizId}:${playerId}`;
 

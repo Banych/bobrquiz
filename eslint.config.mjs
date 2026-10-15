@@ -11,6 +11,7 @@ const eslintConfig = [
       'out/**/*',
       'src/infrastructure/database/prisma/generated/**/*',
       'playwright-report/**/*',
+      '.superpowers/**/*',
     ],
   },
   ...eslintConfigNext,
