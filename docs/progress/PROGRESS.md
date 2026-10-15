@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Claude Config and Progress Records ✅
+- **2026-10-15** — One record per piece of work, CLAUDE.md rewritten as project facts, Copilot files and five commands removed, MCP servers moved to user plugins, shared permissions narrowed — [PR #64](https://github.com/Banych/bobrquiz/pull/64) — [design](plans/2026-10-11-claude-config-and-records-design.md) · [plan](plans/2026-10-11-claude-config-and-records-plan.md) · [ledger](../../.superpowers/sdd/2026-10-11-claude-config-and-records-plan/progress.md)
+
 ### 2026-08-01: Realtime Broadcast-Listener Leak Fix ✅
 - **Focus**: `SupabaseRealtimeClient` was silently stacking a new real `channel.on()` broadcast binding every time a consuming hook's effect re-ran, since `@supabase/realtime-js` exposes no public `channel.off()` to detach one. Found live-testing the "too many connections (~200)" production incident — one player tab left open during a live question accumulated ~180 stacked `answer:ack` handlers over ~5 minutes, each firing a real DB round-trip per broadcast.
 - **Deliverables**: rewrote `SupabaseRealtimeClient`'s internal tracking to bind exactly one real listener per `(channel, event)` pair, fanning out to a handler `Set` (class now exported for direct testing); memoized `usePlayerSession`'s query key so its realtime effects stop tearing down/rebuilding every second during an active countdown.

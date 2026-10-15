@@ -1,7 +1,7 @@
 # Claude config and progress records — design
 
 **Date:** 2026-10-11
-**Status:** Approved design, pending implementation plan
+**Status:** ✅ Complete — PR #64
 **Branch:** `chore/claude-config-and-records` (from `origin/master` at 6a28b02)
 
 ## Why

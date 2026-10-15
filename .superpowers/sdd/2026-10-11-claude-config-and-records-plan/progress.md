@@ -122,3 +122,5 @@ Fix round 2 re-review (task-reviewer, 488fb29..95c54e0): APPROVED, no findings; 
 Branch passes: complete (whole-branch review + 2 fix rounds, 4 fix commits b106a2a..95c54e0)
 Ruling: the three final-*.md review reports are committed with the ledger alongside progress.md and task-*-report.md — they hold the branch-pass findings the ruling table cites; diffs, briefs, link files and check-links.mjs stay uncommitted — cost if wrong: ~250 lines in git
 Task 7 Step 8: ledger force-added (progress.md, task-1..6-report.md, final-whole-branch-review.md, final-fixwave-rereview.md, final-fixwave-round2-rereview.md)
+Task 7 Step 10: PR text approved by the user 2026-10-15; pushed and opened PR #64 (https://github.com/Banych/bobrquiz/pull/64) with the exact approved body; merge-ready commit sets spec + plan status "✅ Complete — PR #64" and adds the PROGRESS Work index line (links verified unfiltered). Merge waits for the user.
+Finding (git 2.55.0, 2026-10-15): with /.superpowers/ ignored, `git add <tracked ledger file>` stages it but prints the ignored-path hint and exits 1, breaking an `&& git commit` chain; `git add -f` (as the CLAUDE.md records row says) avoids it.
