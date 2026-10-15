@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-15: Storage Policies Open to Any Signed-In User ✅
+- **2026-10-15** — both Supabase projects let any authenticated session upload and delete quiz media; signups turned off in both (every account is an admin), docs corrected, policy fix planned with the admin media API — [PR #77](https://github.com/Banych/bobrquiz/pull/77) — [findings](findings/2026-10-15-storage-policies-any-user.md)
+
 ### 2026-10-15: Architecture Check False Hits ✅
 - **2026-10-15** — `architecture-check` skips its accepted exceptions (composition root, broadcaster imports in API routes, generated Prisma client) and no longer prints CLEAN for a path it never searched; ADR-024 accepts the broadcaster imports — [PR #76](https://github.com/Banych/bobrquiz/pull/76) — [ledger](../../.superpowers/sdd/2026-10-15-architecture-check-false-hits/progress.md)
 
