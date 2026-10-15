@@ -2,7 +2,7 @@ import type {
   RealtimeClient,
   RealtimeEventHandler,
 } from '@infrastructure/realtime/realtime-client';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 /**
  * Test implementation of SupabaseRealtimeClient's channel tracking logic.
@@ -379,5 +379,145 @@ describe('SupabaseRealtimeClient (real class)', () => {
     channel.emit('answer:ack', { answerId: 'a1' });
     expect(ackHandler).toHaveBeenCalledTimes(1);
     expect(stateHandler).not.toHaveBeenCalled();
+  });
+});
+
+import {
+  getSupabaseRealtimeClient,
+  resetSupabaseRealtimeClient,
+} from '@infrastructure/realtime/supabase-realtime-client';
+import {
+  getPresenceTracker,
+  resetPresenceTracker,
+} from '@infrastructure/realtime/presence-tracker';
+
+/**
+ * The factory tests below mock only the `createClient` boundary: each call
+ * returns a fresh fake client so instance identity shows whether the getter
+ * cached it. vi.mock is hoisted above the imports, so the real-class tests
+ * above (which build their own fake clients) are unaffected.
+ */
+const supabaseMocks = vi.hoisted(() => ({
+  createClient: vi.fn(),
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: supabaseMocks.createClient,
+}));
+
+const TEST_SUPABASE_URL = 'https://abcdefghijkl.supabase.co';
+// supabase-js's default storage key for that URL; the @supabase/ssr browser
+// client (admin auth) registers its GoTrueClient under it.
+const DEFAULT_AUTH_STORAGE_KEY = 'sb-abcdefghijkl-auth-token';
+
+describe('getSupabaseRealtimeClient', () => {
+  beforeEach(() => {
+    supabaseMocks.createClient.mockReset();
+    supabaseMocks.createClient.mockImplementation(() => ({
+      channel: vi.fn(),
+      removeAllChannels: vi.fn(),
+    }));
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', TEST_SUPABASE_URL);
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key');
+    resetSupabaseRealtimeClient();
+    resetPresenceTracker();
+  });
+
+  afterEach(() => {
+    resetSupabaseRealtimeClient();
+    resetPresenceTracker();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  describe('in the browser', () => {
+    beforeEach(() => {
+      vi.stubGlobal('window', {});
+    });
+
+    it('returns the same instance on repeated calls and creates one Supabase client', () => {
+      const first = getSupabaseRealtimeClient();
+      const second = getSupabaseRealtimeClient();
+
+      expect(first).toBeInstanceOf(SupabaseRealtimeClient);
+      expect(second).toBe(first);
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(1);
+    });
+
+    it('creates a fresh instance after reset', () => {
+      const first = getSupabaseRealtimeClient();
+      resetSupabaseRealtimeClient();
+      const second = getSupabaseRealtimeClient();
+
+      expect(second).not.toBe(first);
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(2);
+    });
+
+    it('creates an anonymous client under its own storage key with no token refresh', () => {
+      getSupabaseRealtimeClient();
+
+      expect(supabaseMocks.createClient).toHaveBeenCalledWith(
+        TEST_SUPABASE_URL,
+        'test-anon-key',
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'bobrquiz-realtime-anon',
+          },
+          realtime: {
+            params: {
+              eventsPerSecond: 3,
+            },
+          },
+        }
+      );
+    });
+
+    it('uses a storage key distinct from the presence client and the default auth key', () => {
+      getSupabaseRealtimeClient();
+      getPresenceTracker();
+
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(2);
+      const storageKeys = supabaseMocks.createClient.mock.calls.map(
+        (call) => (call[2] as { auth: { storageKey?: string } }).auth.storageKey
+      );
+
+      for (const storageKey of storageKeys) {
+        expect(storageKey).toEqual(expect.any(String));
+        expect(storageKey).not.toBe(DEFAULT_AUTH_STORAGE_KEY);
+        expect(storageKey).not.toMatch(/^sb-.*-auth-token$/);
+      }
+      expect(new Set(storageKeys).size).toBe(2);
+    });
+
+    it('returns null without creating a client when env vars are missing', () => {
+      vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+
+      expect(getSupabaseRealtimeClient()).toBeNull();
+      expect(supabaseMocks.createClient).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('on the server', () => {
+    it('returns null and creates no Supabase client', () => {
+      expect(typeof window).toBe('undefined');
+
+      expect(getSupabaseRealtimeClient()).toBeNull();
+      expect(getSupabaseRealtimeClient()).toBeNull();
+      expect(supabaseMocks.createClient).not.toHaveBeenCalled();
+    });
+
+    it('does not cache the server result for a later browser call', () => {
+      expect(getSupabaseRealtimeClient()).toBeNull();
+
+      vi.stubGlobal('window', {});
+
+      expect(getSupabaseRealtimeClient()).toBeInstanceOf(
+        SupabaseRealtimeClient
+      );
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(1);
+    });
   });
 });

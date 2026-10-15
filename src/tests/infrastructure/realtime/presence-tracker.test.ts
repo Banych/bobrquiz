@@ -404,3 +404,102 @@ describe('SupabasePresenceTracker', () => {
     expect(channel.unsubscribe).not.toHaveBeenCalled();
   });
 });
+
+import {
+  getPresenceTracker,
+  resetPresenceTracker,
+} from '@infrastructure/realtime/presence-tracker';
+
+/**
+ * The factory tests below mock only the `createClient` boundary. vi.mock is
+ * hoisted above the imports; the real-class tests above build their own
+ * fake clients and never call createClient.
+ */
+const supabaseMocks = vi.hoisted(() => ({
+  createClient: vi.fn(),
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: supabaseMocks.createClient,
+}));
+
+const TEST_SUPABASE_URL = 'https://abcdefghijkl.supabase.co';
+
+describe('getPresenceTracker', () => {
+  beforeEach(() => {
+    supabaseMocks.createClient.mockReset();
+    supabaseMocks.createClient.mockImplementation(() => ({
+      channel: vi.fn(),
+    }));
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', TEST_SUPABASE_URL);
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key');
+    resetPresenceTracker();
+  });
+
+  afterEach(() => {
+    resetPresenceTracker();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  describe('in the browser', () => {
+    beforeEach(() => {
+      vi.stubGlobal('window', {});
+    });
+
+    it('returns the same instance on repeated calls and creates one Supabase client', () => {
+      const first = getPresenceTracker();
+      const second = getPresenceTracker();
+
+      expect(first).toBeInstanceOf(SupabasePresenceTracker);
+      expect(second).toBe(first);
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(1);
+    });
+
+    it('creates an anonymous client under its own storage key with no token refresh', () => {
+      getPresenceTracker();
+
+      expect(supabaseMocks.createClient).toHaveBeenCalledWith(
+        TEST_SUPABASE_URL,
+        'test-anon-key',
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'bobrquiz-presence-anon',
+          },
+          realtime: {
+            params: {
+              eventsPerSecond: 10,
+            },
+          },
+        }
+      );
+    });
+  });
+
+  describe('on the server', () => {
+    it('returns a no-op tracker and creates no Supabase client', () => {
+      expect(typeof window).toBe('undefined');
+
+      const tracker = getPresenceTracker();
+
+      expect(tracker).not.toBeInstanceOf(SupabasePresenceTracker);
+      expect(tracker.subscribe('quiz-1', 'player-1', {})).toEqual(
+        expect.any(Function)
+      );
+      expect(tracker.getPresenceState('quiz-1')).toEqual({});
+      expect(supabaseMocks.createClient).not.toHaveBeenCalled();
+    });
+
+    it('does not cache the server result for a later browser call', () => {
+      getPresenceTracker();
+
+      vi.stubGlobal('window', {});
+
+      expect(getPresenceTracker()).toBeInstanceOf(SupabasePresenceTracker);
+      expect(supabaseMocks.createClient).toHaveBeenCalledTimes(1);
+    });
+  });
+});
