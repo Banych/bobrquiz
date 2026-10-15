@@ -727,6 +727,37 @@ Each piece of work leaves a spec, a plan, a committed ledger (`progress.md` and 
 
 ---
 
+## ADR-023: Project Procedures Live as Skills, Not Commands (2026-10-15)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-10-15
+**Supersedes**: the "keep as commands" rows in §3 of the 2026-10-11 Claude config spec
+
+### Decision
+Repeatable procedures for this repo (scaffolding, migrations, layer checks, product review) are
+skills in `.claude/skills/<name>/SKILL.md`, each with a `name:` and a "Use when …"
+`description:`. `.claude/commands/` is not used. Each skill ends with an "Observed vs assumed"
+section and keeps a `FINDINGS.md` beside it, per the user-level skill-writing rule.
+
+### Rationale
+- The user's preference (2026-10-15): commands are the older mechanism, and skills are where
+  the rest of their tooling lives.
+- A skill folder can hold supporting files (templates, scripts) next to the procedure.
+- Discovery is unchanged: the commands already appeared in the skill list with their
+  descriptions, and the moved skills appeared there too.
+
+### Rejected
+- Keeping commands (the 2026-10-11 spec's choice): it works, but it splits procedures across two
+  mechanisms.
+- Turning `architecture-check` into a read-only agent now: no recorded run shows how it is used
+  yet. Revisit once it has been run on real diffs.
+
+### References
+- [progress/plans/2026-10-11-claude-config-and-records-design.md](progress/plans/2026-10-11-claude-config-and-records-design.md) – §3
+- `~/.claude/rules/skill-writing.md` – the Observed-vs-assumed and `FINDINGS.md` rule
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)
