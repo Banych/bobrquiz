@@ -4249,10 +4249,10 @@ lru.min@^1.1.4:
   resolved "https://registry.yarnpkg.com/lru.min/-/lru.min-1.1.5.tgz#bd32483f4e342261d0eb011b06d2219e6b5ef818"
   integrity sha512-5J9ysMYUpYIg9RF2vJpy9SinEmSviFSe0GyPpCQ4L5QSkLAgeLXlTAOu2ZwWUU5m+0SBl6gUU1R1ZQB3aKypfA==
 
-lucide-react@^0.487.0:
-  version "0.487.0"
-  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.487.0.tgz#c18a463404e8ef106d46a7c9cceddf9fc8b9ff6b"
-  integrity sha512-aKqhOQ+YmFnwq8dWgGjOuLc8V1R9/c/yOd+zDY4+ohsR2Jo05lSGc3WsstYPIzcTpeosN7LoCkLReUUITvaIvw==
+lucide-react@^1.57.0:
+  version "1.57.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-1.57.0.tgz#63f1bdd182a8e92ff87b4fb329dad4c6158be139"
+  integrity sha512-bXFZEucYhAzLD62Jse76AbTR6LiSLTn3Tqir2f1n8rZrWAdLodYy7jnRZSPIT89dRLk/IseMOUWG82wJtTyTTw==
 
 magic-string@^0.30.21:
   version "0.30.21"
