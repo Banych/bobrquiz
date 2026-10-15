@@ -17,7 +17,10 @@ after a throwaway probe in the same worktree.
 
 ## Compatibility (probe, node_modules peerDependencies)
 - next 16.3.8, vitest 4.1.12: no typescript peer. eslint-config-next 16.4.1: `>=3.3.1`.
-  prisma 7.10.1: `>=5.4.0` (optional). vite-tsconfig-paths 6.1.1: vite only.
+  prisma 7.10.1: `>=5.4.0` (optional). vite-tsconfig-paths 6.1.1: vite only, but its dependency
+  tsconfck 3.1.5 peers `typescript ^5.0.0` (optional) and calls `parseNative` when typescript is
+  installed. It parses tsconfig.json under 6.0.3 (reviewer probe: 15 compilerOptions plus paths),
+  and `yarn test:run`, which loads it through vitest.config.ts, passes.
 
 ## Verification (2026-10-15, CachyOS, Node v24.18.1, in the worktree)
 - `npx tsc -v`: Version 6.0.3. yarn.lock: `typescript@~6.0.3` → 6.0.3, single entry.
@@ -29,3 +32,7 @@ after a throwaway probe in the same worktree.
   NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY. The worktree has no .env.local, and
   `src/lib/env-validation.ts` throws during page-data collection without them; compile and
   TypeScript steps pass before that point.
+
+## Review
+- task-reviewer on 14b1564: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout, and the ledger listing, unchanged.
+- Minor fixed: tsconfck added to the compatibility list (above). Minor 2 (test, lint, build counts not re-run by the reviewer): read-only brief; the counts come from this session's runs.
