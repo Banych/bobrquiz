@@ -15,7 +15,7 @@ Example: `/create-entity Category`
 ## What Gets Created
 
 1. `src/domain/entities/[entity-name].ts` — entity class
-2. `src/domain/repositories/I[EntityName]Repository.ts` — repository interface
+2. `src/domain/repositories/[entity-name]-repository.ts` — repository interface
 3. `src/tests/domain/entities/[entity-name].test.ts` — test file
 
 ## Step 1: Read Existing Entities First
@@ -98,7 +98,7 @@ export class [EntityName] {
 
 ## Step 3: Create Repository Interface
 
-File: `src/domain/repositories/I[EntityName]Repository.ts`
+File: `src/domain/repositories/[entity-name]-repository.ts`
 
 ```typescript
 import { [EntityName] } from '@domain/entities/[entity-name]';
@@ -166,7 +166,7 @@ describe('[EntityName]', () => {
 ## Step 5: Run Tests
 
 ```bash
-yarn test src/tests/domain/entities/[entity-name].test.ts
+yarn test:run src/tests/domain/entities/[entity-name].test.ts
 ```
 
 Must pass before moving to Application layer.
@@ -180,4 +180,4 @@ Must pass before moving to Application layer.
 - [ ] All methods are **synchronous** (no async/await in domain)
 - [ ] Repository interface uses `null` (not `undefined`) for missing entities
 - [ ] Tests: creation + each invariant, each command (success + wrong state)
-- [ ] `yarn test src/tests/domain/` passes
+- [ ] `yarn test:run src/tests/domain/` passes

@@ -79,7 +79,7 @@ If the schema change reflects a domain concept:
 
 ### 7. Verify
 ```bash
-yarn test
+yarn test:run
 yarn build
 ```
 

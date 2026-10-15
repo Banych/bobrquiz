@@ -13,7 +13,7 @@ yarn build                # Production build (prebuild runs prisma:generate)
 yarn lint                 # ESLint (Prettier runs as an ESLint rule); yarn lint:fix to auto-fix
 yarn test:run             # Unit tests once: the verdict command, use it for any reported result
 yarn test:run src/tests/domain/entities/quiz.test.ts   # One file (or a name pattern)
-yarn test                 # Vitest watch mode (never exits; not for verdicts)
+yarn test                 # Vitest; watch mode in an interactive terminal, not for verdicts
 yarn test:e2e             # Playwright (e2e/); also test:e2e:ui and test:e2e:debug
 yarn prisma:generate      # Regenerate the client; required after schema changes
 yarn prisma:migrate       # Create/apply migrations; prisma:seed and seed:demo seed data
@@ -38,6 +38,9 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
+One exception: `@application/services/factories` is the composition root. It imports
+infrastructure to wire the services, and API routes call its `getServices()`.
+
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook
 that carries it uses that type. Components import DTOs, never entities.
@@ -50,8 +53,8 @@ Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/
 ## Prisma v7 setup (non-standard)
 
 1. Schema: `src/infrastructure/database/prisma/schema.prisma`.
-2. Generated client (git-ignored): import `@infrastructure/database/prisma/generated-client`,
-   never `@prisma/client`.
+2. The client is generated into `./generated/client` (git-ignored); import it through
+   `@infrastructure/database/prisma/generated-client`, never `@prisma/client`.
 3. The client needs the driver adapter:
    ```typescript
    import { PrismaPg } from '@prisma/adapter-pg';
@@ -130,7 +133,8 @@ TanStack Query hooks: the key is a const tuple factory (`hostQuizQueryKey(quizId
 `(await response.json().catch(() => ({}))) as { error?: string }` and throw
 `new Error(error ?? 'Unable to load …')`.
 
-Repositories: always `upsert` (no separate create/update); batches go through `$transaction`;
+Repositories: `save()` upserts in the player and question repositories (new repositories follow
+that); the quiz aggregate uses separate `create`/`update`. Batches go through `$transaction`;
 nullable columns default with `??` (`record.score ?? 0`), never `undefined`.
 
 Types: no `any`; use domain or DTO types, or `unknown` plus a type guard when a type truly can't
@@ -180,7 +184,8 @@ repeated here.
 
 1. Route `params` is a Promise: `await params` in handlers before reading it.
 2. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
-3. `yarn test` is watch mode and never exits; use `yarn test:run`.
+3. `yarn test` enters watch mode in an interactive terminal (it runs once without a TTY); use
+   `yarn test:run` for verdicts.
 
 ## Debugging order
 
@@ -201,6 +206,7 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 - Tests: stale mocks (reset in `beforeEach`), mock return shapes match what the code under test
   expects.
 - MCP: `supabase` is in `.mcp.json` (authenticate with `/mcp`); playwright, github: user plugins.
+  The user-level `plugin:supabase:supabase` is not scoped to this project; use the project entry.
 
 ## Working rules
 
