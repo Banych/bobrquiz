@@ -26,3 +26,9 @@ Bounded; design approved in chat (user: "approve", 2026-10-15). Source: the dev 
   build output lists `ƒ Proxy (Middleware)` and no deprecation line.
 - Controller: `yarn test:run src/tests/proxy.test.ts` Test Files 1 passed (1), Tests 9 passed (9).
 - Dev server and E2E: pending.
+
+## Review
+- task-reviewer on 61da978: APPROVED, 0 critical, 0 important. Tamper check: HEAD and status of the worktree and the main checkout unchanged.
+- Runtime (reviewer, node_modules/next 16.3.8): build/entries.js:231-233 runs a proxy file on the server (Node) only; the old middleware had no runtime export, so it ran on edge. dist/docs/.../proxy.md:255: "Proxy defaults to using the Node.js runtime. The runtime config option is not available". The proxy imports only next/server, @supabase/ssr and isAdminUser (reads process.env.ADMIN_EMAILS), so the edge → Node switch changes no behaviour here.
+- Minor 1 fixed in this round: new test "reads request cookies and forwards refreshed session cookies" (commit after 61da978). 10/10 pass; mutating src/proxy.ts to drop `supabaseResponse.cookies.set` fails exactly that test (1 failed | 9 passed), restored.
+- Minors 2-3 (no change): [MIDDLEWARE] log prefixes and prose/historical "middleware" mentions, as ruled above.
