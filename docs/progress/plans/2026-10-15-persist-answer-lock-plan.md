@@ -37,8 +37,9 @@ the lock and reset use cases call the new methods. The whole-aggregate `save` st
 ## Review focus
 
 1. **An answer request saving a stale aggregate after the lock** must not undo it. Pinned by the
-   global constraint "`save` does not change" and Task 2's integration test "rejects an answer
-   submitted after the lock in a later request" (it saves through the real `save` after locking).
+   global constraint "`save` does not change" and Task 2's integration test "a stale aggregate
+   saved after the lock does not undo it" (it saves a copy loaded before the lock through the
+   real `save`).
 2. **Two lock requests at once** (double click, two host tabs): one wins, the other throws and
    writes no snapshots. Pinned by Task 2 test "throws and writes nothing when another request
    locked the question first" and the repository test "reports a lost race".
@@ -46,7 +47,8 @@ the lock and reset use cases call the new methods. The whole-aggregate `save` st
    reload. Pinned by Task 2 integration test "clears persisted locks when the quiz is reset".
 4. **An unlocked question** must load as unlocked (`undefined`, not `null`, since the domain
    checks truthiness and the DTO maps `?.toISOString() ?? null`). Pinned by Task 1's existing
-   mapping test plus the new assertion on it.
+   mapping test once its question records carry `answersLockedAt: null` (as a real Prisma row
+   does), plus the new assertion on it; strict `tsc` also rejects `Date | null` there.
 5. **A lock request for a question of another quiz** must change nothing. Pinned by the `quizId`
    in the filter (Task 1 test asserts the exact `where`).
 
@@ -100,10 +102,12 @@ const questionMocks = vi.hoisted(() => ({
 //   Object.values(questionMocks).forEach((mockFn) => mockFn.mockReset());
 ```
 
-  - in the existing test "maps a quiz record into an aggregate", add for its first question (whose
-    record has no `answersLockedAt`):
+  - in the existing test "maps a quiz record into an aggregate", add `answersLockedAt: null,` to
+    both question records (a real Prisma row always has the key), and assert for the first
+    question after sorting:
     `expect(aggregate?.quizQuestions[0].answersLockedAt).toBeUndefined();`
-    (adapt the variable names to the test);
+    (adapt the variable names to the test). With the key present, this fails if the mapper
+    passes `null` through;
   - add inside the `describe`:
 
 ```ts
@@ -244,7 +248,9 @@ git commit -m "fix(quiz): persist and load the answer lock"
 **Behaviour:**
 - `LockQuestionUseCase.execute`: right after `quiz.lockCurrentQuestion()` (step 2), call
   `quizRepository.lockQuestion(quizId, currentQuestion.id, <the Date the domain just set on
-  currentQuestion.answersLockedAt>)`. On `false`, throw `new Error('Question already locked')`
+  currentQuestion.answersLockedAt>)` (the field is typed `Date | undefined`; the file already uses
+  `currentQuestion.answersLockedAt!` at :180, follow that). On `false`, throw
+  `new Error('Question already locked')`
   before reading previous snapshots or saving new ones. The later steps are unchanged.
 - `ResetQuizUseCase.execute`: after `quiz.reset()`, call `quizRepository.clearQuestionLocks(quizId)`,
   then `save`. A failing `quiz.reset()` (invalid state) calls neither.
@@ -305,14 +311,27 @@ git commit -m "fix(quiz): persist and load the answer lock"
 
   it('throws and writes nothing when another request locked the question first', async () => {
     const { quiz } = makeActiveQuiz();
+    const auditLogRepository = {
+      save: vi.fn().mockResolvedValue(undefined),
+      findByQuizId: vi.fn(),
+      findRecent: vi.fn(),
+    };
     quizRepository.findById.mockResolvedValue(quiz);
     quizRepository.lockQuestion.mockResolvedValue(false);
+    playerRepository.listByQuizId.mockResolvedValue([]);
+    snapshotRepository.findByQuizAndQuestion.mockResolvedValue([]);
 
-    await expect(useCase.execute('quiz-1')).rejects.toThrow(
-      'Question already locked'
-    );
+    await expect(
+      new LockQuestionUseCase(
+        quizRepository,
+        playerRepository,
+        snapshotRepository,
+        auditLogRepository
+      ).execute('quiz-1')
+    ).rejects.toThrow('Question already locked');
     expect(snapshotRepository.saveSnapshots).not.toHaveBeenCalled();
     expect(quizRepository.save).not.toHaveBeenCalled();
+    expect(auditLogRepository.save).not.toHaveBeenCalled();
   });
 ```
 
@@ -536,8 +555,10 @@ describe('answer lock persistence', () => {
 - [ ] **Step 2: Run them to see them fail**
 
 Run: `yarn test:run src/tests/application/use-cases/lock-question.use-case.test.ts src/tests/application/use-cases/reset-quiz-use-case.test.ts src/tests/integration/answer-lock-persistence.test.ts`
-Expected: the two new lock tests fail (`lockQuestion` never called; the lost race does not
-throw); the reset assertions fail (`clearQuestionLocks` never called); in the integration file
+Expected: the two new lock tests fail (`lockQuestion` never called; the lost race resolves
+instead of rejecting); the reset test "resets a completed quiz and saves it" fails
+(`clearQuestionLocks` never called), while the two `not.toHaveBeenCalled` additions pass before
+and after (regression guards); in the integration file
 four tests fail because nothing persists the lock yet ("keeps … locked", "rejects an answer",
 "a stale aggregate …", "rejects a second lock"). "clears persisted locks" passes before the fix
 (nothing is locked to clear); it becomes a real guard once the lock persists, and must still pass
@@ -572,5 +593,11 @@ git commit -m "fix(quiz): keep the answer lock across requests"
   `POST /api/player/answer` for question 1 is refused with "Answers are locked for this question.";
   lock again via the API → 400 "Question already locked"; restart → question 1 unlocked. Delete
   the quiz afterwards.
+- [ ] Findings record `docs/progress/findings/2026-10-15-persist-answer-lock.md` with the
+  real-target run (steps, what the button and the answer route did, quiz ids deleted).
+- [ ] Note in the ledger and the findings record that the E2E branch's round-transitions tests
+  "should disable Lock Question after locking" and "should re-enable Lock Question after
+  advancing" are the automated check once `test/e2e-isolated-quizzes` has this fix.
+- [ ] Spec and plan status lines to `In progress` now, `✅ Complete — PR #NN` at merge.
 - [ ] Ledger `.superpowers/sdd/2026-10-15-persist-answer-lock-plan/progress.md` (`git add -f`);
   the out-of-scope items from the spec recorded where the user chooses.

@@ -1,7 +1,7 @@
 # Persist the answer lock — design
 
 **Date:** 2026-10-15
-**Status:** Approved design, pending implementation plan
+**Status:** In progress
 **Branch:** `fix/persist-answer-lock` (from `origin/master` at d839d5f)
 
 ## Why
@@ -98,7 +98,8 @@ Failing first, then passing:
 - **Use cases** (`lock-question.use-case.test.ts`, `reset-quiz.use-case.test.ts`): `lockQuestion`
   called with the quiz, question and time; `false` throws and saves no snapshots; reset calls
   `clearQuestionLocks`.
-- Mock objects of `IQuizRepository` elsewhere get the two new methods (type check).
+- Only the lock and reset tests' `IQuizRepository` mocks gain the two methods: every other mock is
+  cast `as unknown as`, so `tsc` stays clean without touching them (plan check, 2026-10-15).
 - Verdict: `yarn test:run` with counts; `yarn lint`; `tsc`.
 - **Real target:** with the dev server, lock a question on the host dashboard and check the button
   stays disabled after the refetch, and that a player's answer after the lock is refused. The E2E
