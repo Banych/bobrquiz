@@ -32,6 +32,7 @@ Find work by date:
 - Ledger: [.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md](../../.superpowers/sdd/2026-08-01-realtime-broadcast-listener-leak-fix/progress.md)
 - PR: [#63](https://github.com/Banych/bobrquiz/pull/63)
 
+### 2026-07-05: Presence and leaderboard fixes ✅
 - **2026-07-05** — Host leaderboard realtime update (`leaderboard:update` subscription wired up on the host dashboard) — [PR #60](https://github.com/Banych/bobrquiz/pull/60) — fix commit b66389b, no spec or plan
 - **2026-07-05** — Presence tracker provider mount and channel reuse — [PR #59](https://github.com/Banych/bobrquiz/pull/59) — [design](plans/2026-07-05-presence-tracker-provider-design.md) · [plan](plans/2026-07-05-presence-tracker-provider-implementation.md) · [design](plans/2026-07-05-presence-channel-reuse-design.md) · [plan](plans/2026-07-05-presence-channel-reuse-implementation.md)
 - **2026-07-05** — Presence heartbeat resilience — [PR #58](https://github.com/Banych/bobrquiz/pull/58) — [design](plans/2026-07-05-presence-heartbeat-resilience-design.md) · [plan](plans/2026-07-05-presence-heartbeat-resilience-implementation.md)

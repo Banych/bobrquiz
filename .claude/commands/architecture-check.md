@@ -145,7 +145,7 @@ grep -rn "from '@domain/entities/quiz'" src/
 ## After Fixing Violations
 
 ```bash
-yarn test        # Ensure nothing broke
+yarn test:run    # Ensure nothing broke
 yarn build       # Catch remaining type errors
 yarn lint        # Check import order and style
 ```

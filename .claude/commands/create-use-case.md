@@ -213,7 +213,7 @@ describe('[VerbNoun]UseCase', () => {
 ## Step 7: Run Tests
 
 ```bash
-yarn test src/tests/application/use-cases/[verb-noun].use-case.test.ts
+yarn test:run src/tests/application/use-cases/[verb-noun].use-case.test.ts
 ```
 
 Must pass before considering the use case complete.
@@ -227,4 +227,4 @@ Must pass before considering the use case complete.
 - [ ] Use case wired into service and factories.ts
 - [ ] API route created with standard error handling pattern
 - [ ] Tests: success path, not found (verifies error message), invalid state
-- [ ] `yarn test src/tests/application/` passes
+- [ ] `yarn test:run src/tests/application/` passes

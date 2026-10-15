@@ -77,7 +77,7 @@ Start here:
 Start here:
 1. [PROGRESS.md](progress/PROGRESS.md) – What features exist
 2. [guides/PRESENTATION-LAYER.md](guides/PRESENTATION-LAYER.md#testing) – Testing strategy
-3. [progress/sessions/](progress/sessions/) – Recent testing sessions & learnings
+3. [progress/plans/](progress/plans/) – Specs, plans and their verification results (sessions/ is historical)
 
 ### **DevOps / Infrastructure**
 Start here:
@@ -91,7 +91,7 @@ Complete this sequence:
 2. [ARCHITECTURE.md](ARCHITECTURE.md) – Understand the design (45 min)
 3. [PROGRESS.md](progress/PROGRESS.md) – See what's been built (15 min)
 4. Pick a guide based on your role above (60 min)
-5. Read recent session notes to understand current pain points
+5. Read the latest entries in the [PROGRESS.md](progress/PROGRESS.md) Work index and their plans
 
 ---
 
@@ -110,7 +110,8 @@ We use `@prisma/adapter-pg` for Vercel Edge compatibility. See **ARCHITECTURE.md
 Supabase Realtime broadcasts quiz updates. TanStack Query caches are manually updated by event handlers. See **ARCHITECTURE.md** → **Data Flow** → **Realtime Event Path**.
 
 ### Iterative Test Development
-Write E2E tests by first manually exploring UI via Playwright MCP, then automating based on observations. See **PROGRESS.md** and **progress/sessions/2025-12-20-admin-question-crud-rewrite.md**.
+Write E2E tests by first manually exploring UI via Playwright MCP, then automating based on observations. See **PROGRESS.md**, and the historical
+**progress/sessions/2025-12-20-admin-question-crud-rewrite.md** for a worked example.
 
 ---
 
@@ -121,7 +122,7 @@ When documentation gets stale, please update it immediately:
 - **Architecture change?** Update [ARCHITECTURE.md](ARCHITECTURE.md) and add an entry to [DECISION-LOG.md](DECISION-LOG.md)
 - **New env var?** Update [guides/SETUP.md](guides/SETUP.md#environment-files)
 - **New DTOs or layer patterns?** Update relevant guide + [ARCHITECTURE.md](ARCHITECTURE.md)
-- **Completed work?** Append to [progress/dev-notes.md](progress/dev-notes.md) and reference session file
+- **Merged a piece of work?** Add one Work index line to [progress/PROGRESS.md](progress/PROGRESS.md) (see [progress/plans/README.md](progress/plans/README.md))
 - **New design decision?** Add timestamped entry to [DECISION-LOG.md](DECISION-LOG.md)
 
 **Remember**: Stale documentation is a code smell. If you find outdated info, fix it immediately or flag it in a comment.
@@ -161,6 +162,6 @@ When documentation gets stale, please update it immediately:
 ## ❓ Didn't Find What You're Looking For?
 
 1. **Search** the docs using your editor's search function (Cmd/Ctrl + Shift + F)
-2. **Check [progress/dev-notes.md](progress/dev-notes.md)** for recent changes
-3. **Review session notes** in [progress/sessions/](progress/sessions/) for context on recent work
+2. **Check the Work index** in [progress/PROGRESS.md](progress/PROGRESS.md) for recent changes
+3. **Read the spec, plan and ledger** of recent work in [progress/plans/](progress/plans/)
 4. **Ask the team** – documentation gaps are bugs

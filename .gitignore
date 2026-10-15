@@ -54,3 +54,6 @@ supabase/.temp/
 
 # Per-machine Claude Code overrides (shared settings live in .claude/settings.json)
 .claude/settings.local.json
+
+# Plan workspaces (ledger, briefs, review diffs); commit a ledger with git add -f
+/.superpowers/
