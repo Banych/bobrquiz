@@ -31,3 +31,7 @@ security branches.
 - yarn audit: braces GHSA-vfj7-8cjw-p6xm only (unchanged from master).
 - yarn build: exit 0.
 - yarn playwright install chromium: chromium-headless-shell v1248 downloaded, exit 0.
+- Dev server restarted by the user on f0fe436 deps: curl / /login /icon-192.png → 200.
+- yarn test:e2e: 18 passed, 16 failed, 4 did not run (1.3m). Failing list compared with the master baseline (trailing whitespace stripped): 0 new, 0 fixed, 16 in both.
+
+No findings record: nothing was measured beyond the standard checks; the two Dependabot problems (#43 splitting react from react-dom, #47 targeting Node 25) are rulings above.
