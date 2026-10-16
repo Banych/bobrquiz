@@ -48,3 +48,7 @@ Task 3 review: APPROVED, spec all ✅, 3 minors. Tamper check clean (HEAD 3e93ea
 - Ruling: minor "loose last-seen regexes (/just now|\ds ago/, /2m ago|3m ago/)" — no change; tolerances for timing drift between the mock time and the render — if wrong, a regression in last-seen formatting within those ranges goes unnoticed.
 - Ruling: minor "fixed mock player ids p1/p2/p3" — no change; each page has its own route, so tests stay isolated — no cost.
 Task 3 fix round 1 commit a732a9e (rename only, +3/-1 after prettier). Controller: reconnection spec --retries=0 8 passed, exit 0, 0 'Too many requests'.
+Task 3: fix round 1/5 (1 addressed, 0 open — reconnection test renamed to 'should re-enable the answer box after the connection returns'; commits 3e93eaa..a732a9e). Re-review ADDRESSED, no new breakage; tamper check clean (HEAD f8a994a, status empty).
+- Task 3: minor (deferred): 'should show reconnecting state during sync', 'should auto-reconnect when network returns' and the renamed test overlap heavily (offline → banner → online → box enabled). Deferred to the branch passes' simplification report — premise: the spec keeps the five existing reconnection tests and only moves them to their own quizzes; merging them is a test-design change outside Task 3. Reopen if the branch passes or the user want the suite trimmed.
+Task 3: complete (commits 21c1bbc..a732a9e, review clean)
+Doc sweep after Task 3: nothing measured or decided beyond the ledger lines above.
