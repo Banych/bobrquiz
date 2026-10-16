@@ -788,6 +788,30 @@ from `@application/dtos/*` only", next to the `factories` composition root.
 
 ---
 
+## ADR-025: Outside-Service Interfaces Live in `src/application/ports/` (2026-10-16)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-10-16
+
+### Decision
+Interfaces for outside services that infrastructure implements (storage now; the realtime
+transport and presence tracker next) live in `src/application/ports/`. Repository interfaces stay
+in `src/domain/repositories/`.
+
+### Rationale
+- User ruling (2026-10-15, admin media API design): storage and realtime transports are not
+  domain concepts, and the application layer is where use cases need them.
+- `IStorageService` sat in `src/infrastructure/storage/`, where use cases may not import it.
+
+### Rejected
+- `src/domain/services/`: one home for every implemented interface, but domain would hold files,
+  buckets and presence channels.
+
+### References
+- [progress/plans/2026-10-15-admin-media-api-design.md](progress/plans/2026-10-15-admin-media-api-design.md)
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)

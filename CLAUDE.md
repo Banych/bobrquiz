@@ -28,6 +28,8 @@ Next.js API route → zod DTO validation → use case/service → domain entity 
 - **Domain** (`src/domain/**`): pure logic: entities, value objects, aggregates, events, repo
   interfaces.
 - **Application** (`src/application/**`): use cases orchestrate the domain, return DTOs.
+- **Ports** (`src/application/ports/**`): interfaces for outside services that infrastructure
+  implements (ADR-025); repository interfaces stay in `src/domain/repositories/`.
 - **Infrastructure** (`src/infrastructure/**`): Prisma repositories, realtime, auth, storage.
 - **Presentation** (`src/app/**`, `src/components/**`, `src/hooks/**`): DTOs only.
 

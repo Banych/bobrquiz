@@ -3,6 +3,11 @@
  * Uses browser Canvas API to reduce image sizes before upload
  */
 
+import {
+  MEDIA_ALLOWED_TYPES,
+  MEDIA_MAX_UPLOAD_BYTES,
+} from '@application/dtos/media.dto';
+
 export interface ResizeOptions {
   /**
    * Maximum width in pixels
@@ -116,10 +121,12 @@ export const resizeImage = async (
 /**
  * Validate image file type
  */
-export const isValidImageType = (file: File): boolean => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  return validTypes.includes(file.type);
-};
+export const isValidImageType = (file: File): boolean =>
+  (MEDIA_ALLOWED_TYPES as readonly string[]).includes(file.type);
+
+/** Whether a (resized) image fits the server's upload limit. */
+export const isWithinUploadLimit = (file: Blob): boolean =>
+  file.size <= MEDIA_MAX_UPLOAD_BYTES;
 
 /**
  * Validate image file size (in bytes)
