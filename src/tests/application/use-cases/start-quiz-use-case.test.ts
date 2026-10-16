@@ -57,6 +57,24 @@ describe('StartQuizUseCase', () => {
     expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
   });
 
+  it('rejects a quiz that is not Pending and clears nothing', async () => {
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz1', 'Sample Quiz', [], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+      }),
+      30
+    );
+    quiz.startQuiz();
+    quizRepository.findById.mockResolvedValue(quiz);
+
+    await expect(startQuizUseCase.execute('quiz1')).rejects.toThrow(
+      'Quiz can only be started if it is in Pending status.'
+    );
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
+    expect(quizRepository.save).not.toHaveBeenCalled();
+  });
+
   describe('audit log emission', () => {
     let auditLogRepository: Mocked<IAuditLogRepository>;
 

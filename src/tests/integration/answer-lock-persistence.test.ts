@@ -180,10 +180,32 @@ describe('answer lock persistence', () => {
     expect(snapshotRepository.saveSnapshots).toHaveBeenCalledTimes(1);
   });
 
+  it('lets exactly one of two concurrent locks win', async () => {
+    const lockQuestionSpy = vi.spyOn(quizRepository, 'lockQuestion');
+
+    const results = await Promise.allSettled([lock(), lock()]);
+
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.filter((r) => r.status === 'rejected');
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toEqual(
+      new Error('Question already locked')
+    );
+    // Both requests reached the repository, so the false branch decided it
+    const outcomes = await Promise.all(
+      lockQuestionSpy.mock.results.map((r) => r.value as Promise<boolean>)
+    );
+    expect(outcomes.sort()).toEqual([false, true]);
+    expect(snapshotRepository.saveSnapshots).toHaveBeenCalledTimes(1);
+    lockQuestionSpy.mockRestore();
+  });
+
   it('clears a lock written after a reset when the quiz starts again', async () => {
     await new ResetQuizUseCase(quizRepository).execute('quiz-1');
     // A lock request that loaded the Active quiz before the reset writes late
-    await quizRepository.lockQuestion('quiz-1', 'q2', new Date());
+    expect(await quizRepository.lockQuestion('quiz-1', 'q2', new Date())).toBe(
+      true
+    );
 
     await new StartQuizUseCase(quizRepository).execute('quiz-1');
 
@@ -193,10 +215,13 @@ describe('answer lock persistence', () => {
 
   it('clears persisted locks when the quiz is reset', async () => {
     await lock();
+    const beforeReset = await quizRepository.findById('quiz-1');
+    expect(beforeReset?.isQuestionLocked('q1')).toBe(true);
     await new ResetQuizUseCase(quizRepository).execute('quiz-1');
 
     const reloaded = await quizRepository.findById('quiz-1');
 
+    expect(reloaded?.quizQuestions).toHaveLength(2);
     expect(
       reloaded?.quizQuestions.every((question) => !question.answersLockedAt)
     ).toBe(true);
