@@ -105,31 +105,6 @@ describe('LockQuestionUseCase', () => {
     );
   });
 
-  it('throws and writes nothing when another request locked the question first', async () => {
-    const { quiz } = makeActiveQuiz();
-    const auditLogRepository = {
-      save: vi.fn().mockResolvedValue(undefined),
-      findByQuizId: vi.fn(),
-      findRecent: vi.fn(),
-    };
-    quizRepository.findById.mockResolvedValue(quiz);
-    quizRepository.lockQuestion.mockResolvedValue(false);
-    playerRepository.listByQuizId.mockResolvedValue([]);
-    snapshotRepository.findByQuizAndQuestion.mockResolvedValue([]);
-
-    await expect(
-      new LockQuestionUseCase(
-        quizRepository,
-        playerRepository,
-        snapshotRepository,
-        auditLogRepository
-      ).execute('quiz-1')
-    ).rejects.toThrow('Question already locked');
-    expect(snapshotRepository.saveSnapshots).not.toHaveBeenCalled();
-    expect(quizRepository.save).not.toHaveBeenCalled();
-    expect(auditLogRepository.save).not.toHaveBeenCalled();
-  });
-
   it('should lock current question and return round summary', async () => {
     // Setup quiz with active question
     const question1 = new Question(
@@ -440,6 +415,24 @@ describe('LockQuestionUseCase', () => {
       );
 
       await expect(useCaseWithAudit.execute('quiz-1')).resolves.not.toThrow();
+    });
+
+    it('throws and writes nothing when another request locked the question first', async () => {
+      const { quiz } = makeActiveQuiz();
+      quizRepository.findById.mockResolvedValue(quiz);
+      quizRepository.lockQuestion.mockResolvedValue(false);
+
+      await expect(
+        new LockQuestionUseCase(
+          quizRepository,
+          playerRepository,
+          snapshotRepository,
+          auditLogRepository
+        ).execute('quiz-1')
+      ).rejects.toThrow('Question already locked');
+      expect(snapshotRepository.saveSnapshots).not.toHaveBeenCalled();
+      expect(quizRepository.save).not.toHaveBeenCalled();
+      expect(auditLogRepository.save).not.toHaveBeenCalled();
     });
   });
 
