@@ -31,7 +31,10 @@ export class SupabaseStorageService implements IStorageService {
       upsert: false,
     });
     if (error) throw error;
-    return { path: input.path, url: this.getPublicUrl(input.path) };
+    return {
+      path: input.path,
+      url: bucket.getPublicUrl(input.path).data.publicUrl,
+    };
   }
 
   async delete(path: string): Promise<void> {

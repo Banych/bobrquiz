@@ -129,4 +129,58 @@ describe('SupabaseStorageService', () => {
       await expect(call()).rejects.toThrow('Storage is not configured');
     }
   );
+
+  it('lists under a prefix and builds prefixed paths', async () => {
+    mocks.bucket.list.mockResolvedValue({
+      data: [
+        {
+          name: 'a.jpg',
+          metadata: { size: 10 },
+          created_at: '2026-10-16T00:00:00Z',
+        },
+      ],
+      error: null,
+    });
+    await expect(
+      new SupabaseStorageService().list('questions/q')
+    ).resolves.toEqual([
+      {
+        name: 'a.jpg',
+        path: 'questions/q/a.jpg',
+        size: 10,
+        createdAt: '2026-10-16T00:00:00Z',
+      },
+    ]);
+    expect(mocks.bucket.list).toHaveBeenCalledWith(
+      'questions/q',
+      expect.anything()
+    );
+  });
+
+  it('passes a Supabase list error through', async () => {
+    mocks.bucket.list.mockResolvedValue({
+      data: null,
+      error: new Error('list failed'),
+    });
+    await expect(new SupabaseStorageService().list()).rejects.toThrow(
+      'list failed'
+    );
+  });
+
+  it('passes a Supabase remove error through', async () => {
+    mocks.bucket.remove.mockResolvedValue({
+      data: null,
+      error: new Error('remove failed'),
+    });
+    await expect(new SupabaseStorageService().delete('a.jpg')).rejects.toThrow(
+      'remove failed'
+    );
+  });
+
+  it('getPublicUrl throws "Storage is not configured" without a client', () => {
+    mocks.getClient.mockReturnValue(null);
+    expect(() => new SupabaseStorageService().getPublicUrl('p')).toThrow(
+      'Storage is not configured'
+    );
+  });
 });
