@@ -18,3 +18,9 @@ Plan check returned READY (no blocking defects, 7 corrections). Tamper check: HE
 - Implementer note carried in the plan: answersLockedAt is Date | undefined; follow the file's `!` precedent at :180.
 - Spec and plan status: In progress.
 Paused for the user after the plan check (user, 2026-10-15: "pause after plan checker back").
+
+User go-ahead 2026-10-16 ("go both"): lock Task 1 and E2E Task 3 in parallel.
+## Task 1
+BASE b1d804a. Dispatched implementer.
+Task 1 implementer DONE, commit 4590411 (4 files). Controller verdict: yarn test:run exit 0, Test Files 66 passed | 1 skipped (67), Tests 493 passed | 1 skipped (494); the skip is the env-gated add-player.integration.test.ts (describe.skip unless enabled), pre-existing.
+Controller mutation check: mapper changed to pass null through → 'maps a quiz record into an aggregate' fails (1 failed | 14 passed); file restored (git diff empty).
