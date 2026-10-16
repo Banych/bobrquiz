@@ -43,3 +43,8 @@ User go-ahead 2026-10-16 ("go both"): Task 3 next, ahead of Task 2 (Task 2's loc
 ## Task 3
 BASE 21c1bbc. Dev server from this worktree confirmed. Dispatched implementer.
 Task 3 implementer DONE, commit 0f3cdf4 (4 files). Controller: yarn lint exit 0, tsc exit 0; player specs --retries=0: 15 passed, exit 0; 'Too many requests' 0 in output, 0 files in test-results.
+Task 3 review: APPROVED, spec all ✅, 3 minors. Tamper check clean (HEAD 3e93eaa, status empty). ⚠️ "retries twice (1 s, then 2 s)" resolved by the controller: confirmed by the plan check (use-host-quiz-players.ts:79-80, retry: 2).
+- Minor fixed in the task's own round: the reconnection test "should detect offline state immediately on load" does not test a load-time offline state (its body is disconnect then reconnect) — renamed to what it checks.
+- Ruling: minor "loose last-seen regexes (/just now|\ds ago/, /2m ago|3m ago/)" — no change; tolerances for timing drift between the mock time and the render — if wrong, a regression in last-seen formatting within those ranges goes unnoticed.
+- Ruling: minor "fixed mock player ids p1/p2/p3" — no change; each page has its own route, so tests stay isolated — no cost.
+Task 3 fix round 1 commit a732a9e (rename only, +3/-1 after prettier). Controller: reconnection spec --retries=0 8 passed, exit 0, 0 'Too many requests'.
