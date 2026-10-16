@@ -133,3 +133,38 @@ root (#79 out of scope); delete passes port errors through; Task 1 constants, no
 - Doc sweep: no decision, findings, convention or CLAUDE.md change beyond this entry.
 
 Task 2: complete (commits b9e8da0..d45ea0b, review clean, 2 minors ruled no-change)
+
+### Task 3 — service-role storage adapter (implementer, sonnet pin)
+
+BASE de5009c. Report `task-3-report.md` (fix round 1 appended). Commits fe11a1b `feat(media): add
+service-role storage adapter` (2 files) and b695cba `test(media): cover storage adapter error
+paths` (same 2 files).
+
+Dispatch rulings: `quiz-media` as a module constant; one private helper resolves the bucket per
+call and throws `Storage is not configured` without a client (every method, `getPublicUrl`
+included); `upload` rethrows the Supabase error as is and returns the input path; `delete` throws
+`Media file <path> not found` on empty `data`; `list` keeps the old adapter's mapping
+(placeholder filter, `size ?? 0`, `created_at ?? now`); no casts.
+
+- Controller checks on fe11a1b: committed test file `diff`-identical to the brief's block after
+  `yarn prettier`; `yarn tsc --noEmit` exit 0; `yarn eslint` on both files exit 0 (these closed
+  the reviewer's two ⚠️ items, type-check and the `implements` clause). Verdict `yarn test:run`:
+  `70 passed | 1 skipped (71)`, `529 passed | 1 skipped (530)`, exit 0.
+- Review (task-reviewer, sonnet pin): spec ✅, quality Approved, no Critical/Important, 2 Minor
+  (untested list prefix / list and remove error passthrough / direct `getPublicUrl` without a
+  client; `upload` resolved the client twice). Tamper check clean.
+- Ruling: fix both Minors in this task's round (user-level rule: minors are fixed in the task's
+  own fix round) — four tests added after the brief's fixed tests, which stay unchanged; `upload`
+  builds its URL from the bucket it already resolved. Cost if wrong: four extra tests and a
+  one-line change, easy to drop.
+- Task 3: fix round 1/5 (2 addressed, 0 open — missing adapter tests, double client resolution;
+  commits fe11a1b..b695cba). Verdict `yarn test:run` on b695cba: `70 passed | 1 skipped (71)`,
+  `533 passed | 1 skipped (534)`, exit 0. Scoped re-review (task-reviewer): both ADDRESSED, no
+  new breakage, no out-of-scope observations. Tamper check clean (HEAD b695cba, empty porcelain,
+  ledger sha256sums identical).
+- Ruling: the plan's expected totals move by +4 — Task 3 Step 4 notes 12 executed tests, Task 4
+  Step 5 becomes 543 tests (71 files), Task 6 Step 3 552 tests (72 files). Edited in the plan,
+  committed with this entry. Cost if wrong: none beyond a count to correct.
+- Doc sweep: no decision, findings, convention or CLAUDE.md change.
+
+Task 3: complete (commits de5009c..b695cba, review clean after fix round 1)
