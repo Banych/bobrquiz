@@ -29,9 +29,11 @@ Before the fix, the same sequence would have re-enabled the button on the first 
 the late answer, accepted the second lock and written a second snapshot set (root-cause report in
 the ledger directory).
 
-The two-request race is the check the unit and integration tests cannot make: it shows Postgres
-re-checks `"answersLockedAt" IS NULL` in the single `UPDATE` that `updateMany` sends, so exactly
-one request wins.
+The two-request race is the check the unit and integration tests cannot make. It shows the
+outcome, one winner, in two parallel runs (Q2 and Q1); it does not show the requests' `UPDATE`s
+overlapped. The guarantee rests on Postgres semantics, not on this run: under READ COMMITTED a
+second `UPDATE` waiting on the row lock re-checks `"answersLockedAt" IS NULL` against the
+committed row, so it matches nothing.
 
 ## Gotchas met
 
@@ -50,6 +52,11 @@ The quiz was reset and deleted through the admin API; `GET /api/admin/quizzes/{i
 404 (its questions, player, answers and snapshots cascade).
 
 ## Still to come
+
+Until then, master's shared-quiz `e2e/round-transitions.spec.ts` is order-dependent: it locks the
+shared `JOIN-KYTX` quiz's current question, and now that the lock persists, a later or parallel
+test (or a retry) that expects Lock Question enabled on that quiz can fail (end-of-branch review,
+2026-10-16; E2E not run against this branch).
 
 The E2E branch's round-transitions tests "should disable Lock Question after locking" and "should
 re-enable Lock Question after advancing" become the automated check for this once

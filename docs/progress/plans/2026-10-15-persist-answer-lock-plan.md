@@ -63,7 +63,7 @@ the lock and reset use cases call the new methods. The whole-aggregate `save` st
 | `src/application/use-cases/lock-question.use-case.ts` | modify | persist the lock before snapshots |
 | `src/application/use-cases/reset-quiz.use-case.ts` | modify | clear locks before save |
 | `src/application/use-cases/start-quiz.use-case.ts` | modify | clear locks before save (a lock written after a reset) |
-| `src/tests/application/use-cases/lock-question.use-case.test.ts`, `reset-quiz-use-case.test.ts` | modify | use case tests |
+| `src/tests/application/use-cases/lock-question.use-case.test.ts`, `reset-quiz-use-case.test.ts`, `start-quiz-use-case.test.ts` | modify | use case tests |
 | `src/tests/integration/answer-lock-persistence.test.ts` | create | lock → reload → submit → reset across the real repository |
 
 ---
@@ -263,7 +263,7 @@ git commit -m "fix(quiz): persist and load the answer lock"
   calls neither. Why: a lock request that loaded the Active quiz before a reset can write its lock
   after the reset's clear (the conditional filter cannot see the quiz status), leaving a lock that
   would refuse answers in the next run; a quiz only starts from Pending, so clearing at start is
-  always right and closes that window.
+  always right and narrows that window (spec Design 6 has the interleaving that remains).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -634,7 +634,7 @@ git commit -m "fix(quiz): keep the answer lock across requests"
   400, and one snapshot set for that question index (the "one wins" guarantee rests on Postgres
   re-checking `answersLockedAt IS NULL` in a single UPDATE, which no unit test can show). Delete
   the quiz afterwards.
-- [ ] Findings record `docs/progress/findings/2026-10-15-persist-answer-lock.md` with the
+- [ ] Findings record `docs/progress/findings/2026-10-16-persist-answer-lock.md` with the
   real-target run (steps, what the button and the answer route did, quiz ids deleted).
 - [ ] Note in the ledger and the findings record that the E2E branch's round-transitions tests
   "should disable Lock Question after locking" and "should re-enable Lock Question after

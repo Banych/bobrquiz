@@ -78,8 +78,9 @@ locking") already fails on master and E2E is not in CI.
    `quizRepository.clearQuestionLocks(quiz.id)`. Covers host "Restart quiz" and admin reset, which
    both go through it. Clear first (planning, 2026-10-15): if the clear failed after the save, the
    quiz would be Pending with a stale lock on question 1, and reset refuses a Pending quiz, so it
-   could not be retried; a failed save after the clear leaves an Active or Completed quiz with no
-   locks, and reset can be retried.
+   could not be retried (Design 6 later made the next start clear it, but the quiz would sit
+   Pending with question 1 locked until then); a failed save after the clear leaves an Active or
+   Completed quiz with no locks, and reset can be retried.
 6. **Start use case** (`start-quiz.use-case.ts`, added after Task 1's review, 2026-10-16): after
    `quiz.startQuiz()` and before `save`, call `clearQuestionLocks(quiz.id)`. A lock request that
    loaded the Active quiz before a reset can write its lock after the reset's clear (the
@@ -102,11 +103,16 @@ Failing first, then passing:
   `PrismaQuizRepository` and use cases against a stateful Prisma fake (the investigation's draft):
   lock then reload keeps Q1 locked and Q2 unlocked; a later submit is rejected; a second lock is
   rejected and writes one snapshot set; reset clears the persisted locks.
-- **Use cases** (`lock-question.use-case.test.ts`, `reset-quiz.use-case.test.ts`): `lockQuestion`
-  called with the quiz, question and time; `false` throws and saves no snapshots; reset calls
-  `clearQuestionLocks`.
-- Only the lock and reset tests' `IQuizRepository` mocks gain the two methods: every other mock is
-  cast `as unknown as`, so `tsc` stays clean without touching them (plan check, 2026-10-15).
+- **Use cases** (`lock-question.use-case.test.ts`, `reset-quiz-use-case.test.ts`,
+  `start-quiz-use-case.test.ts`): `lockQuestion` called with the quiz, question and time; `false`
+  throws and saves no snapshots; reset and start call `clearQuestionLocks`, and start from a
+  non-Pending quiz calls neither it nor `save`.
+- Only the lock, reset and start tests' `IQuizRepository` mocks gain methods (lock both, reset and
+  start `clearQuestionLocks`): every other mock is cast `as unknown as`, so `tsc` stays clean
+  without touching them (plan check, 2026-10-15; start added with Design 6).
+- **Route** (`src/tests/app/api/lock-question-route.test.ts`, end-of-branch fix, 2026-10-16): a
+  failed broadcast still returns 200 with the summary; "Question already locked" → 400; an
+  inactive quiz → 404.
 - Verdict: `yarn test:run` with counts; `yarn lint`; `tsc`.
 - **Real target:** with the dev server, lock a question on the host dashboard and check the button
   stays disabled after the refetch, and that a player's answer after the lock is refused. The E2E
@@ -119,7 +125,9 @@ Failing first, then passing:
   already locked", so the host loses that round's summary and the next round's rank deltas lack
   a baseline. Players are still refused correctly. It is the price of persisting the lock first
   so a lost race writes nothing (Design 4); undoing it would need a per-question unlock on
-  failure (Task 2 review, 2026-10-16).
+  failure (Task 2 review, 2026-10-16). The route's realtime broadcast, the likeliest of these
+  steps to fail, no longer counts: the end-of-branch passes (2026-10-16) made a failed broadcast
+  a logged warning with a 200, as in the start and reset routes.
 
 - The in-flight answer race (an answer loaded before the lock and saved after it).
 - Every `save` regenerates answer ids (`prisma-quiz.repository.ts:98`), so the `answerId` sent to
@@ -130,3 +138,12 @@ Failing first, then passing:
 - A custom timer duration is not saved; the reload falls back to `timePerQuestion`.
 - `submitAnswer` accepts answers for any question id, not only the active one.
 - The player screen ignores `answersLockedAt` and relies on the 10 s broadcast.
+- The whole-aggregate `save` is a lost update: it deletes every answer of the quiz and re-creates
+  the loaded aggregate's, with no transaction or version check, so two players answering at once
+  can drop one answer, and any stale save writes back an old status or question index
+  (`prisma-quiz.repository.ts` `save`; end-of-branch review, 2026-10-16).
+- The lock and start routes map every error that is not "not found" (lock: or "not active") to
+  400 and log nothing in start: a database outage reads as a bad request (silent-failure hunt,
+  2026-10-16; pre-existing).
+- Both reset routes map reset's refusal of a Pending quiz ("Quiz can only be reset if it is in
+  Active or Completed status.") to 500 (silent-failure hunt, 2026-10-16; pre-existing).
