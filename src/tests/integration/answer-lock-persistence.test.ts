@@ -33,9 +33,17 @@ const db = vi.hoisted(() => {
             }
           : null
       ),
-      update: vi.fn(async ({ data }: { data: Row }) =>
-        Object.assign(state.quiz, data)
-      ),
+      update: vi.fn(async ({ data }: { data: Row }) => {
+        // The fake keeps relations in their own arrays, so a nested write
+        // here would be dropped silently and hide a save that touches them
+        const nested = ['questions', 'answers', 'players'].filter(
+          (key) => key in data
+        );
+        if (nested.length > 0) {
+          throw new Error(`Fake quiz.update got nested ${nested.join(', ')}`);
+        }
+        return Object.assign(state.quiz, data);
+      }),
     },
     question: {
       updateMany: vi.fn(async ({ where, data }: { where: Row; data: Row }) => {
@@ -165,9 +173,10 @@ describe('answer lock persistence', () => {
 
   it('a stale aggregate saved after the lock does not undo it', async () => {
     const stale = await quizRepository.findById('quiz-1');
+    if (!stale) throw new Error('quiz-1 missing from the fake');
     await lock();
 
-    await quizRepository.save(stale!);
+    await quizRepository.save(stale);
 
     const reloaded = await quizRepository.findById('quiz-1');
     expect(reloaded?.isQuestionLocked('q1')).toBe(true);
