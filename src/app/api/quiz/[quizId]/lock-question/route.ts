@@ -24,11 +24,20 @@ export async function POST(_request: Request, { params }: RouteContext) {
 
     const roundSummary = await lockQuestionUseCase.execute(quizId);
 
-    // Broadcast to all quiz participants
-    await broadcastRoundSummary(quizId, roundSummary);
+    // The lock is already persisted: a failed broadcast must not turn into an
+    // error the host retries, because the retry is refused as already locked
+    try {
+      await broadcastRoundSummary(quizId, roundSummary);
+    } catch (broadcastError) {
+      console.warn('Failed to broadcast round summary after lock', {
+        quizId,
+        error: broadcastError,
+      });
+    }
 
     return NextResponse.json(roundSummary);
   } catch (error) {
+    console.error('[API] lock question error:', error);
     const message =
       error instanceof Error ? error.message : 'Unable to lock question.';
 
