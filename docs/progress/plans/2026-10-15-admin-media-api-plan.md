@@ -28,7 +28,10 @@
 1. **Adapter file name.** The server adapter is a new file, `src/infrastructure/storage/supabase-storage-service.ts`; the old `supabase-storage.ts` and `storage-service.ts` are deleted in Task 6, when their last callers go. Rewriting in place would break the build between Tasks 3 and 6.
 2. **E2E delete.** The media library lists only the bucket root (#79), so a file uploaded under `questions/<quizId>/` never appears there. Delete is exercised through the API (Task 7), not the library UI.
 3. **Media list polling.** `useMediaLibrary` uses `staleTime: 5_000` and no `refetchInterval`: the list changes only through this admin's own actions, which invalidate it. Deviation from the CLAUDE.md query default, recorded here.
-4. **400 vs 500.** Use-case validation throws `MediaValidationError`; the route maps it and `ZodError` to 400, `/not found/i` to 404, everything else to 500 with a fixed body and the real error logged. The CLAUDE.md pattern (everything else → 400) would report a Storage outage as the admin's mistake.
+4. **400 vs 500.** Use-case validation throws `MediaValidationError`; the route maps it (by `error.name === 'MediaValidationError'`, as `src/app/api/admin/quizzes/route.ts:42` checks `ZodError`, so the route imports nothing from `@application/use-cases/`) and `ZodError` to 400, `/not found/i` to 404, everything else to 500 with a fixed body and the real error logged. This follows the spec's error table; the CLAUDE.md pattern (everything else → 400) would report a Storage outage as the admin's mistake.
+5. **Stricter `quizId`.** The spec has `z.string().min(1)`; the plan uses `/^[A-Za-z0-9_-]+$/` because the ID becomes part of a storage path (Review Focus 2). Real IDs are cuids (`schema.prisma:11`).
+6. **Guarded migration.** `prisma migrate dev` replays every migration on a shadow database, which may have no `storage` schema; a bare `DROP POLICY … ON storage.objects` would fail there and block `yarn prisma:migrate` for everyone. The drops run only when `to_regclass('storage.objects')` is not null.
+7. **E2E upload assertion.** The preview is a `next/image` (`image-upload.tsx:168-173`), so its `src` is an optimizer URL; the test asserts on the upload response instead (Task 7).
 
 ## Review Focus
 
@@ -81,17 +84,30 @@ import {
 
 describe('media DTOs', () => {
   it('pins the allowed types and the 4 MB limit', () => {
-    expect(MEDIA_ALLOWED_TYPES).toEqual(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    expect(MEDIA_ALLOWED_TYPES).toEqual([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+    ]);
     expect(MEDIA_MAX_UPLOAD_BYTES).toBe(4 * 1024 * 1024);
   });
 
   it('accepts a plain quiz ID', () => {
-    expect(UploadMediaInputSchema.parse({ quizId: 'cm1abc_X-9' })).toEqual({ quizId: 'cm1abc_X-9' });
+    expect(UploadMediaInputSchema.parse({ quizId: 'cm1abc_X-9' })).toEqual({
+      quizId: 'cm1abc_X-9',
+    });
   });
 
   it.each(['', '../x', 'a/b', 'a b'])('rejects quizId %j', (quizId) => {
     const result = UploadMediaInputSchema.safeParse({ quizId });
     expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('Invalid quiz ID');
+  });
+
+  it('rejects a missing quizId with the same message', () => {
+    const result = UploadMediaInputSchema.safeParse({});
+    expect(result.error?.issues[0].message).toBe('Invalid quiz ID');
   });
 
   it('rejects an empty delete path', () => {
@@ -113,6 +129,10 @@ describe('image-utils', () => {
   it('accepts the four image types and nothing else', () => {
     expect(isValidImageType(fileOf(1, 'image/gif'))).toBe(true);
     expect(isValidImageType(fileOf(1, 'image/svg+xml'))).toBe(false);
+  });
+
+  it('accepts a file under the upload limit', () => {
+    expect(isWithinUploadLimit(fileOf(1))).toBe(true);
   });
 
   it('accepts a file at the upload limit', () => {
@@ -148,7 +168,11 @@ export type StorageListEntry = {
 };
 
 export interface IStorageService {
-  upload(input: { path: string; body: ArrayBuffer; contentType: string }): Promise<StoredObject>;
+  upload(input: {
+    path: string;
+    body: ArrayBuffer;
+    contentType: string;
+  }): Promise<StoredObject>;
   delete(path: string): Promise<void>;
   list(prefix?: string): Promise<StorageListEntry[]>;
   getPublicUrl(path: string): string;
@@ -168,13 +192,20 @@ export class MediaValidationError extends Error {
 
 Append to `src/application/dtos/media.dto.ts` (keep `MediaFileDTOSchema`):
 ```ts
-export const MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
+export const MEDIA_ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
 export type MediaContentType = (typeof MEDIA_ALLOWED_TYPES)[number];
 export const MEDIA_MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const MEDIA_TOO_LARGE_MESSAGE = 'Image must be 4 MB or smaller';
 
 export const UploadMediaInputSchema = z.object({
-  quizId: z.string().regex(/^[A-Za-z0-9_-]+$/, 'Invalid quiz ID'),
+  quizId: z
+    .string({ error: 'Invalid quiz ID' })
+    .regex(/^[A-Za-z0-9_-]+$/, 'Invalid quiz ID'),
 });
 export type UploadMediaInputDTO = z.infer<typeof UploadMediaInputSchema>;
 
@@ -185,7 +216,7 @@ export const UploadMediaResultDTOSchema = z.object({
 export type UploadMediaResultDTO = z.infer<typeof UploadMediaResultDTOSchema>;
 
 export const DeleteMediaInputSchema = z.object({
-  path: z.string().min(1, 'Invalid media path'),
+  path: z.string({ error: 'Invalid media path' }).min(1, 'Invalid media path'),
 });
 export type DeleteMediaInputDTO = z.infer<typeof DeleteMediaInputSchema>;
 ```
@@ -195,7 +226,8 @@ export type DeleteMediaInputDTO = z.infer<typeof DeleteMediaInputSchema>;
 and `MEDIA_MAX_UPLOAD_BYTES` from `@application/dtos/media.dto`; add
 ```ts
 /** Whether a (resized) image fits the server's upload limit. */
-export const isWithinUploadLimit = (file: Blob): boolean => file.size <= MEDIA_MAX_UPLOAD_BYTES;
+export const isWithinUploadLimit = (file: Blob): boolean =>
+  file.size <= MEDIA_MAX_UPLOAD_BYTES;
 ```
 
 `docs/DECISION-LOG.md`, new section before `## Open ideas (not decisions)` (after ADR-024's `---`):
@@ -211,7 +243,7 @@ transport and presence tracker next) live in `src/application/ports/`. Repositor
 in `src/domain/repositories/`.
 
 ### Rationale
-- User ruling (2026-10-16, admin media API design): storage and realtime transports are not
+- User ruling (2026-10-15, admin media API design): storage and realtime transports are not
   domain concepts, and the application layer is where use cases need them.
 - `IStorageService` sat in `src/infrastructure/storage/`, where use cases may not import it.
 
@@ -225,18 +257,22 @@ in `src/domain/repositories/`.
 ---
 ```
 
-`CLAUDE.md`, in "Architecture and layer rules", after the Application bullet:
-`- Ports (`src/application/ports/**`): interfaces for outside services that infrastructure implements (ADR-025); repository interfaces stay in `src/domain/repositories/`.`
+`CLAUDE.md`, in "Architecture and layer rules", after the Application bullet (line 30), insert
+exactly these two lines:
+```markdown
+- **Ports** (`src/application/ports/**`): interfaces for outside services that infrastructure
+  implements (ADR-025); repository interfaces stay in `src/domain/repositories/`.
+```
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `yarn test:run src/tests/application/dtos/media-dto.test.ts src/tests/lib/image-utils.test.ts`
-Expected: PASS, 2 files, 10 tests.
+Expected: PASS, 2 files, 12 tests.
 
-- [ ] **Step 5: Type-check and lint**
+- [ ] **Step 5: Type-check, format and lint**
 
-Run: `yarn tsc --noEmit && yarn eslint src/application/ports src/application/dtos/media.dto.ts src/application/use-cases/media-validation-error.ts src/lib/image-utils.ts src/tests/application/dtos/media-dto.test.ts src/tests/lib/image-utils.test.ts`
-Expected: exit 0, no output from eslint.
+Run: `yarn eslint --fix src/application/ports src/application/dtos/media.dto.ts src/application/use-cases/media-validation-error.ts src/lib/image-utils.ts src/tests/application/dtos/media-dto.test.ts src/tests/lib/image-utils.test.ts`, then the same without `--fix`, then `yarn tsc --noEmit`.
+Expected: the second eslint run and tsc exit 0 with no output. Ruled correction for the byte-compare: Prettier reformatting by `--fix` only.
 
 - [ ] **Step 6: Commit**
 
@@ -666,7 +702,11 @@ it('DELETE with an empty path returns 400', async () => {
 Run: `yarn test:run src/tests/app/api/media-routes.test.ts`
 Expected: FAIL — route module not found.
 
-- [ ] **Step 3: Implement** `MediaService` in `factories.ts` and the route. The route parses `quizId` with `UploadMediaInputSchema` and `DELETE` bodies with `DeleteMediaInputSchema`; a `ZodError` answers 400 with its first issue's message. One error-mapping helper per file (400 for `MediaValidationError`/`ZodError`, 404 for `/not found/i`, else `console.error` and 500 with the method's fixed body).
+- [ ] **Step 3: Implement** `MediaService` in `factories.ts` and the route. The route parses `quizId` with `UploadMediaInputSchema` and `DELETE` bodies with `DeleteMediaInputSchema`; a `ZodError` answers 400 with its first issue's message. One error-mapping helper in the file, **not exported** (`next build` rejects extra exports from `route.ts`): 400 when `error.name` is `MediaValidationError` or `ZodError`, 404 for `/not found/i`, else `console.error` and 500 with the method's fixed body. The route imports nothing from `@application/` except `dtos/*` and `services/factories`. Also:
+  - `request.formData()` throwing (not multipart) answers 400 `No image file provided`.
+  - `DELETE` success is `new NextResponse(null, { status: 204 })` (`NextResponse.json` with 204 throws).
+  - `GET` takes no arguments.
+  - The test harness creates fresh `vi.fn()`s in `beforeEach` (Vitest 4's `restoreAllMocks` restores only spies).
 
 - [ ] **Step 4: Run to verify it passes, and the existing route test still passes**
 
@@ -676,7 +716,7 @@ Expected: PASS, 2 files (`media-routes` 10 tests plus `quiz-routes` unchanged).
 - [ ] **Step 5: Type-check, lint, full suite**
 
 Run: `yarn tsc --noEmit && yarn eslint src/application/services/factories.ts src/app/api/admin/media src/tests/app/api && yarn test:run`
-Expected: exit 0; 71 files passed / 1 skipped; 489 + 10 (Task 1) + 20 (Task 2) + 8 (Task 3) + 10 = 537 tests passed / 1 skipped.
+Expected: exit 0; 71 files passed / 1 skipped; 489 + 12 (Task 1) + 20 (Task 2) + 8 (Task 3) + 10 = 539 tests passed / 1 skipped.
 
 - [ ] **Step 6: Commit**
 
@@ -804,7 +844,7 @@ and the browser check need it) and starts the dev server from the worktree.
 - Consumes: Task 5's hooks; Task 1's `isWithinUploadLimit`.
 
 - [ ] **Step 1: Switch the components.**
-  - `media-library.tsx`: `useMediaLibrary()` replaces the inline query and `handleDelete`'s storage call (`deleteFile.mutateAsync(file.path)` after the existing `confirm()`); a failed delete shows `deleteFile.error.message` near the list.
+  - `media-library.tsx`: `useMediaLibrary()` replaces the inline query and `handleDelete`'s storage call (`deleteFile.mutate(file.path)` after the existing `confirm()`; `mutate`, not `mutateAsync`, because the click handler at line 93 does not await, so a rejection would go unhandled); a failed delete shows `deleteFile.error.message` near the list.
   - Both dialogs: `const uploadMedia = useUploadMedia(quizId);` and `onUpload={async (file) => { const { url } = await uploadMedia.mutateAsync(file); setMediaUrl(url); return url; }}`. Thrown errors already reach `ImageUpload`'s `setError`.
   - `image-upload.tsx`: after `resizeImage`, `if (!isWithinUploadLimit(resizedFile)) { setError('Image must be 4 MB or smaller after resizing'); return; }` (inside the `try`, so `finally` clears the spinner).
   - Delete the two old storage files.
@@ -817,9 +857,9 @@ Expected: no output, exit 1 for both.
 - [ ] **Step 3: Type-check, lint, full suite, build**
 
 Run: `yarn tsc --noEmit && yarn eslint src/components/admin && yarn test:run && yarn build`
-Expected: exit 0; 72 files passed / 1 skipped; 546 tests passed / 1 skipped; build completes.
+Expected: exit 0; 72 files passed / 1 skipped; 548 tests passed / 1 skipped; build completes.
 
-- [ ] **Step 4: Verify in the browser (CLAUDE.md working rule).** With the dev server running from this worktree (`.env.local` copied in by the controller), sign in as the test admin, open a quiz, add a question with a small PNG through the dialog; the preview shows the image and its URL contains `/quiz-media/questions/<quizId>/` and ends `.jpg`. Open `/admin/media`; the page loads without errors. Record both in the report.
+- [ ] **Step 4: Verify in the browser (CLAUDE.md working rule).** With the dev server running from this worktree (`.env.local` copied in by the controller), sign in as the test admin, open a quiz, add a question with a small PNG through the dialog; the preview shows the image, and the `POST /api/admin/media` response (network log) is 201 with a `path` matching `questions/<quizId>/<digits>-<suffix>.jpg`. (The preview `src` is a `next/image` optimizer URL, not the storage URL.) Open `/admin/media`; the page loads without errors. Record both in the report.
 
 - [ ] **Step 5: Commit**
 
@@ -839,7 +879,7 @@ git commit -m "feat(media): upload and manage media through the API"
 - Consumes: the routes (Task 4), the dialog (Task 6), `AdminQuizDetailPage` (`e2e/pages`), the admin `storageState`.
 
 - [ ] **Step 1: Write the spec** with a 64×64 PNG built in the file as a base64 constant, three tests:
-  1. `uploads an image through the create-question dialog`: create a quiz through `POST /api/admin/quizzes` (as `admin-question-crud.spec.ts` does), open its detail page, open the create-question dialog, answer the file chooser (`page.waitForEvent('filechooser')` around the upload area's click) with the PNG; expect the preview `img` `src` to match `/\/quiz-media\/questions\/<quizId>\/\d+-[a-z0-9]+\.jpg$/`. Cleanup: `DELETE /api/admin/media` with the path cut from that URL, expect 204.
+  1. `uploads an image through the create-question dialog`: create a quiz through `POST /api/admin/quizzes` (as `admin-question-crud.spec.ts` does), open its detail page, open the create-question dialog, and answer the file chooser (`page.waitForEvent('filechooser')` around the upload area's click) with the PNG while waiting for `page.waitForResponse(r => r.url().endsWith('/api/admin/media') && r.request().method() === 'POST')`. Expect that response to be 201 with `path` matching `new RegExp(\`^questions/${quizId}/\\d+-[a-z0-9]+\\.jpg$\`)`, and the preview image (`alt="Uploaded image"`) visible. Fill the question text and save; reopen the question in the edit dialog and expect the preview image visible again (the question kept its `mediaUrl`). Cleanup: `DELETE /api/admin/media` with the response's `path`, expect 204.
   2. `round-trips an upload through the API`: `request.post('/api/admin/media', { multipart: { quizId, file: { name: 'a.png', mimeType: 'image/png', buffer } } })` → 201 with `path` ending `.png`; `request.get(url)` → 200; `DELETE` → 204; `DELETE` again → 404.
   3. `rejects an anonymous upload`: a new context with `storageState: { cookies: [], origins: [] }` posting the same multipart → 401.
 
@@ -868,8 +908,15 @@ git commit -m "test(e2e): cover admin media upload and delete"
 
 ```sql
 -- Writes to quiz-media go through the server's service-role key only (admin media API).
-DROP POLICY IF EXISTS "Authenticated users can upload quiz media" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can delete quiz media" ON storage.objects;
+-- Guarded: a shadow database used by `prisma migrate dev` may have no storage schema.
+DO $$
+BEGIN
+  IF to_regclass('storage.objects') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Authenticated users can upload quiz media" ON storage.objects;
+    DROP POLICY IF EXISTS "Authenticated users can delete quiz media" ON storage.objects;
+  END IF;
+END
+$$;
 ```
 
 - [ ] **Step 2: Rewrite `MEDIA-UPLOADS.md`**: bucket settings (unchanged), policies (public read only; writes via service role), the upload flow (pick → 10 MB and type check → resize to JPEG ≤1920×1080 → 4 MB check → `POST /api/admin/media` → `UploadMediaUseCase` → `SupabaseStorageService`), list and delete, the error table from the spec's section 2, the migration and its manual fallback (the same SQL in each project's SQL editor), and remove the nonexistent `src/app/api/admin/upload/route.ts`, `e2e/admin-media-upload.spec.ts` and the old `IStorageService` sample.
@@ -898,7 +945,7 @@ Not an agent task: it needs the dev server, the dev project and judgment on what
 
 ## Rollout (main session, after merge — spec section 3)
 
-1. Dev: `npx prisma migrate deploy --schema ./src/infrastructure/database/prisma/schema.prisma` (`.env.local`; no yarn script covers `migrate deploy`). If it fails on ownership of `storage.objects`, run the migration's SQL in the dev SQL editor and record it.
+1. Dev: `set -a; . ./.env.local; set +a; npx prisma migrate deploy` (`prisma.config.ts` loads only `.env`, which does not exist, and connects with `DIRECT_URL ?? DATABASE_URL`; no yarn script covers `migrate deploy`). If it fails on ownership of `storage.objects` (the `DIRECT_URL` role is not its owner), run the migration's SQL in the dev SQL editor and record it.
 2. Dev checks: a direct Storage API upload and delete with the admin's session (anon key + that session, bypassing the app) fail with an RLS error; an upload through the app still works; a public URL loads. Append to the findings record.
 3. Production: the user applies the migration (`migrate deploy` or the SQL editor), then the same checks against production.
 4. Follow-up commit on a new branch: remove CLAUDE.md pitfall 4, add the dated note to the storage-policies findings record, index line.
