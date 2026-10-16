@@ -16,6 +16,7 @@ export class StartQuizUseCase {
     }
 
     quiz.startQuiz();
+    await this.quizRepository.clearQuestionLocks(quizId);
 
     await this.quizRepository.save(quiz);
 

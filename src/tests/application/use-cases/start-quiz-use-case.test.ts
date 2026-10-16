@@ -19,6 +19,7 @@ describe('StartQuizUseCase', () => {
       updateCurrentQuestion: vi.fn(),
       updateLeaderboard: vi.fn(),
       delete: vi.fn(),
+      clearQuestionLocks: vi.fn(),
     } as unknown as Mocked<IQuizRepository>;
     startQuizUseCase = new StartQuizUseCase(quizRepository);
   });
@@ -39,6 +40,10 @@ describe('StartQuizUseCase', () => {
     expect(quiz.quizStatus).toBe(QuizStatus.Active);
     expect(quiz.timerStartTime).toBeDefined();
     expect(quizRepository.save).toHaveBeenCalledWith(quiz);
+    expect(quizRepository.clearQuestionLocks).toHaveBeenCalledWith('quiz1');
+    expect(
+      quizRepository.clearQuestionLocks.mock.invocationCallOrder[0]
+    ).toBeLessThan(quizRepository.save.mock.invocationCallOrder[0]);
   });
 
   it('should throw an error if the quiz is not found', async () => {
@@ -49,6 +54,7 @@ describe('StartQuizUseCase', () => {
     );
     expect(quizRepository.findById).toHaveBeenCalledWith('invalidQuizId');
     expect(quizRepository.save).not.toHaveBeenCalled();
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
   });
 
   describe('audit log emission', () => {

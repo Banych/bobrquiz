@@ -34,6 +34,16 @@ export class LockQuestionUseCase {
     // 2. Lock the current question
     quiz.lockCurrentQuestion();
 
+    // Persist the lock first; losing the race means another request locked it
+    const locked = await this.quizRepository.lockQuestion(
+      quizId,
+      currentQuestion.id,
+      currentQuestion.answersLockedAt!
+    );
+    if (!locked) {
+      throw new Error('Question already locked');
+    }
+
     // 3. Get current leaderboard
     const currentLeaderboard = quiz.getLeaderboard();
 

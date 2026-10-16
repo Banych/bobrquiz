@@ -17,6 +17,7 @@ describe('ResetQuizUseCase', () => {
       updateCurrentQuestion: vi.fn(),
       updateLeaderboard: vi.fn(),
       delete: vi.fn(),
+      clearQuestionLocks: vi.fn(),
     } as unknown as Mocked<IQuizRepository>;
     resetQuizUseCase = new ResetQuizUseCase(quizRepository);
   });
@@ -38,6 +39,10 @@ describe('ResetQuizUseCase', () => {
     expect(quizRepository.findById).toHaveBeenCalledWith('quiz1');
     expect(quiz.quizStatus).toBe(QuizStatus.Pending);
     expect(quizRepository.save).toHaveBeenCalledWith(quiz);
+    expect(quizRepository.clearQuestionLocks).toHaveBeenCalledWith('quiz1');
+    expect(
+      quizRepository.clearQuestionLocks.mock.invocationCallOrder[0]
+    ).toBeLessThan(quizRepository.save.mock.invocationCallOrder[0]);
   });
 
   it('throws "Quiz not found." when quiz does not exist', async () => {
@@ -47,6 +52,7 @@ describe('ResetQuizUseCase', () => {
       'Quiz not found.'
     );
     expect(quizRepository.save).not.toHaveBeenCalled();
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
   });
 
   it('propagates entity error for invalid state (already Pending)', async () => {
@@ -63,5 +69,6 @@ describe('ResetQuizUseCase', () => {
       'Quiz can only be reset if it is in Active or Completed status.'
     );
     expect(quizRepository.save).not.toHaveBeenCalled();
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
   });
 });
