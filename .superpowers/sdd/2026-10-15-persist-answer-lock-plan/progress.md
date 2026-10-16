@@ -89,3 +89,9 @@ W2 note: after this merges, master's e2e/round-transitions.spec.ts (shared JOIN-
 - 742ed9c integration fake's quiz.update throws on nested questions/answers/players; `stale!` replaced by a guard. Mutation check: a nested `questions: { updateMany: [] }` added to save → 7 failed (7) in the file; restored (git diff empty).
 - 7415d2b race test moved into the audit describe, unreachable stubs dropped (P1, P2). lint, tsc exit 0; yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
 - df56cfc docs: spec Testing and Design 5, out-of-scope list (+ lost-update save, lock/start 400 mapping, reset refusal 500; broadcast removed from the persisted-lock item), plan file table / "narrows" / findings name, findings mechanism wording and the shared-quiz E2E note.
+
+### Fix-wave re-review
+task-reviewer-capable over b9fc943..6620035: APPROVED, 4 minors (final-fixwave-rereview.md). Tamper check clean (HEAD 6620035, status empty, ledger listing unchanged).
+- R1 (refusals logged at error level): no change — matches both reset routes; revisit with the deferred status mapping — cost: log noise on a double click.
+- R2 (error log unpinned), R3 (pre-existing `!` in the round summary), R4 (spec Testing lists): fixed in 183efd6 — lockedAt passed into buildRoundSummary; 400 route test asserts console.error; spec lists all 7 integration behaviours and marks which route test failed first. lint, tsc exit 0; yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
+Branch passes: complete. Next: bring fix/persist-answer-lock-final-fixes into fix/persist-answer-lock (fast-forward), PR draft for the user's approval.
