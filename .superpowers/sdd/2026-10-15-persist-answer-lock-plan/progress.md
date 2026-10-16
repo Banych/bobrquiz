@@ -53,3 +53,31 @@ Live check (scratchpad lock-live-check.mjs, output lock-live-check.txt): lock 20
 Findings: docs/progress/findings/2026-10-16-persist-answer-lock.md. The E2E branch's two round-transitions lock tests are the automated check once test/e2e-isolated-quizzes has this fix.
 Out-of-scope items from the spec: recording them as tracked items waits for the user's choice of place.
 Task 3: complete
+
+## End-of-branch passes
+User go-ahead 2026-10-16 ("yes"). Range d839d5f..b9fc943 (origin/master merge base to Task 3's findings commit). Production code changed (repository, mapper, three use cases): all three reports — whole-branch review (task-reviewer-capable, handback saved as final-whole-branch-review.md), silent-failure hunt (final-silent-failure-hunt.md), simplification report (final-simplification.md, report only).
+Tamper baseline: HEAD b9fc943, git status --porcelain " M progress.md" (this section, appended just before), ledger listing recorded (11 files, progress.md 08:57:05).
+Tamper checks after each return: HEAD b9fc943 and status unchanged; ledger listing gained only final-simplification.md and final-silent-failure-hunt.md (each agent's own report). Whole-branch review returned in its handback, saved as final-whole-branch-review.md. Reviewer's verdict run: yarn test:run 503 passed | 1 skipped (504) exit 0; lint exit 0 (5 warnings, untouched files); tsc exit 0.
+
+### Ruling table
+| Finding (sources) | Ruling | Cost if wrong |
+|---|---|---|
+| Broadcast failure after a persisted lock → 400, retry refused, summary lost (W1, S1; triage of T2 minor 1) | Fix: wrap the lock route's broadcast in its own try/catch with console.warn, return 200 with the summary, as start/reset do; route test where the broadcast rejects | — |
+| No route test pins the lock route's mapping (S6) | Fix with W1: route tests for 200 + broadcast, broadcast rejects → 200, "Question already locked" → 400, "not active" → 404 | — |
+| Lock route logs nothing on error (S2, logging half) | Fix: console.error in the lock route's catch (file touched by W1) | — |
+| Non-domain errors map to 400, not 500, in lock and start routes (S2, status half) | Defer — pre-existing on master, not caused by the branch; changing the regex means auditing every domain message the routes can throw. Record as an out-of-scope item | A DB outage reads as 400 to the host, as on master today |
+| Reset refusal "can only be reset" maps to 500 (S7) | Defer — pre-existing on master, unrelated to the lock. Record as an out-of-scope item | Same as today |
+| `lockQuestion` false always reported "already locked", also for a quiz/question deleted mid-request (S3) | No change — needs a deletion racing a lock in the same few ms; the 400 is still a refusal | A host who deletes in another tab mid-lock sees "already locked" |
+| `answersLockedAt!` hides that lockCurrentQuestion sets it; an unset value would reach Prisma as an empty update (S4, P3) | Fix: lockCurrentQuestion returns the Date; the use case passes it; domain test asserts the return | One domain signature void → Date; callers ignore it |
+| Integration fake's quiz.update ignores nested question writes, so the stale-save test can't see option A creeping in (S5) | Fix: fake throws on nested `questions`/`answers`/`players` data | — |
+| Shared-quiz round-transitions E2E becomes order-dependent after merge (W2) | Fix (docs): ledger line here and the findings record; transient until the E2E branch's Task 2 | — |
+| Spec/plan wording drift (W3) | Fix (docs): spec Testing lines, Design 5 clause; plan file table, "narrows", findings file name | — |
+| Findings overclaims the Postgres mechanism (W4) | Fix (docs): reword to outcome observed, mechanism from Postgres semantics | — |
+| Whole-aggregate save loses concurrent answers (W5) | Fix (docs): add to the spec's out-of-scope list | — |
+| Race test duplicates the audit describe's setup (P1) and stubs unreachable mocks (P2) | Apply | — |
+| Repeated Prisma fixture in repository tests (P4) | Skip — the simplifier itself says skip unless the older test is touched | Two ~25-line fixtures stay |
+| Integration fakes list unused methods (P5) | Skip — matches the neighbouring full-surface style | — |
+| `save(stale!)` (P6) | Apply the guard only; leave lock() where it is | — |
+| P7, P8 | No edit (simplifier) | — |
+| Clear-before-save not atomic; server clock; same error text (simplifier's non-simplifications) | No change — ruled in Design 5 / Task 2; intentional | — |
+W2 note: after this merges, master's e2e/round-transitions.spec.ts (shared JOIN-KYTX quiz) can fail "toBeEnabled" when the shared quiz's question is already locked by an earlier or parallel test; the E2E branch's Task 2 rewrites it on per-test quizzes.
