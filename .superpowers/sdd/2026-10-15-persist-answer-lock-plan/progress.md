@@ -30,3 +30,8 @@ Task 1 review (task-reviewer-capable): APPROVED, spec ✅, 2 minors. Tamper chec
 - Unverified "one wins" relies on Postgres re-checking the condition in one UPDATE — added to Task 3's real-target check: two parallel lock requests → one 200, one 400, one snapshot set.
 Task 1: complete (commits b1d804a..4590411, review clean)
 Doc sweep after Task 1: nothing measured; plan and spec amended above (premise: the reviewer's lock-vs-reset interleaving).
+
+User go-ahead 2026-10-16 ("go next").
+## Task 2
+BASE 3520bc4. Dispatched implementer.
+Task 2 implementer DONE, commit a244b8c (7 files). Implementer red run: 9 failed | 15 passed (24) on the four files, as the brief predicted; fake ran unchanged. Controller verdict: yarn test:run exit 0, Test Files 67 passed | 1 skipped (68), Tests 501 passed | 1 skipped (502).
