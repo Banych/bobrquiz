@@ -77,7 +77,7 @@ Tests are written with the code, not after. Every feature needs:
 | Entity behavior, invariants | `src/tests/domain/{entities,value-objects,aggregates,events}/` |
 | Use case success, not-found and invalid-state paths | `src/tests/application/use-cases/` |
 | Repository CRUD and edge cases | `src/tests/infrastructure/repositories/` |
-| Services, mappers, hooks, lib, API routes, components | `src/tests/{application/services,application/mappers,hooks,lib,app/api,components}/` |
+| Services, mappers, DTO schemas, hooks, lib, API routes, components | `src/tests/{application/services,application/mappers,application/dtos,hooks,lib,app/api,components}/` |
 | Cross-layer flows | `src/tests/integration/` |
 | User flows (Playwright) | `e2e/` |
 

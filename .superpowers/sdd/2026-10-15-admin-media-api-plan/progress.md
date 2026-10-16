@@ -41,3 +41,60 @@ Rulings applied to the plan:
   schema (correction 6). The checker had listed only the `IF EXISTS` notice as unverified.
 - Task 4 Step 3 carries the checker's watch items (unexported helper, 204 via
   `new NextResponse(null, …)`, `GET()` without arguments, fresh `vi.fn()`s, non-multipart → 400).
+
+## Execution (2026-10-16)
+
+User approved the plan 2026-10-16 ("plan is ok, subagent driven"); kept the old main-checkout
+draft (`.superpowers/drafts/2026-10-15-storage-policies-any-user.md`), not deleted.
+
+### Pre-flight conflict scan (controller, plan at 85d1efd)
+
+| Rows | Produces → consumes | Found |
+|---|---|---|
+| T1 → T2 | `IStorageService` (4 methods), `MediaValidationError`, `MEDIA_*`, `UploadMediaInputSchema`, `DeleteMediaInputSchema` → use cases and the `satisfies Record<keyof IStorageService>` mock | agree |
+| T1 → T3 | `StoredObject`, `StorageListEntry` → adapter return shapes; T3 list test expects `{name,path,size,createdAt}` | agree |
+| T1 → T4 | input schemas → route validation; `Invalid quiz ID` before the use case | agree |
+| T1 → T5 | `MEDIA_TOO_LARGE_MESSAGE` → 413 mapping | agree |
+| T1 → T6 | `isWithinUploadLimit(Blob)` → after-resize check; the after-resize copy is a literal in T6, not a T1 constant | agree |
+| T2 ↔ existing | `MediaFileDTOSchema` fields `name,path,url,size,createdAt` (media.dto.ts) → T2 list test | agree |
+| T2/T3 → T4 | three use cases + `SupabaseStorageService()` no-arg ctor → `MediaService` | agree |
+| T4 → T5 | POST 201 JSON, GET 200, DELETE 204 empty body → hooks (delete must not parse a body) | agree |
+| T3 → T6 | T3 only reads the old adapter; T6 deletes it | agree (correction 1) |
+| T6 → T7 | preview `alt="Uploaded image"` (`image-upload.tsx:170`) → e2e locator | agree |
+| T6 → T8 | admin storage components gone → architecture-check Assumed bullet | agree |
+| T1 self | 8 + 4 = 12 tests; `''` fails the regex with the message; missing key hits `z.string({ error })` (zod ^4.4.3, v4 syntax); `media.dto.ts` already imports `z` | agree |
+| T2 self | 12 + 2 + 6 = 20 tests; validation order quizId → type → empty → size | agree |
+| T3 self | 5 + 3 = 8 tests | agree |
+| T4 self | 10 tests; totals 489 + 12 + 20 + 8 + 10 = 539, 66 + 5 = 71 files | agree |
+| T5 self | 9 tests; 548 / 72 after T6 (T6 adds no tests) | agree |
+| T8 self | migration replaces no schema change; Step 3 checks it | agree |
+
+Scan clean; no new rulings.
+
+### Task 1 — port, DTOs, shared limits (implementer-transcribe, haiku pin)
+
+BASE 85d1efd. Report `task-1-report.md`. Commit 75631a2 `feat(media): add storage port and media
+DTOs`, 8 files (the brief's Step 6 list exactly; nothing under `.superpowers/` staged).
+
+- RED (implementer): 2 files failed, 11 failed / 1 passed. The pass is the `isValidImageType`
+  case, which characterises a function that already existed; expected.
+- Byte-compare (controller, brief blocks vs commit): the four new files (`storage-service.ts`,
+  `media-validation-error.ts`, both test files) are `diff`-identical to the brief; the
+  `media.dto.ts` append, ADR-025 and the CLAUDE.md Ports bullet match their blocks line for line;
+  `image-utils.ts` matches the brief's prose (import at top, `isValidImageType` as an expression
+  arrow, `isWithinUploadLimit` added next to it). No Prettier reformatting happened, so not even
+  the ruled correction was needed. Per-task review skipped under the user-level transcribe
+  exception; the end-of-branch passes cover it.
+- Controller re-checks: `yarn eslint <the six paths>` exit 0, `yarn tsc --noEmit` exit 0.
+- Verdict (`yarn test:run`, main session): first run after the hand-back gave
+  `Test Files 1 failed | 67 passed | 1 skipped (69)`, `Tests 1 failed | 500 passed | 1 skipped
+  (502)`, exit 1; its failure lines were not captured (only `tail` was kept). The next 17 runs
+  (1 + 10 sequential + 6 as 3 concurrent pairs) all gave `68 passed | 1 skipped (69)`,
+  `501 passed | 1 skipped (502)`, exit 0. Expected 68 / 501 after Task 1: met. The one failure
+  is unidentified (Why: unknown). It may have overlapped the implementer's last commands, but
+  that is not shown. If it recurs, capture the full output before re-running.
+- Doc sweep: decision → ADR-025 (in the commit). Findings → none beyond the flake above, kept
+  here. Conventions → none. CLAUDE.md → the test table now names `src/tests/application/dtos/`,
+  the new home of DTO schema tests (controller edit, committed with this entry).
+
+Task 1: complete (commits 85d1efd..75631a2, byte-compare clean, review skipped per transcribe exception)
