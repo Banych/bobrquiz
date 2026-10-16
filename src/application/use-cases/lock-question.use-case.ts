@@ -74,7 +74,8 @@ export class LockQuestionUseCase {
       currentQuestion,
       currentLeaderboard,
       previousSnapshots,
-      playerMap
+      playerMap,
+      lockedAt
     );
 
     // 8. Persist locked state
@@ -108,7 +109,8 @@ export class LockQuestionUseCase {
       score: number;
       rank: number;
     }>,
-    playerMap: Map<string, Player>
+    playerMap: Map<string, Player>,
+    lockedAt: Date
   ): RoundSummaryDTO {
     // Collect all answers for the current question from all players
     const allAnswers: Answer[] = [];
@@ -187,7 +189,7 @@ export class LockQuestionUseCase {
       correctCount,
       totalPlayers: playerMap.size,
       leaderboardDeltas,
-      lockedAt: currentQuestion.answersLockedAt!.toISOString(),
+      lockedAt: lockedAt.toISOString(),
     };
   }
 }

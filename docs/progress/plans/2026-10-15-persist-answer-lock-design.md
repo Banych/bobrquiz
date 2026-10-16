@@ -101,8 +101,11 @@ Failing first, then passing:
   count; `clearQuestionLocks` clears by quiz.
 - **Integration** (`src/tests/integration/answer-lock-persistence.test.ts`): the real
   `PrismaQuizRepository` and use cases against a stateful Prisma fake (the investigation's draft):
-  lock then reload keeps Q1 locked and Q2 unlocked; a later submit is rejected; a second lock is
-  rejected and writes one snapshot set; reset clears the persisted locks.
+  lock then reload keeps Q1 locked and Q2 unlocked; a later submit is rejected; a stale aggregate
+  saved after the lock does not undo it; a second lock is rejected and writes one snapshot set;
+  of two concurrent locks exactly one wins; reset clears the persisted locks; start clears a lock
+  written after a reset. The fake's `quiz.update` throws on nested relation writes, so a `save`
+  that wrote locks that way could not pass silently.
 - **Use cases** (`lock-question.use-case.test.ts`, `reset-quiz-use-case.test.ts`,
   `start-quiz-use-case.test.ts`): `lockQuestion` called with the quiz, question and time; `false`
   throws and saves no snapshots; reset and start call `clearQuestionLocks`, and start from a
@@ -111,8 +114,8 @@ Failing first, then passing:
   start `clearQuestionLocks`): every other mock is cast `as unknown as`, so `tsc` stays clean
   without touching them (plan check, 2026-10-15; start added with Design 6).
 - **Route** (`src/tests/app/api/lock-question-route.test.ts`, end-of-branch fix, 2026-10-16): a
-  failed broadcast still returns 200 with the summary; "Question already locked" → 400; an
-  inactive quiz → 404.
+  failed broadcast still returns 200 with the summary (the one route test that failed first);
+  "Question already locked" → 400 and is logged; an inactive quiz → 404 (regression pins).
 - Verdict: `yarn test:run` with counts; `yarn lint`; `tsc`.
 - **Real target:** with the dev server, lock a question on the host dashboard and check the button
   stays disabled after the refetch, and that a player's answer after the lock is refused. The E2E

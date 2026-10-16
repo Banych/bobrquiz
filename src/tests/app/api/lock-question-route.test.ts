@@ -89,6 +89,10 @@ describe('POST /api/quiz/[quizId]/lock-question', () => {
       error: 'Question already locked',
     });
     expect(mocks.broadcastRoundSummary).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      '[API] lock question error:',
+      expect.any(Error)
+    );
   });
 
   it('maps an inactive quiz to 404', async () => {
