@@ -37,6 +37,16 @@ import { ListQuizQuestionsUseCase } from '@application/use-cases/list-quiz-quest
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
 import { ListAllQuestionsUseCase } from '@application/use-cases/list-all-questions.use-case';
 import { ListAuditLogsUseCase } from '@application/use-cases/audit/list-audit-logs.use-case';
+import { UploadMediaUseCase } from '@application/use-cases/upload-media.use-case';
+import type { UploadMediaInput } from '@application/use-cases/upload-media.use-case';
+import { ListMediaUseCase } from '@application/use-cases/list-media.use-case';
+import { DeleteMediaUseCase } from '@application/use-cases/delete-media.use-case';
+import { SupabaseStorageService } from '@infrastructure/storage/supabase-storage-service';
+import type {
+  DeleteMediaInputDTO,
+  MediaFileDTO,
+  UploadMediaResultDTO,
+} from '@application/dtos/media.dto';
 import type {
   CreateQuestionDTO,
   UpdateQuestionDTO,
@@ -68,6 +78,12 @@ type QuestionService = {
   }) => ReturnType<ListAllQuestionsUseCase['execute']>;
 };
 
+type MediaService = {
+  upload: (input: UploadMediaInput) => Promise<UploadMediaResultDTO>;
+  list: () => Promise<MediaFileDTO[]>;
+  delete: (input: DeleteMediaInputDTO) => Promise<void>;
+};
+
 type AuditService = {
   listAuditLogs: (params: {
     quizId?: string;
@@ -81,6 +97,7 @@ type ServiceContainer = {
   answerService: AnswerService;
   questionService: QuestionService;
   auditService: AuditService;
+  mediaService: MediaService;
   joinSessionUseCase: JoinSessionUseCase;
   lockQuestionUseCase: LockQuestionUseCase;
   getPlayerConnectionStatusUseCase: GetPlayerConnectionStatusUseCase;
@@ -251,12 +268,25 @@ export const getServices = (): ServiceContainer => {
     listAllQuestions: (params) => listAllQuestionsUseCase.execute(params),
   };
 
+  // Media use cases
+  const storageService = new SupabaseStorageService();
+  const uploadMediaUseCase = new UploadMediaUseCase(storageService);
+  const listMediaUseCase = new ListMediaUseCase(storageService);
+  const deleteMediaUseCase = new DeleteMediaUseCase(storageService);
+
+  const mediaService: MediaService = {
+    upload: (input) => uploadMediaUseCase.execute(input),
+    list: () => listMediaUseCase.execute(),
+    delete: (input) => deleteMediaUseCase.execute(input),
+  };
+
   container = {
     playerService,
     quizService,
     answerService,
     questionService,
     auditService,
+    mediaService,
     joinSessionUseCase,
     lockQuestionUseCase,
     getPlayerConnectionStatusUseCase,

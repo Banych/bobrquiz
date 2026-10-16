@@ -41,6 +41,7 @@ describe('Quiz API routes', () => {
       joinSessionUseCase: {} as ServiceContainer['joinSessionUseCase'],
       questionService: {} as ServiceContainer['questionService'],
       auditService: {} as ServiceContainer['auditService'],
+      mediaService: {} as ServiceContainer['mediaService'],
       lockQuestionUseCase: {} as ServiceContainer['lockQuestionUseCase'],
       getPlayerConnectionStatusUseCase:
         {} as ServiceContainer['getPlayerConnectionStatusUseCase'],
