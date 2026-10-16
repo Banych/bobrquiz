@@ -182,22 +182,24 @@ describe('answer lock persistence', () => {
 
   it('lets exactly one of two concurrent locks win', async () => {
     const lockQuestionSpy = vi.spyOn(quizRepository, 'lockQuestion');
+    try {
+      const results = await Promise.allSettled([lock(), lock()]);
 
-    const results = await Promise.allSettled([lock(), lock()]);
-
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    const rejected = results.filter((r) => r.status === 'rejected');
-    expect(rejected).toHaveLength(1);
-    expect((rejected[0] as PromiseRejectedResult).reason).toEqual(
-      new Error('Question already locked')
-    );
-    // Both requests reached the repository, so the false branch decided it
-    const outcomes = await Promise.all(
-      lockQuestionSpy.mock.results.map((r) => r.value as Promise<boolean>)
-    );
-    expect(outcomes.sort()).toEqual([false, true]);
-    expect(snapshotRepository.saveSnapshots).toHaveBeenCalledTimes(1);
-    lockQuestionSpy.mockRestore();
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const rejected = results.filter((r) => r.status === 'rejected');
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason).toEqual(
+        new Error('Question already locked')
+      );
+      // Both requests reached the repository, so the false branch decided it
+      const outcomes = await Promise.all(
+        lockQuestionSpy.mock.results.map((r) => r.value as Promise<boolean>)
+      );
+      expect(outcomes.sort()).toEqual([false, true]);
+      expect(snapshotRepository.saveSnapshots).toHaveBeenCalledTimes(1);
+    } finally {
+      lockQuestionSpy.mockRestore();
+    }
   });
 
   it('clears a lock written after a reset when the quiz starts again', async () => {
