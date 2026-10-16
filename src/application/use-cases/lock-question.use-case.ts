@@ -32,7 +32,17 @@ export class LockQuestionUseCase {
     }
 
     // 2. Lock the current question
-    quiz.lockCurrentQuestion();
+    const lockedAt = quiz.lockCurrentQuestion();
+
+    // Persist the lock first; losing the race means another request locked it
+    const locked = await this.quizRepository.lockQuestion(
+      quizId,
+      currentQuestion.id,
+      lockedAt
+    );
+    if (!locked) {
+      throw new Error('Question already locked');
+    }
 
     // 3. Get current leaderboard
     const currentLeaderboard = quiz.getLeaderboard();
@@ -64,7 +74,8 @@ export class LockQuestionUseCase {
       currentQuestion,
       currentLeaderboard,
       previousSnapshots,
-      playerMap
+      playerMap,
+      lockedAt
     );
 
     // 8. Persist locked state
@@ -98,7 +109,8 @@ export class LockQuestionUseCase {
       score: number;
       rank: number;
     }>,
-    playerMap: Map<string, Player>
+    playerMap: Map<string, Player>,
+    lockedAt: Date
   ): RoundSummaryDTO {
     // Collect all answers for the current question from all players
     const allAnswers: Answer[] = [];
@@ -177,7 +189,7 @@ export class LockQuestionUseCase {
       correctCount,
       totalPlayers: playerMap.size,
       leaderboardDeltas,
-      lockedAt: currentQuestion.answersLockedAt!.toISOString(),
+      lockedAt: lockedAt.toISOString(),
     };
   }
 }

@@ -30,6 +30,8 @@ describe('LockQuestionUseCase', () => {
       update: vi.fn(),
       findAll: vi.fn(),
       findEntityById: vi.fn(),
+      lockQuestion: vi.fn().mockResolvedValue(true),
+      clearQuestionLocks: vi.fn(),
     } as unknown as Mocked<IQuizRepository>;
 
     playerRepository = {
@@ -54,6 +56,52 @@ describe('LockQuestionUseCase', () => {
       quizRepository,
       playerRepository,
       snapshotRepository
+    );
+  });
+
+  const makeActiveQuiz = () => {
+    const question = new Question(
+      'q1',
+      'What is 2+2?',
+      ['4'],
+      'multiple-choice',
+      100,
+      undefined,
+      undefined,
+      ['2', '3', '4', '5']
+    );
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz-1', 'Math Quiz', [question], {
+        timePerQuestion: 30,
+        allowSkipping: false,
+      }),
+      30
+    );
+    quiz.addPlayer('p1');
+    quiz.startQuiz();
+    return { quiz, question };
+  };
+
+  it('persists the lock before writing snapshots', async () => {
+    const { quiz, question } = makeActiveQuiz();
+    quizRepository.findById.mockResolvedValue(quiz);
+    playerRepository.listByQuizId.mockResolvedValue([
+      new Player('p1', 'Alice', 'quiz-1'),
+    ]);
+    snapshotRepository.findByQuizAndQuestion.mockResolvedValue([]);
+
+    await useCase.execute('quiz-1');
+
+    expect(quizRepository.lockQuestion).toHaveBeenCalledWith(
+      'quiz-1',
+      'q1',
+      question.answersLockedAt
+    );
+    expect(question.answersLockedAt).toBeInstanceOf(Date);
+    expect(
+      quizRepository.lockQuestion.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      snapshotRepository.saveSnapshots.mock.invocationCallOrder[0]
     );
   });
 
@@ -367,6 +415,24 @@ describe('LockQuestionUseCase', () => {
       );
 
       await expect(useCaseWithAudit.execute('quiz-1')).resolves.not.toThrow();
+    });
+
+    it('throws and writes nothing when another request locked the question first', async () => {
+      const { quiz } = makeActiveQuiz();
+      quizRepository.findById.mockResolvedValue(quiz);
+      quizRepository.lockQuestion.mockResolvedValue(false);
+
+      await expect(
+        new LockQuestionUseCase(
+          quizRepository,
+          playerRepository,
+          snapshotRepository,
+          auditLogRepository
+        ).execute('quiz-1')
+      ).rejects.toThrow('Question already locked');
+      expect(snapshotRepository.saveSnapshots).not.toHaveBeenCalled();
+      expect(quizRepository.save).not.toHaveBeenCalled();
+      expect(auditLogRepository.save).not.toHaveBeenCalled();
     });
   });
 
