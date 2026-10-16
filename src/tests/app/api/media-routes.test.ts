@@ -168,4 +168,32 @@ describe('Admin media API route', () => {
     expect(res.status).toBe(400);
     expect(mediaService.delete).not.toHaveBeenCalled();
   });
+
+  it('POST with a non-multipart body returns 400 "No image file provided"', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/admin/media', {
+        method: 'POST',
+        body: JSON.stringify({ quizId: 'quiz-1' }),
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({
+      error: 'No image file provided',
+    });
+    expect(mediaService.upload).not.toHaveBeenCalled();
+  });
+
+  it('DELETE with an unparsable body returns 400 "Invalid media path"', async () => {
+    const res = await DELETE(
+      new Request('http://localhost/api/admin/media', {
+        method: 'DELETE',
+        body: 'not json',
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({ error: 'Invalid media path' });
+    expect(mediaService.delete).not.toHaveBeenCalled();
+  });
 });
