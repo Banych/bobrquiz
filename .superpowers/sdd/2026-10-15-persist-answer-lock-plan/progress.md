@@ -81,3 +81,11 @@ Tamper checks after each return: HEAD b9fc943 and status unchanged; ledger listi
 | P7, P8 | No edit (simplifier) | — |
 | Clear-before-save not atomic; server clock; same error text (simplifier's non-simplifications) | No change — ruled in Design 5 / Task 2; intentional | — |
 W2 note: after this merges, master's e2e/round-transitions.spec.ts (shared JOIN-KYTX quiz) can fail "toBeEnabled" when the shared quiz's question is already locked by an earlier or parallel test; the E2E branch's Task 2 rewrites it on per-test quizzes.
+
+### Fix wave (branch fix/persist-answer-lock-final-fixes, cut from b9fc943)
+- 798d20d docs: the three reports and the ruling table.
+- f352ed5 lock route broadcast in its own try/catch + console.warn, console.error in the catch; new src/tests/app/api/lock-question-route.test.ts (4 tests). Red on the old route: 1 failed | 3 passed (the broadcast-rejects test); green 4 passed. Full: yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
+- 971438e lockCurrentQuestion returns the Date; use case passes it (no `!`); domain test asserts the return is the stored Date. lint, tsc exit 0; yarn test:run exit 0, 507 passed | 1 skipped (508).
+- 742ed9c integration fake's quiz.update throws on nested questions/answers/players; `stale!` replaced by a guard. Mutation check: a nested `questions: { updateMany: [] }` added to save → 7 failed (7) in the file; restored (git diff empty).
+- 7415d2b race test moved into the audit describe, unreachable stubs dropped (P1, P2). lint, tsc exit 0; yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
+- df56cfc docs: spec Testing and Design 5, out-of-scope list (+ lost-update save, lock/start 400 mapping, reset refusal 500; broadcast removed from the persisted-lock item), plan file table / "narrows" / findings name, findings mechanism wording and the shared-quiz E2E note.
