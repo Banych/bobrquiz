@@ -78,6 +78,7 @@ export function PlayerListWithStatus({
           {players.map((player) => (
             <div
               key={player.playerId}
+              data-testid={`player-card-${player.playerId}`}
               className="rounded-lg border border-border/80 px-3 py-2"
             >
               <div className="flex items-center justify-between gap-2">
