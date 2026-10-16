@@ -84,7 +84,9 @@ locking") already fails on master and E2E is not in CI.
    `quiz.startQuiz()` and before `save`, call `clearQuestionLocks(quiz.id)`. A lock request that
    loaded the Active quiz before a reset can write its lock after the reset's clear (the
    conditional filter does not see the quiz status); a quiz only starts from Pending, so clearing
-   at start is always right and closes that window.
+   at start is always right and narrows that window to a lock request that loads before the
+   reset and writes after the following start (whose own stale `save` then also writes the old
+   status back: the existing `save` race).
 7. **Unchanged:** the host hook, the player UI, realtime, the answer route. After the fix, a late
    answer gets the existing 400 "Answers are locked for this question." as its submission message.
 
@@ -111,6 +113,13 @@ Failing first, then passing:
   branch's two round-transitions lock tests are the automated check once both branches are in.
 
 ## Out of scope (recorded as separate items)
+
+- A failure after the lock is persisted (snapshot read or write, player load, building the
+  summary, `save`) leaves the question locked with no round summary, and a retry gets "Question
+  already locked", so the host loses that round's summary and the next round's rank deltas lack
+  a baseline. Players are still refused correctly. It is the price of persisting the lock first
+  so a lost race writes nothing (Design 4); undoing it would need a per-question unlock on
+  failure (Task 2 review, 2026-10-16).
 
 - The in-flight answer race (an answer loaded before the lock and saved after it).
 - Every `save` regenerates answer ids (`prisma-quiz.repository.ts:98`), so the `answerId` sent to

@@ -35,3 +35,7 @@ User go-ahead 2026-10-16 ("go next").
 ## Task 2
 BASE 3520bc4. Dispatched implementer.
 Task 2 implementer DONE, commit a244b8c (7 files). Implementer red run: 9 failed | 15 passed (24) on the four files, as the brief predicted; fake ran unchanged. Controller verdict: yarn test:run exit 0, Test Files 67 passed | 1 skipped (68), Tests 501 passed | 1 skipped (502).
+Task 2 review (task-reviewer-capable): APPROVED, spec ✅, 6 minors. Tamper check clean (HEAD ed0fcbe, status empty).
+- Minors 2-5 fixed in the task's own round: integration test for two parallel locks (Promise.all) exercising the repository's false path; assert the late lockQuestion returns true; assert q1 is locked before the reset and the question count; unit test that start from a non-Pending quiz calls neither clearQuestionLocks nor save.
+- Ruling: minor 1 "a failure after the lock is persisted leaves the round without a summary and a retry is refused" — recorded in the spec's Out of scope, no code change; it follows from Design 4 (persist first so a lost race writes nothing), undoing it needs a per-question unlock — cost: on a rare DB failure mid-lock, the host loses that round's summary.
+- Ruling: minor 6 "closes that window overstates" — spec Design 6 reworded to "narrows" with the remaining interleaving — no cost.
