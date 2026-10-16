@@ -1,7 +1,7 @@
 # Persist the answer lock — design
 
 **Date:** 2026-10-15
-**Status:** In progress
+**Status:** ✅ Complete — PR #81
 **Branch:** `fix/persist-answer-lock` (from `origin/master` at d839d5f)
 
 ## Why

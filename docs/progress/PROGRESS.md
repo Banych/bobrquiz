@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-16: Persist the Answer Lock ✅
+- **2026-10-16** — the host's answer lock is saved and restored, so Lock stays disabled, late answers are refused and a second lock writes no snapshots; reset and start clear locks; a failed broadcast after locking no longer loses the round summary — [PR #81](https://github.com/Banych/bobrquiz/pull/81) — [spec](plans/2026-10-15-persist-answer-lock-design.md) — [plan](plans/2026-10-15-persist-answer-lock-plan.md) — [ledger](../../.superpowers/sdd/2026-10-15-persist-answer-lock-plan/progress.md) — [findings](findings/2026-10-16-persist-answer-lock.md)
+
 ### 2026-10-15: Architecture Check False Hits ✅
 - **2026-10-15** — `architecture-check` skips its accepted exceptions (composition root, broadcaster imports in API routes, generated Prisma client) and no longer prints CLEAN for a path it never searched; ADR-024 accepts the broadcaster imports — [PR #76](https://github.com/Banych/bobrquiz/pull/76) — [ledger](../../.superpowers/sdd/2026-10-15-architecture-check-false-hits/progress.md)
 
