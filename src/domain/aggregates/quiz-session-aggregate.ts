@@ -228,7 +228,7 @@ export class QuizSessionAggregate {
     };
   }
 
-  lockCurrentQuestion(): void {
+  lockCurrentQuestion(): Date {
     const question = this.currentQuestion;
     if (!question) {
       throw new Error('No active question to lock');
@@ -237,7 +237,9 @@ export class QuizSessionAggregate {
       throw new Error('Question already locked');
     }
 
-    question.answersLockedAt = new Date();
+    const lockedAt = new Date();
+    question.answersLockedAt = lockedAt;
+    return lockedAt;
   }
 
   isQuestionLocked(questionId?: string): boolean {

@@ -32,13 +32,13 @@ export class LockQuestionUseCase {
     }
 
     // 2. Lock the current question
-    quiz.lockCurrentQuestion();
+    const lockedAt = quiz.lockCurrentQuestion();
 
     // Persist the lock first; losing the race means another request locked it
     const locked = await this.quizRepository.lockQuestion(
       quizId,
       currentQuestion.id,
-      currentQuestion.answersLockedAt!
+      lockedAt
     );
     if (!locked) {
       throw new Error('Question already locked');
