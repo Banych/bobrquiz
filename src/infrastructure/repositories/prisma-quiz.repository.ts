@@ -213,6 +213,25 @@ export class PrismaQuizRepository implements IQuizRepository {
     });
   }
 
+  async lockQuestion(
+    quizId: string,
+    questionId: string,
+    lockedAt: Date
+  ): Promise<boolean> {
+    const result = await prisma.question.updateMany({
+      where: { id: questionId, quizId, answersLockedAt: null },
+      data: { answersLockedAt: lockedAt },
+    });
+    return result.count === 1;
+  }
+
+  async clearQuestionLocks(quizId: string): Promise<void> {
+    await prisma.question.updateMany({
+      where: { quizId },
+      data: { answersLockedAt: null },
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await prisma.quiz.delete({ where: { id } });
   }
