@@ -45,3 +45,11 @@ Task 2 fix round 2 commit 5e3d72a (try/finally around the spy; 1 test file). Con
 Task 2: fix round 2/5 (1 addressed, 0 open — spy restored in finally; commits 574ae9f..5e3d72a). Re-review ADDRESSED, no new breakage; tamper check clean (HEAD f80f352, status empty).
 Task 2: complete (commits 3520bc4..5e3d72a, review clean)
 Doc sweep after Task 2: spec amended during the task (out-of-scope item for a failure after the persisted lock; Design 6 "narrows"); nothing measured. Next: Task 3 (real-target check, controller) awaits the user's go-ahead.
+
+## Task 3 (controller)
+User go-ahead 2026-10-16 (dev server on :3001 from this worktree after a real node_modules install: yarn install --frozen-lockfile --prefer-offline, 4.0 s).
+Verdict at 06e242f (from Task 2): yarn test:run exit 0, 503 passed | 1 skipped (504); lint and tsc exit 0 (implementer, fix round 2; controller ran test:run).
+Live check (scratchpad lock-live-check.mjs, output lock-live-check.txt): lock 200; reload shows Q1 locked; late answer 400 "Answers are locked for this question."; second lock 400 "Question already locked"; dashboard Lock disabled on load, after 6.5 s refetch and after reload; advance re-enables; two parallel locks on Q2 → 200 + 400; reset and start clear all locks; answer after restart accepted. Parallel locks on Q1 with a scored player → 200 + 400, leaderboard_snapshots 1 row for index 0 (1 player). Quiz cmvaoahhj00002mwo1628cfkj reset and deleted (GET → 404).
+Findings: docs/progress/findings/2026-10-16-persist-answer-lock.md. The E2E branch's two round-transitions lock tests are the automated check once test/e2e-isolated-quizzes has this fix.
+Out-of-scope items from the spec: recording them as tracked items waits for the user's choice of place.
+Task 3: complete
