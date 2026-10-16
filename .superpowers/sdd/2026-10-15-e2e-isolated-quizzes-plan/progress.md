@@ -37,3 +37,9 @@ Task 1: fix round 1/5 (3 addressed, 0 open — teardown deletes all then throws 
 Task 1: fix round 2/5 (1 addressed, 0 open — sweep attempts every delete then throws AggregateError; commits 22be611..e851f5c). Controller re-run 11 passed, exit 0. Re-review ADDRESSED, no new breakage (1 minor: error text duplicated in AggregateError message and errors[] — no change, harmless). Tamper check clean (HEAD e851f5c, status empty).
 Task 1: complete (commits 7f1326f..e851f5c, review clean)
 Doc sweep after Task 1: design doc corrected (lock cause, createdAt) with a dated note; findings doc 2026-10-15-worktree-dev-server-node-modules.md (Turbopack symlink) written. Lock fix spec drafted on fix/persist-answer-lock, awaiting the user's approval.
+
+User go-ahead 2026-10-16 ("go both"): Task 3 next, ahead of Task 2 (Task 2's lock tests need fix/persist-answer-lock merged; Task 4 last because it deletes e2e/fixtures.ts, which the host specs import until Task 2).
+- Ruling: task order 1, 3, 2, 4 — Task 3 shares no files with Task 2 — if wrong, a conflict shows in Task 4's full run.
+## Task 3
+BASE 21c1bbc. Dev server from this worktree confirmed. Dispatched implementer.
+Task 3 implementer DONE, commit 0f3cdf4 (4 files). Controller: yarn lint exit 0, tsc exit 0; player specs --retries=0: 15 passed, exit 0; 'Too many requests' 0 in output, 0 files in test-results.
