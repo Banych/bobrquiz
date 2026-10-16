@@ -95,3 +95,4 @@ task-reviewer-capable over b9fc943..6620035: APPROVED, 4 minors (final-fixwave-r
 - R1 (refusals logged at error level): no change — matches both reset routes; revisit with the deferred status mapping — cost: log noise on a double click.
 - R2 (error log unpinned), R3 (pre-existing `!` in the round summary), R4 (spec Testing lists): fixed in 183efd6 — lockedAt passed into buildRoundSummary; 400 route test asserts console.error; spec lists all 7 integration behaviours and marks which route test failed first. lint, tsc exit 0; yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
 Branch passes: complete. Next: bring fix/persist-answer-lock-final-fixes into fix/persist-answer-lock (fast-forward), PR draft for the user's approval.
+Doc sweep after branch passes: PATTERNS.md realtime convention (broadcast after a write fails soft); nothing new measured beyond the mutation and red runs logged above; CLAUDE.md unaffected.
