@@ -42,3 +42,6 @@ Task 2 review (task-reviewer-capable): APPROVED, spec ✅, 6 minors. Tamper chec
 Task 2 fix round 1 commit 5eedda5 (tests only, 2 files). Controller: yarn test:run exit 0, Test Files 67 passed | 1 skipped (68), Tests 503 passed | 1 skipped (504).
 Task 2: fix round 1/5 (4 addressed, 0 open — parallel-lock integration test reaching the false path, late lock asserted, reset test non-vacuous, start-from-non-Pending guard; commits 2d00fd8..5eedda5). Re-review APPROVED; tamper check clean (HEAD 574ae9f). New minor in the fix diff: lockQuestion spy restored only on the last line — fix round 2 (try/finally).
 Task 2 fix round 2 commit 5e3d72a (try/finally around the spy; 1 test file). Controller: yarn test:run exit 0, Test Files 67 passed | 1 skipped (68), Tests 503 passed | 1 skipped (504).
+Task 2: fix round 2/5 (1 addressed, 0 open — spy restored in finally; commits 574ae9f..5e3d72a). Re-review ADDRESSED, no new breakage; tamper check clean (HEAD f80f352, status empty).
+Task 2: complete (commits 3520bc4..5e3d72a, review clean)
+Doc sweep after Task 2: spec amended during the task (out-of-scope item for a failure after the persisted lock; Design 6 "narrows"); nothing measured. Next: Task 3 (real-target check, controller) awaits the user's go-ahead.
