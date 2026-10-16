@@ -711,12 +711,12 @@ Expected: FAIL — route module not found.
 - [ ] **Step 4: Run to verify it passes, and the existing route test still passes**
 
 Run: `yarn test:run src/tests/app/api/`
-Expected: PASS, 2 files (`media-routes` 10 tests plus `quiz-routes` unchanged).
+Expected: PASS, 2 files (`media-routes` 10 tests plus `quiz-routes` unchanged). (Executed: `media-routes` 12 — fix round 1 added the non-multipart POST and unparsable DELETE body tests; see the ledger.)
 
 - [ ] **Step 5: Type-check, lint, full suite**
 
 Run: `yarn tsc --noEmit && yarn eslint src/application/services/factories.ts src/app/api/admin/media src/tests/app/api && yarn test:run`
-Expected: exit 0; 71 files passed / 1 skipped; 489 + 12 (Task 1) + 20 (Task 2) + 12 (Task 3, after its fix round) + 10 = 543 tests passed / 1 skipped.
+Expected: exit 0; 71 files passed / 1 skipped; 489 + 12 (Task 1) + 20 (Task 2) + 12 (Task 3, after its fix round) + 12 (after this task's fix round) = 545 tests passed / 1 skipped.
 
 - [ ] **Step 6: Commit**
 
@@ -857,7 +857,7 @@ Expected: no output, exit 1 for both.
 - [ ] **Step 3: Type-check, lint, full suite, build**
 
 Run: `yarn tsc --noEmit && yarn eslint src/components/admin && yarn test:run && yarn build`
-Expected: exit 0; 72 files passed / 1 skipped; 552 tests passed / 1 skipped; build completes.
+Expected: exit 0; 72 files passed / 1 skipped; 554 tests passed / 1 skipped; build completes.
 
 - [ ] **Step 4: Verify in the browser (CLAUDE.md working rule).** With the dev server running from this worktree (`.env.local` copied in by the controller), sign in as the test admin, open a quiz, add a question with a small PNG through the dialog; the preview shows the image, and the `POST /api/admin/media` response (network log) is 201 with a `path` matching `questions/<quizId>/<digits>-<suffix>.jpg`. (The preview `src` is a `next/image` optimizer URL, not the storage URL.) Open `/admin/media`; the page loads without errors. Record both in the report.
 

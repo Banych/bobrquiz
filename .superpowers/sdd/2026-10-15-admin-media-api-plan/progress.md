@@ -168,3 +168,43 @@ included); `upload` rethrows the Supabase error as is and returns the input path
 - Doc sweep: no decision, findings, convention or CLAUDE.md change.
 
 Task 3: complete (commits de5009c..b695cba, review clean after fix round 1)
+
+### Task 4 — service wiring and routes (implementer, sonnet pin)
+
+BASE 2aa0855. Report `task-4-report.md` (fix round 1 appended). Commits 2f29557 `feat(media): add
+admin media API routes` (route, `factories.ts`, `media-routes.test.ts`, one line in
+`quiz-routes.test.ts`) and e73b35c `test(media): cover malformed media request bodies`.
+
+Dispatch rulings: `size`, `bytes` and `contentType` all from the one `File` entry (discharges the
+Task 2 premise; route.ts builds them from `file.size`, `file.arrayBuffer()`, `file.type`); POST
+order formData → `instanceof File` → quizId schema → service; an unparsable DELETE body is 400
+`Invalid media path`; one unexported `toErrorResponse` (ZodError by `instanceof`,
+`MediaValidationError` by name, `/not found/i` → 404, else logged 500 with the fixed body);
+`export const dynamic = 'force-dynamic'` (precedent `lock-question/route.ts`; `GET()` has no
+request argument); `mediaService` from one `SupabaseStorageService`.
+
+- Controller checks on 2f29557: read `route.ts` against the rulings; `yarn tsc --noEmit` exit 0;
+  `yarn eslint` on the touched paths exit 0. Verdict `yarn test:run`: `71 passed | 1 skipped
+  (72)`, `543 passed | 1 skipped (544)`, exit 0.
+- Review (task-reviewer, sonnet pin): spec ✅, quality Approved, no Critical/Important, 2 Minor.
+  Tamper check clean.
+- Ruling: Minor "`/not found/i` returns the raw message as 404, so an infrastructure error such as
+  Supabase's `Bucket not found` would become a 404" — no change. Plan correction 4 mandates the
+  mapping, it is the project-wide CLAUDE.md convention, the `quiz-media` bucket exists in both
+  projects, and the text an admin would see names the misconfiguration. A typed not-found error
+  from the adapter would be a cross-route convention change, out of this task's scope. Cost if
+  wrong: a missing bucket shows the admin a 404 `Bucket not found` instead of a 500; nothing
+  secret leaks.
+- Ruling: Minor "no test for the unparsable DELETE body or a non-multipart POST" — fixed in this
+  task's round (user-level rule). Cost if wrong: two tests to drop.
+- Task 4: fix round 1/5 (1 addressed, 0 open — malformed-body tests; commits 2f29557..e73b35c).
+  Verdict `yarn test:run` on e73b35c: `71 passed | 1 skipped (72)`, `545 passed | 1 skipped
+  (546)`, exit 0. Scoped re-review (task-reviewer): ADDRESSED; it checked that each new test
+  fails without its branch (the error would fall to the 500 path). No new breakage. Tamper check
+  clean (HEAD e73b35c, empty porcelain, ledger sha256sums identical).
+- Ruling: the plan's expected totals move by +2 — Task 4 Step 4/5 note 12 media-route tests and
+  545 tests; Task 6 Step 3 becomes 554 tests (72 files). Edited in the plan, committed with this
+  entry.
+- Doc sweep: no decision, findings, convention or CLAUDE.md change.
+
+Task 4: complete (commits 2aa0855..e73b35c, review clean after fix round 1)
