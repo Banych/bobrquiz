@@ -98,3 +98,38 @@ DTOs`, 8 files (the brief's Step 6 list exactly; nothing under `.superpowers/` s
   the new home of DTO schema tests (controller edit, committed with this entry).
 
 Task 1: complete (commits 85d1efd..75631a2, byte-compare clean, review skipped per transcribe exception)
+
+### Task 2 — use cases (implementer, sonnet pin)
+
+BASE b9e8da0. Report `task-2-report.md`. Commit d45ea0b `feat(media): add upload, list and
+delete use cases`, 4 files (the brief's three use cases and one test file).
+
+Dispatch rulings (on points the brief left open): `UploadMediaInput` exported from
+`upload-media.use-case.ts`; quizId via `UploadMediaInputSchema.safeParse` → `MediaValidationError`;
+suffix always ≥ 6 lowercase base-36 characters (implementer used 8 hex chars of
+`crypto.randomUUID()`); extension through `Record<MediaContentType, string>`; list at the bucket
+root (#79 out of scope); delete passes port errors through; Task 1 constants, not literals.
+
+- Controller checks: the committed test file is `diff`-identical to the brief's test block after
+  `yarn prettier` on the extract. Verdict `yarn test:run` (main session): `Test Files 69 passed |
+  1 skipped (70)`, `Tests 521 passed | 1 skipped (522)`, exit 0 — matches the expected
+  501 + 20.
+- Review (task-reviewer, sonnet pin): spec ✅, quality Approved, no Critical/Important, 2 Minor.
+  Tamper check clean (HEAD d45ea0b, empty porcelain before and after, ledger-directory sha256sums
+  identical).
+- Ruling: Minor "empty and size checks trust `file.size`, not `file.bytes.byteLength`" — no
+  change. Premise: Task 4's route builds `size` and `bytes` from the same `File` (`file.size`,
+  `await file.arrayBuffer()`), so they cannot disagree; the brief's interface carries `size` and
+  the Task 4 route test asserts it. Carried into the Task 4 dispatch. Reopen if any caller builds
+  them separately. Cost if wrong: a caller passing a small `size` with large bytes would bypass
+  the 4 MB check (the 4.5 MB platform limit still caps the request).
+- Ruling: Minor "`includes('..')` also rejects names like `a..b.jpg`" — no change; the plan's
+  Step 3 prescribes the check, and generated names never contain `..`. Dev bucket checked
+  (`SELECT name FROM storage.objects WHERE bucket_id = 'quiz-media'`, 2026-10-16): 2 objects,
+  `questions/cmmhy4vfs0000pcu7frbdhusv/1773495000674-wjunzikevzc.png` and
+  `questions/cmmgrpdra000004ky9on9gtyi/1772914913867-xme6kml0dw.jpg`, neither contains `..`.
+  Production not checked (needs the user's permission). Cost if wrong: an existing object with
+  `..` in its name could not be deleted through the API.
+- Doc sweep: no decision, findings, convention or CLAUDE.md change beyond this entry.
+
+Task 2: complete (commits b9e8da0..d45ea0b, review clean, 2 minors ruled no-change)
