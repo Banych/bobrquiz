@@ -129,7 +129,9 @@ test.describe('Player Reconnection Flow', () => {
     ).toBeEnabled({ timeout: 5000 });
   });
 
-  test('should detect offline state immediately on load', async ({ page }) => {
+  test('should re-enable the answer box after the connection returns', async ({
+    page,
+  }) => {
     await joinAsPlayer(page, quiz);
 
     await expect(
