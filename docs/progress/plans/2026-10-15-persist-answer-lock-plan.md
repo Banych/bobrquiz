@@ -62,6 +62,7 @@ the lock and reset use cases call the new methods. The whole-aggregate `save` st
 | `src/tests/infrastructure/repositories/prisma-quiz-repository.test.ts` | modify | repository tests |
 | `src/application/use-cases/lock-question.use-case.ts` | modify | persist the lock before snapshots |
 | `src/application/use-cases/reset-quiz.use-case.ts` | modify | clear locks before save |
+| `src/application/use-cases/start-quiz.use-case.ts` | modify | clear locks before save (a lock written after a reset) |
 | `src/tests/application/use-cases/lock-question.use-case.test.ts`, `reset-quiz-use-case.test.ts` | modify | use case tests |
 | `src/tests/integration/answer-lock-persistence.test.ts` | create | lock → reload → submit → reset across the real repository |
 
@@ -236,9 +237,11 @@ git commit -m "fix(quiz): persist and load the answer lock"
 
 **Files:**
 - Modify: `src/application/use-cases/lock-question.use-case.ts`,
-  `src/application/use-cases/reset-quiz.use-case.ts`
+  `src/application/use-cases/reset-quiz.use-case.ts`,
+  `src/application/use-cases/start-quiz.use-case.ts`
 - Modify: `src/tests/application/use-cases/lock-question.use-case.test.ts`,
-  `src/tests/application/use-cases/reset-quiz-use-case.test.ts`
+  `src/tests/application/use-cases/reset-quiz-use-case.test.ts`,
+  `src/tests/application/use-cases/start-quiz-use-case.test.ts`
 - Create: `src/tests/integration/answer-lock-persistence.test.ts`
 
 **Interfaces:**
@@ -254,6 +257,13 @@ git commit -m "fix(quiz): persist and load the answer lock"
   before reading previous snapshots or saving new ones. The later steps are unchanged.
 - `ResetQuizUseCase.execute`: after `quiz.reset()`, call `quizRepository.clearQuestionLocks(quizId)`,
   then `save`. A failing `quiz.reset()` (invalid state) calls neither.
+- `StartQuizUseCase.execute` (`src/application/use-cases/start-quiz.use-case.ts`, added after
+  Task 1's review, 2026-10-16): after `quiz.startQuiz()`, call
+  `quizRepository.clearQuestionLocks(quizId)`, then `save`. A failing `startQuiz()` (not Pending)
+  calls neither. Why: a lock request that loaded the Active quiz before a reset can write its lock
+  after the reset's clear (the conditional filter cannot see the quiz status), leaving a lock that
+  would refuse answers in the next run; a quiz only starts from Pending, so clearing at start is
+  always right and closes that window.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -350,6 +360,20 @@ git commit -m "fix(quiz): persist and load the answer lock"
     invalid state (already Pending)", add
     `expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();`.
 
+  In `start-quiz-use-case.test.ts`:
+  - the mock gains `clearQuestionLocks: vi.fn(),`;
+  - in "should start a quiz and update its status to Active", add:
+
+```ts
+    expect(quizRepository.clearQuestionLocks).toHaveBeenCalledWith('quiz1');
+    expect(
+      quizRepository.clearQuestionLocks.mock.invocationCallOrder[0]
+    ).toBeLessThan(quizRepository.save.mock.invocationCallOrder[0]);
+```
+
+  - in "should throw an error if the quiz is not found", add
+    `expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();`.
+
   Create `src/tests/integration/answer-lock-persistence.test.ts` (the real `PrismaQuizRepository`
   and use cases over a stateful Prisma fake):
 
@@ -359,6 +383,7 @@ import { PrismaQuizRepository } from '@infrastructure/repositories/prisma-quiz.r
 import { LockQuestionUseCase } from '@application/use-cases/lock-question.use-case';
 import { SubmitAnswerUseCase } from '@application/use-cases/submit-answer.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
+import { StartQuizUseCase } from '@application/use-cases/start-quiz.use-case';
 import { Player } from '@domain/entities/player';
 import type { IPlayerRepository } from '@domain/repositories/player-repository';
 import type { ILeaderboardSnapshotRepository } from '@domain/repositories/leaderboard-snapshot-repository';
@@ -535,6 +560,17 @@ describe('answer lock persistence', () => {
     expect(snapshotRepository.saveSnapshots).toHaveBeenCalledTimes(1);
   });
 
+  it('clears a lock written after a reset when the quiz starts again', async () => {
+    await new ResetQuizUseCase(quizRepository).execute('quiz-1');
+    // A lock request that loaded the Active quiz before the reset writes late
+    await quizRepository.lockQuestion('quiz-1', 'q2', new Date());
+
+    await new StartQuizUseCase(quizRepository).execute('quiz-1');
+
+    const reloaded = await quizRepository.findById('quiz-1');
+    expect(reloaded?.isQuestionLocked('q2')).toBe(false);
+  });
+
   it('clears persisted locks when the quiz is reset', async () => {
     await lock();
     await new ResetQuizUseCase(quizRepository).execute('quiz-1');
@@ -554,7 +590,7 @@ describe('answer lock persistence', () => {
 
 - [ ] **Step 2: Run them to see them fail**
 
-Run: `yarn test:run src/tests/application/use-cases/lock-question.use-case.test.ts src/tests/application/use-cases/reset-quiz-use-case.test.ts src/tests/integration/answer-lock-persistence.test.ts`
+Run: `yarn test:run src/tests/application/use-cases/lock-question.use-case.test.ts src/tests/application/use-cases/reset-quiz-use-case.test.ts src/tests/application/use-cases/start-quiz-use-case.test.ts src/tests/integration/answer-lock-persistence.test.ts`
 Expected: the two new lock tests fail (`lockQuestion` never called; the lost race resolves
 instead of rejecting); the reset test "resets a completed quiz and saves it" fails
 (`clearQuestionLocks` never called), while the two `not.toHaveBeenCalled` additions pass before
@@ -562,20 +598,22 @@ and after (regression guards); in the integration file
 four tests fail because nothing persists the lock yet ("keeps … locked", "rejects an answer",
 "a stale aggregate …", "rejects a second lock"). "clears persisted locks" passes before the fix
 (nothing is locked to clear); it becomes a real guard once the lock persists, and must still pass
-after Step 3.
+after Step 3. "clears a lock written after a reset when the quiz starts again" fails (the start
+does not clear); the start test's `clearQuestionLocks` assertions fail likewise, its
+`not.toHaveBeenCalled` addition passes before and after.
 
 - [ ] **Step 3: Implement** the two use case changes.
 
 - [ ] **Step 4: Run them to see them pass**
 
-Run: the same three files. Expected: all pass; report the count.
+Run: the same four files. Expected: all pass; report the count.
 Run: `yarn test:run`. Expected: exit 0, 0 failed; report the counts.
 Run: `yarn eslint --fix <touched files>`, `yarn lint`, `yarn -s tsc --noEmit -p .`. Expected: exit 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/application/use-cases/lock-question.use-case.ts src/application/use-cases/reset-quiz.use-case.ts src/tests/application/use-cases/lock-question.use-case.test.ts src/tests/application/use-cases/reset-quiz-use-case.test.ts src/tests/integration/answer-lock-persistence.test.ts
+git add src/application/use-cases/lock-question.use-case.ts src/application/use-cases/reset-quiz.use-case.ts src/application/use-cases/start-quiz.use-case.ts src/tests/application/use-cases/lock-question.use-case.test.ts src/tests/application/use-cases/reset-quiz-use-case.test.ts src/tests/application/use-cases/start-quiz-use-case.test.ts src/tests/integration/answer-lock-persistence.test.ts
 git commit -m "fix(quiz): keep the answer lock across requests"
 ```
 
@@ -591,7 +629,10 @@ git commit -m "fix(quiz): keep the answer lock across requests"
   create a quiz with two questions through the admin API, start it, join a player, lock question
   1 on the host dashboard; check Lock stays disabled after the 5 s refetch and a page reload, and
   `POST /api/player/answer` for question 1 is refused with "Answers are locked for this question.";
-  lock again via the API → 400 "Question already locked"; restart → question 1 unlocked. Delete
+  lock again via the API → 400 "Question already locked"; restart → question 1 unlocked. On a
+  fresh question, send two lock requests at once (two parallel `curl`s): exactly one 200 and one
+  400, and one snapshot set for that question index (the "one wins" guarantee rests on Postgres
+  re-checking `answersLockedAt IS NULL` in a single UPDATE, which no unit test can show). Delete
   the quiz afterwards.
 - [ ] Findings record `docs/progress/findings/2026-10-15-persist-answer-lock.md` with the
   real-target run (steps, what the button and the answer route did, quiz ids deleted).

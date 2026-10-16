@@ -80,7 +80,12 @@ locking") already fails on master and E2E is not in CI.
    quiz would be Pending with a stale lock on question 1, and reset refuses a Pending quiz, so it
    could not be retried; a failed save after the clear leaves an Active or Completed quiz with no
    locks, and reset can be retried.
-6. **Unchanged:** the host hook, the player UI, realtime, the answer route. After the fix, a late
+6. **Start use case** (`start-quiz.use-case.ts`, added after Task 1's review, 2026-10-16): after
+   `quiz.startQuiz()` and before `save`, call `clearQuestionLocks(quiz.id)`. A lock request that
+   loaded the Active quiz before a reset can write its lock after the reset's clear (the
+   conditional filter does not see the quiz status); a quiz only starts from Pending, so clearing
+   at start is always right and closes that window.
+7. **Unchanged:** the host hook, the player UI, realtime, the answer route. After the fix, a late
    answer gets the existing 400 "Answers are locked for this question." as its submission message.
 
 ## Testing

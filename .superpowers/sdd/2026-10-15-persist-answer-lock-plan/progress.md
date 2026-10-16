@@ -24,3 +24,9 @@ User go-ahead 2026-10-16 ("go both"): lock Task 1 and E2E Task 3 in parallel.
 BASE b1d804a. Dispatched implementer.
 Task 1 implementer DONE, commit 4590411 (4 files). Controller verdict: yarn test:run exit 0, Test Files 66 passed | 1 skipped (67), Tests 493 passed | 1 skipped (494); the skip is the env-gated add-player.integration.test.ts (describe.skip unless enabled), pre-existing.
 Controller mutation check: mapper changed to pass null through → 'maps a quiz record into an aggregate' fails (1 failed | 14 passed); file restored (git diff empty).
+Task 1 review (task-reviewer-capable): APPROVED, spec ✅, 2 minors. Tamper check clean (HEAD 70ec8f3, status empty). ⚠️ "package differs byte-for-byte from git diff" — reviewer confirmed changed lines identical and reviewed the real commit; resolved.
+- Ruling: minor 1 "a lock can survive a reset" (lock request loads Active quiz, reset clears, late lockQuestion writes) — accepted as real; Task 2 now also clears locks in StartQuizUseCase before save (plan Task 2 and spec Design 6 amended, integration test "clears a lock written after a reset when the quiz starts again" added) — a quiz starts only from Pending, so the clear is always right; cost if wrong: one extra updateMany per start.
+- Ruling: minor 2 "updateMany bumps Question.updatedAt on every reset/start" — no change; only the admin question GET returns it, no UI shows it; narrowing to locked rows conflicts with the binding { quizId } filter — cost: updatedAt moves on restart.
+- Unverified "one wins" relies on Postgres re-checking the condition in one UPDATE — added to Task 3's real-target check: two parallel lock requests → one 200, one 400, one snapshot set.
+Task 1: complete (commits b1d804a..4590411, review clean)
+Doc sweep after Task 1: nothing measured; plan and spec amended above (premise: the reviewer's lock-vs-reset interleaving).
