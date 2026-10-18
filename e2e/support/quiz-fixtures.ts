@@ -137,7 +137,7 @@ export async function deleteTestQuiz(
 }
 
 export function fixtureTimestamp(title: string): number | null {
-  const match = /\s(\d+)(?:-[^\s]+)?$/.exec(title);
+  const match = /\s(\d{13})(?:-[a-z0-9]{4})?$/.exec(title);
   return match ? Number(match[1]) : null;
 }
 
