@@ -58,3 +58,8 @@ User go-ahead 2026-10-18 ("merge and go next"): fix/persist-answer-lock merged t
 ## Task 2
 BASE 3469ebc. Brief from task-brief. Waiting for the dev server on :3000 from this worktree.
 Task 2 implementer DONE, commit 8088937 (2 files, plan code byte-identical). Implementer: 9 passed twice, exit 0, 0 'Too many requests'. Controller re-run: 9 passed (13.5s), exit 0, 0 'Too many requests' (output and test-results).
+Task 2 review (task-reviewer): APPROVED, spec ✅, 2 minors. Tamper check clean (HEAD 946b875, status empty).
+- Minor 1 fixed in the task's own round: the host-dashboard question-list check (`getByText(/capital of France/).first()`) also matches the Timer panel's active question, so it passes with no list; fix round 1 scopes it to the questions section and asserts both questions.
+- Ruling: minor 2 "unanchored heading regexes (/timer/, /leaderboard/, /questions/, /players/, /Pending/)" — no change; a new heading containing the word fails loudly with a strict-mode violation rather than passing silently — cost: one locator edit when such a heading appears.
+Fix round 1 dispatched (implementer).
+Task 2 fix round 1 commit 279fe7b (1 file): question-list assertions scoped to page.locator('ol') (QuestionTimeline, the only <ol> in src), both question texts, no .first(). Implementer negative run (largestPlanet text altered): 1 failed | 4 passed, exit 1; positive 5 passed. Controller: host-dashboard + round-transitions --retries=0: 9 passed (11.6s), exit 0, 0 'Too many requests'.
