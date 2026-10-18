@@ -116,3 +116,4 @@ Task 5b review (task-reviewer): APPROVED, 3 minors. Tamper check clean (HEAD 90f
 - Ruling: minor 2 "no route test for the default 10" — no change; the default is the literal at the call site plus the unit test of the fallback, and the diff shows nothing else in the route — cost: a future edit of the literal is caught only in review.
 - Ruling: minor 3 "a huge digit string disables the limit" — no change; same as resolvePoolMax, and only a deliberate setting reaches it; .env.example forbids raising it in deployed environments.
 Fix round 1 dispatched (implementer).
+Task 5b fix round 1 commit f500d81 (resolveRateLimit gains a name argument; join route passes SESSION_JOIN_RATE_LIMIT; spec 7 and plan Task 5b updated). Red 1 failed | 14 passed; green 15 passed. Controller: yarn test:run exit 0, Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523).
