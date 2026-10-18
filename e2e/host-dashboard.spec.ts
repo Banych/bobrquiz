@@ -42,9 +42,14 @@ test.describe('Host Dashboard', () => {
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: /players/i })).toBeVisible();
 
-    // Verify questions list (question text appears in more than one place)
+    // Verify questions list. The Timer panel repeats the active question's
+    // text, so scope to the timeline's ordered list (the only <ol> on the page).
+    const questionList = page.locator('ol');
     await expect(
-      page.getByText(/What is the capital of France/i).first()
+      questionList.getByText(QUESTIONS.capitalOfFrance.text)
+    ).toBeVisible();
+    await expect(
+      questionList.getByText(QUESTIONS.largestPlanet.text)
     ).toBeVisible();
   });
 
