@@ -156,4 +156,35 @@ admins until published (an anonymous request for each returned 404 on 2026-10-18
 | S6 | GHSA-9q49-m59r-h4pq: kicked players keep scoring | medium |
 | S7 | GHSA-g2xx-cr9j-4q77: joining needs no join code | medium |
 
-This record stays unpushed until those fixes merge, because it describes the same attacks.
+The rest are public issues, filed 2026-10-18:
+
+| Findings | Issue |
+|---|---|
+| D2 | #91 joining rewrites the whole quiz and can undo Start |
+| D3 | #92 a stored answer reported as failed when its ack broadcast fails |
+| D4 | #93 the answer save overwrites player status, score and rank |
+| D5 | #94 answers after the timer still score |
+| D6 | #95 rate limits per instance and per IP |
+| D7 | #96 leaderboard broadcast timer fires after the response |
+| D8 | #97 missing service-role key disables realtime silently |
+| Release readiness | #98 no error reporting, structured logging or health check |
+| Release readiness | #99 the seed deletes everything with no guard |
+| Release readiness | #100 no security headers or CSP |
+| S10 | #101 the proxy logs paths and admin emails |
+| Architecture | #102 idle-player removal in the host browser |
+| Architecture | #103 scoring implemented twice |
+| A3 | #104 the architecture check misses `@/infrastructure` imports |
+| Architecture: tests | #105 route and use-case test gaps, e2e not in CI |
+| Release readiness, overturned claims | #106 release docs missing or stale |
+| Architecture: polling | #107 each poll loads the whole quiz |
+| Not verified: login redirect | #108 |
+| Dev advisor | #109 leaked-password protection off |
+| D1 (empty reads), join path | comment on #82 |
+| Error contract, S9 | comment on #89 |
+| Three quiz mappers | comment on #87 |
+
+D1's duplicated-answers consequence is recorded only here: it exposes the missing unique key
+behind GHSA-rq7w-52rf-mq34.
+
+This record stays unpushed until the advisories' fixes merge, because it describes the same
+attacks.
