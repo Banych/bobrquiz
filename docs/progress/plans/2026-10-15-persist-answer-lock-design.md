@@ -123,6 +123,8 @@ Failing first, then passing:
 
 ## Out of scope (recorded as separate items)
 
+Tracked as GitHub issues #82–#89 (2026-10-18); each item names its issue.
+
 - A failure after the lock is persisted (snapshot read or write, player load, building the
   summary, `save`) leaves the question locked with no round summary, and a retry gets "Question
   already locked", so the host loses that round's summary and the next round's rank deltas lack
@@ -130,23 +132,26 @@ Failing first, then passing:
   so a lost race writes nothing (Design 4); undoing it would need a per-question unlock on
   failure (Task 2 review, 2026-10-16). The route's realtime broadcast, the likeliest of these
   steps to fail, no longer counts: the end-of-branch passes (2026-10-16) made a failed broadcast
-  a logged warning with a 200, as in the start and reset routes.
+  a logged warning with a 200, as in the start and reset routes. → #83
 
-- The in-flight answer race (an answer loaded before the lock and saved after it).
+- The in-flight answer race (an answer loaded before the lock and saved after it). → #82
 - Every `save` regenerates answer ids (`prisma-quiz.repository.ts:98`), so the `answerId` sent to
-  players never matches a database row.
+  players never matches a database row. → #82
 - A quiz with `FIXED` scoring may fail to load: `save` writes `scoringDecayRate ?? 2.0` and `Quiz`
-  rejects a decay rate for `FIXED` (`quiz.ts:55-58`). Unverified.
-- Leaderboard snapshots are not cleared on reset.
-- A custom timer duration is not saved; the reload falls back to `timePerQuestion`.
-- `submitAnswer` accepts answers for any question id, not only the active one.
-- The player screen ignores `answersLockedAt` and relies on the 10 s broadcast.
+  rejects a decay rate for `FIXED` (`quiz.ts:55-58`). Checked 2026-10-18: no path can create a
+  `FIXED` quiz today, because create and update drop the admin's scoring choice. → #87
+- Leaderboard snapshots are not cleared on reset. → #84
+- A custom timer duration is not saved; the reload falls back to `timePerQuestion`. Checked
+  2026-10-18: the countdown survives a reload (the saved expiry is restored); the real defect is
+  `timeTaken` measured against `timePerQuestion` instead of the custom length. → #86
+- `submitAnswer` accepts answers for any question id, not only the active one. → #88
+- The player screen ignores `answersLockedAt` and relies on the 10 s broadcast. → #85
 - The whole-aggregate `save` is a lost update: it deletes every answer of the quiz and re-creates
   the loaded aggregate's, with no transaction or version check, so two players answering at once
   can drop one answer, and any stale save writes back an old status or question index
-  (`prisma-quiz.repository.ts` `save`; end-of-branch review, 2026-10-16).
+  (`prisma-quiz.repository.ts` `save`; end-of-branch review, 2026-10-16). → #82
 - The lock and start routes map every error that is not "not found" (lock: or "not active") to
   400 and log nothing in start: a database outage reads as a bad request (silent-failure hunt,
-  2026-10-16; pre-existing).
+  2026-10-16; pre-existing). → #89
 - Both reset routes map reset's refusal of a Pending quiz ("Quiz can only be reset if it is in
-  Active or Completed status.") to 500 (silent-failure hunt, 2026-10-16; pre-existing).
+  Active or Completed status.") to 500 (silent-failure hunt, 2026-10-16; pre-existing). → #89
