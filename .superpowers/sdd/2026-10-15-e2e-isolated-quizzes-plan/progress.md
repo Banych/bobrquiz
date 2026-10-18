@@ -90,3 +90,11 @@ User choice 2026-10-18: env pool size, 10 in dev. Spec section 6 and plan Task 4
 - Ruling: no plan-checker pass for the one-task amendment — the task carries its full test code, and the per-task review covers it — cost if wrong: a plan defect surfaces in the review.
 ## Task 4b
 Task 4b implementer DONE, commit ad06c3f (4 files). Red: module missing, 1 failed; green: 7 passed. Controller: yarn test:run exit 0, Test Files 69 passed | 1 skipped (70), Tests 514 passed | 1 skipped (515). Implementer: lint, tsc exit 0.
+Task 4b review (task-reviewer): APPROVED, 2 minors. Tamper check clean (HEAD 30e1a62, status empty).
+- Ruling: minor "no upper bound on DATABASE_POOL_MAX" — no code cap; .env.example now says to keep it well under the database's connection limit — a cap number would be a guess (Supavisor transaction mode multiplexes client connections; only 10 was measured), and an over-large value fails loudly as pooler errors, not silently — cost: a deliberate typo like 1000 on a dev box exhausts the pooler until fixed.
+- Minor fixed: spec "No unit test for the helper" (meant the E2E fixture helper) named explicitly; .env.example's "200 limit" corrected to the measured 60 next to the new setting.
+- Minor (no change): no '010' / '99999' test cases — '010' → 10 is harmless and the regex is pinned by the rejection cases.
+Verdict run after the user restarted dev with DATABASE_POOL_MAX=10 (.env.development.local): full `yarn test:e2e --retries=0`: 48 passed (35.3s), exit 0, 0 "Too many requests" (output and test-results). admin-auth:145 (sign-in stayed on /login, unexplained by the pool) passed.
+Task 4: complete (commits 5b309ba..0175ca6, review clean; full suite green after Task 4b)
+Task 4b: complete (commit ad06c3f, review clean)
+Doc sweep after Tasks 4 and 4b: findings 2026-10-18-e2e-db-pool-queueing.md (measured); spec section 6 and plan Task 4b (decision); .env.example documents DATABASE_POOL_MAX. Convention for CLAUDE.md "Commands"/pitfalls: E2E locally needs DATABASE_POOL_MAX≈10 — to add in Task 5's records with the E2E README.

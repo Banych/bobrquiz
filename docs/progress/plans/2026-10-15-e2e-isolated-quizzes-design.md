@@ -157,7 +157,8 @@ it. User's choice (2026-10-18, of: env pool size, fewer workers, fewer queries p
 
 ## Testing and verification
 
-- No unit test for the helper: it is E2E support code, exercised by every spec that uses it.
+- No unit test for the quiz fixture helper: it is E2E support code, exercised by every spec that
+  uses it. (The pool-size helper of section 6 is application code and has its own unit test.)
 - Two full `yarn test:e2e` runs back to back. The second shows that nothing carries over between
   runs. Target: 0 failures; anything left failing gets its own cause, not a retry.
 - No 429 response in either run.
