@@ -1081,7 +1081,7 @@ Why: spec section 6; findings `docs/progress/findings/2026-10-18-e2e-db-pool-que
 ```ts
 // pool-size.ts
 export const DEFAULT_POOL_MAX = 2;
-/** Pool size for the pg adapter: unset or blank → DEFAULT_POOL_MAX; throws on anything but a positive integer, naming `name` in the message. */
+/** Pool size for the pg adapter: unset or blank → DEFAULT_POOL_MAX; throws on anything but a positive integer. */
 export function resolvePoolMax(value: string | undefined): number;
 ```
 
@@ -1149,8 +1149,8 @@ export const resolveRateLimit = (
 ```
 
 The join route resolves it once at module scope
-(`const SESSION_JOIN_LIMIT = resolveRateLimit(process.env.SESSION_JOIN_RATE_LIMIT, 10, 'SESSION_JOIN_RATE_LIMIT');`) and
-passes it as `limit`.
+(`resolveRateLimit(process.env.SESSION_JOIN_RATE_LIMIT, 10, 'SESSION_JOIN_RATE_LIMIT')`) and passes
+it as `limit`.
 
 **Tests** (added to `src/tests/lib/rate-limit.test.ts`):
 

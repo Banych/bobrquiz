@@ -162,10 +162,10 @@ into one 60 s window, and the four reconnection tests got 429 "Too many requests
 retry). User's choice (2026-10-18, of: an env override, or docs telling people to wait a minute):
 
 - `POST /api/session/join` reads its limit from `SESSION_JOIN_RATE_LIMIT` through a pure helper
-  `resolveRateLimit(value, fallback, name)` in `src/lib/rate-limit.ts`: unset or blank → the fallback
-  (10, today's limit, so production is unchanged); a positive integer → that value; anything else
-  throws when the route module loads, naming the variable (`name`) in the message. The window stays 60 s; add-player and submit-answer keep
-  their limits (no E2E run reaches them).
+  `resolveRateLimit(value, fallback, name)` in `src/lib/rate-limit.ts`: unset or blank → the
+  fallback (10, today's limit, so production is unchanged); a positive integer → that value;
+  anything else throws when the route module loads, naming the variable in the message. The
+  window stays 60 s; add-player and submit-answer keep their limits (no E2E run reaches them).
 - `.env.example` documents it; this worktree's `.env.development.local` sets 100.
 - Same parsing rule as `resolvePoolMax` (section 6), written twice on purpose: infrastructure
   cannot import `src/lib`, and a shared module for two six-line helpers costs more than it saves.
