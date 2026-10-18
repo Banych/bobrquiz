@@ -5,11 +5,13 @@ import {
   QUESTIONS,
   type TestQuiz,
 } from './support/quiz-fixtures';
+import { joinAsPlayer } from './support/player-join';
 
 /**
  * Player reconnection after network disruptions.
  * Each test gets its own Active quiz whose first question is free text, so the play page
- * shows the "Type your answer" box.
+ * shows the "Type your answer" box. The network is faked through navigator.onLine and window
+ * events; the realtime socket and fetches stay up, so no real resubscribe is exercised.
  *
  * Manual testing observations (2026-01-31):
  * - ConnectionStatusBanner appears within ~1s of offline event
@@ -21,17 +23,6 @@ import {
  * - Answer input re-enabled with "Type your answer" placeholder
  */
 
-const joinAsPlayer = async (page: Page, quiz: TestQuiz) => {
-  const playerName = `E2E Reconnect ${Date.now()}`;
-  await page.goto('/join');
-  await page.getByRole('textbox', { name: /join code/i }).fill(quiz.joinCode);
-  await page.getByRole('textbox', { name: /your name/i }).fill(playerName);
-  await page.getByRole('button', { name: /join quiz/i }).click();
-  await page.waitForURL(new RegExp(`/play/${quiz.id}/[a-z0-9-]+`), {
-    timeout: 30000,
-  });
-};
-
 const setOnline = async (page: Page, online: boolean) => {
   await page.evaluate((value) => {
     Object.defineProperty(navigator, 'onLine', { writable: true, value });
@@ -42,15 +33,12 @@ const setOnline = async (page: Page, online: boolean) => {
 test.describe('Player Reconnection Flow', () => {
   let quiz: TestQuiz;
 
-  test.beforeEach(async ({ page, createQuiz }) => {
+  test.beforeEach(async ({ createQuiz }) => {
     quiz = await createQuiz({
       label: 'player-reconnection',
       questions: [QUESTIONS.freeText, QUESTIONS.capitalOfFrance],
       start: true,
     });
-    // Clear localStorage to start fresh
-    await page.goto('/');
-    await page.evaluate(() => window.localStorage.clear());
   });
 
   test('should show offline banner when player disconnects', async ({
@@ -77,59 +65,7 @@ test.describe('Player Reconnection Flow', () => {
     ).toBeDisabled();
   });
 
-  test('should auto-reconnect when network returns', async ({ page }) => {
-    await joinAsPlayer(page, quiz);
-
-    await setOnline(page, false);
-    const banner = page
-      .getByRole('alert')
-      .filter({ hasText: /connection lost/i });
-    await expect(banner).toBeVisible();
-
-    await setOnline(page, true);
-
-    await expect(banner).not.toBeVisible({ timeout: 5000 });
-    await expect(
-      page.getByRole('textbox', { name: /type your answer/i })
-    ).toBeEnabled();
-    await expect(
-      page.getByRole('button', { name: /send answer/i })
-    ).toBeVisible();
-  });
-
-  test('should disable answer submission while offline', async ({ page }) => {
-    await joinAsPlayer(page, quiz);
-
-    await expect(
-      page.getByRole('textbox', { name: /type your answer/i })
-    ).toBeEnabled();
-
-    await setOnline(page, false);
-
-    await expect(
-      page.getByRole('textbox', { name: /reconnecting/i })
-    ).toBeDisabled();
-    await expect(
-      page.getByRole('button', { name: /reconnecting/i })
-    ).toBeDisabled();
-  });
-
-  test('should show reconnecting state during sync', async ({ page }) => {
-    await joinAsPlayer(page, quiz);
-
-    await setOnline(page, false);
-    await expect(
-      page.getByRole('alert').filter({ hasText: /connection lost/i })
-    ).toBeVisible();
-
-    await setOnline(page, true);
-
-    await expect(
-      page.getByRole('textbox', { name: /type your answer/i })
-    ).toBeEnabled({ timeout: 5000 });
-  });
-
-  test('should re-enable the answer box after the connection returns', async ({
+  test('should clear the banner and re-enable answering when the network returns', async ({
     page,
   }) => {
     await joinAsPlayer(page, quiz);
@@ -150,5 +86,8 @@ test.describe('Player Reconnection Flow', () => {
     await expect(
       page.getByRole('textbox', { name: /type your answer/i })
     ).toBeEnabled();
+    await expect(
+      page.getByRole('button', { name: /send answer/i })
+    ).toBeVisible();
   });
 });

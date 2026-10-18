@@ -3,18 +3,16 @@ import {
   request,
   type APIRequestContext,
 } from '@playwright/test';
+import { ADMIN_STORAGE_STATE, BASE_URL } from './paths';
 
-export const BASE_URL = 'http://localhost:3000';
-export const ADMIN_STORAGE_STATE = 'playwright/.auth/user.json';
 export const FIXTURE_TITLE_PREFIX = 'E2E fixture ';
-export const STALE_FIXTURE_AGE_MS = 30 * 60_000;
+const STALE_FIXTURE_AGE_MS = 30 * 60_000;
 
 export type QuestionSeed = {
   text: string;
   type: 'multiple-choice' | 'text' | 'true/false';
   options?: string[];
   correctAnswers: string[];
-  points?: number;
 };
 
 export const QUESTIONS = {
@@ -34,11 +32,6 @@ export const QUESTIONS = {
     text: 'Name the largest ocean on Earth.',
     type: 'text',
     correctAnswers: ['pacific'],
-  },
-  trueFalse: {
-    text: 'True or false: water boils at 100°C at sea level.',
-    type: 'true/false',
-    correctAnswers: ['True'],
   },
 } satisfies Record<string, QuestionSeed>;
 
@@ -81,6 +74,10 @@ async function call(
   return { status, body };
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 6).padEnd(4, '0');
 }
@@ -112,9 +109,7 @@ export async function createTestQuiz(
   } catch (error) {
     await deleteTestQuiz(api, id).catch((cleanupError: unknown) => {
       console.warn(
-        `[FIXTURE] cleanup of quiz ${id} failed: ${
-          cleanupError instanceof Error ? cleanupError.message : cleanupError
-        }`
+        `[FIXTURE] cleanup of quiz ${id} failed: ${errorMessage(cleanupError)}`
       );
     });
     throw error;
@@ -137,7 +132,7 @@ export async function deleteTestQuiz(
 }
 
 export function fixtureTimestamp(title: string): number | null {
-  const match = /\s(\d+)(?:-[^\s]+)?$/.exec(title);
+  const match = /\s(\d{13})(?:-[a-z0-9]{4})?$/.exec(title);
   return match ? Number(match[1]) : null;
 }
 
@@ -161,9 +156,7 @@ export async function sweepFixtureQuizzes(
       await deleteTestQuiz(api, quiz.id);
       deleted += 1;
     } catch (error) {
-      errors.push(
-        `${quiz.id}: ${error instanceof Error ? error.message : String(error)}`
-      );
+      errors.push(`${quiz.id}: ${errorMessage(error)}`);
     }
   }
   if (errors.length > 0) {
@@ -206,7 +199,7 @@ export const test = base.extend<
       throw new AggregateError(
         errors,
         `fixture teardown failed for ${errors.length} quiz(zes): ${errors
-          .map((error) => (error instanceof Error ? error.message : error))
+          .map(errorMessage)
           .join('; ')}`
       );
     }

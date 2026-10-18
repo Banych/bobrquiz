@@ -5,8 +5,9 @@
  */
 
 import { test as setup, expect } from '@playwright/test';
+import { ADMIN_STORAGE_STATE } from './support/paths';
 
-const authFile = 'playwright/.auth/user.json';
+const authFile = ADMIN_STORAGE_STATE;
 
 setup('authenticate', async ({ page, context }) => {
   const testEmail = process.env.TEST_ADMIN_EMAIL;

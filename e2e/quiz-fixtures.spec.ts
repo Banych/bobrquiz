@@ -33,6 +33,8 @@ test.describe('quiz fixtures', () => {
     expect(
       quiz.title.startsWith(`${FIXTURE_TITLE_PREFIX}fixture-create `)
     ).toBe(true);
+    // The sweep must be able to age the titles the fixture writes
+    expect(fixtureTimestamp(quiz.title)).not.toBeNull();
     expect(quiz.joinCode).toMatch(/^JOIN-[A-Z0-9]{4}$/);
 
     const response = await adminApi.get(`/api/admin/quizzes/${quiz.id}`);
@@ -114,6 +116,13 @@ test.describe('quiz fixtures', () => {
     );
     expect(fixtureTimestamp('E2E fixture host')).toBeNull();
     expect(fixtureTimestamp('E2E fixture host 1760000000000 extra')).toBeNull();
+    // Only the shapes the fixtures write: 13 digits, optionally a 4-character suffix
+    expect(fixtureTimestamp('E2E fixture round 2')).toBeNull();
+    expect(fixtureTimestamp('E2E fixture demo 2024')).toBeNull();
+    expect(fixtureTimestamp('E2E fixture x 5-bar')).toBeNull();
+    expect(
+      fixtureTimestamp('E2E fixture host 1760000000000-ab12cd')
+    ).toBeNull();
   });
 
   test('sweep deletes stale prefixed quizzes and keeps fresh ones', async ({

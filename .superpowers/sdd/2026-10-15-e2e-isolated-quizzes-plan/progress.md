@@ -132,3 +132,56 @@ Task 5: complete. Next: end-of-branch passes (production code changed: pool-size
 
 ## End-of-branch passes
 User go-ahead 2026-10-18 ("go"). Range e39a9e0..23140ab (merge base with origin/master, which this branch merged at 3469ebc, to Task 5's records). Production code changed (pool-size + client.ts, rate-limit + join route, host player-card test id): all three reports — whole-branch review (task-reviewer-capable, handback saved as final-whole-branch-review.md), silent-failure hunt (final-silent-failure-hunt.md), simplification (final-simplification.md, report only). Code diff saved as review-branch.diff (src, e2e, playwright.config.ts, .env.example, .gitignore).
+
+### Branch-pass reports (2026-10-18)
+All three returned with HEAD ecdad04, empty status, and only their own report files new in the ledger dir (the whole-branch review also wrote its `yarn test:run` log to the session scratchpad, outside the repo). Counts each reran: `yarn test:run` 522 passed | 1 skipped (523), exit 0; lint 0 errors / 5 warnings in untouched files; tsc exit 0. Whole-branch review: CHANGES_REQUESTED, minor only (W1–W7). Hunt: S1–S2 Medium, S3–S7 Low. Simplification: P1–P6, R1–R3 rejected.
+
+| Finding (sources) | Ruling | Cost if wrong |
+|---|---|---|
+| Join 429/500 surfaces only as a 30 s `waitForURL` timeout (S1 part 1) | Fix: one `joinAsPlayer` in `e2e/support/` asserts the join response is 200, body in the message; both specs use it (absorbs P6) | A rate-limit or route regression again reads as "cause unknown" |
+| Flaky tests exit 0 locally (W5, S1 part 2) | Fix: `failOnFlakyTests: true` (no CI workflow runs E2E; checked `.github/workflows/ci.yml`). Retries stay, so a flake is still reported as flaky, but the run exits 1 | A flake caught only by someone reading the summary |
+| Pitfall 5 says "fails"; measured was flaky + exit 0 (S1 part 3) | Fix wording; with `failOnFlakyTests` it now does fail | Misleads the next diagnosis |
+| Invalid-join-code test passes on any 500 (S2) | Fix: assert 404 and "was not found" (the use case's message) | Hides a crashed join route |
+| Reconnection overlap: :100 ⊂ :56, :117 and :132 ⊂ :80; :117's name promises a state it never asserts (W3, P1, S7, Task 3 deferred) | Fix: delete :100, :117, :132; :80 gains the initial-enabled check and a name saying what it asserts (offline/online event re-enables answering). Overrides the spec's "keep the five existing tests": its premise was coverage, and every dropped assertion is in a kept test. Revisitable: test-only | Two lost tests that each assert nothing the kept ones don't |
+| `localStorage.clear()` in `beforeEach` is redundant (P2) | Fix: fresh context per test; `grep -c quiz-game-player-session playwright/.auth/user.json` → 0 | One extra page load per test only |
+| Sweep reads any trailing number as a timestamp (S4) | Fix: `/\s(\d{13})(?:-[a-z0-9]{4})?$/`, the two shapes the code writes; spec cases for "round 2" and a short suffix | A hand-made "E2E fixture … 2" quiz deleted every run |
+| Sweep skips untimed titles silently (S5) | No change: keeping them is right, only hand-made titles have that shape, and they stay visible in the admin list | Untimed leaks pile up unnoticed |
+| Misspelled/unloaded env var silently uses the default (S3) | No change: the join case now fails with the 429 body (S1); pool starvation shows as 15 s fixture timeouts, which the findings record names. A dev-only log line is production code for a dev aid | Time lost to a typo in an env file |
+| "Throws at startup" is really "throws when the module first loads" (S6, uncertain) | Fix the spec wording (sections 6 and 7); no build run to settle when Next evaluates the modules | A reader expects a boot failure that may come on first request |
+| Spec "no app code changes", plan "only the one data-testid" (W1) | Fix: dated notes pointing at §6–7 and Tasks 4b/5b | Stale claim |
+| Plan's ledger path missing `-plan` (W2) | Fix | Dead path |
+| Ledger line 36 implies the sweep no longer blocks (W4) | Fix: append a correction; blocking stays on purpose (loud over silent) | A reader thinks one bad stale quiz can't stop the suite |
+| Dev overlay repeats error text → strict-mode violation (W6) | Fix: README Debugging Tips line | Same trap rediscovered |
+| Findings record lacks the outcome (W7) | Fix: dated Outcome paragraph with the post-fix counts and the 429 measurement | Findings read as open |
+| Unused `trueFalse`, `points`; exports used only in-file (P3) | Fix | — |
+| Auth-file path in four places (P4) | Fix: `e2e/support/paths.ts` with `ADMIN_STORAGE_STATE` and `BASE_URL`, used by the config, `auth.setup.ts`, `admin-quiz-crud.spec.ts` and the fixture. Pre-existing `localhost:3000` literals in page objects and admin-auth left alone (outside the change) | — |
+| Inline error-to-message ternaries (P5) | Fix: `errorMessage()` in the fixture | — |
+| Share the two env-integer parsers (R1), merge fixture spec tests (R2), trim client.ts comment (R3) | Agree: no change (layer rule; distinct behaviours; accurate) | — |
+| Deferred minors triage (whole-branch review table) | All "fine as ruled" except the reconnection overlap, fixed above | — |
+
+Fix wave on `2026-10-15-e2e-isolated-quizzes-plan-final-fixes`, cut from ecdad04.
+- Correction (2026-10-18, whole-branch review W4) to Task 1's fix round 2 above: the sweep still throws one AggregateError after trying every delete, so the cleanup project still fails and chromium still does not run when a stale fixture cannot be deleted. Kept on purpose: loud over silent; the error names every quiz that failed.
+
+### Fix wave (2026-10-18), commits e87b547..746cc4e on 2026-10-15-e2e-isolated-quizzes-plan-final-fixes
+- eaf8fbb join response asserted (S1 part 1, S2, P6, P2 for player-join): player-join + reconnection --retries=0, 10 passed, exit 0.
+- 368e543 reconnection overlap dropped, failOnFlakyTests (W3, P1, S7, P2, W5, S1 parts 2–3): reconnection --retries=0, 4 passed, exit 0. Negative case: a scratch probe test failing on attempt 0 and passing on retry gave "1 flaky", exit 1; the probe file was removed (status clean after).
+- 8ed0f17 sweep regex (S4): new cases failed first ("received 2"), then quiz-fixtures.spec.ts 10 passed, exit 0.
+- 2d17e20 paths module, dead code, errorMessage (P3, P4, P5): two full runs back to back, default retries + failOnFlakyTests: 45 passed each (24.2 s, 26.0 s), 0 flaky, exit 0. 45 = the earlier 48 less the three dropped tests.
+- 2c445e3 docs (W1, W2, W6, W7, S6) and the W4 ledger correction.
+- 746cc4e prettier fix in quiz-fixtures.spec.ts: missed in 8ed0f17 because only the edited support file was linted; caught by the full `yarn lint`.
+- After the wave: `yarn test:run` Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523), exit 0; `yarn lint` 0 errors / 5 warnings (untouched files), exit 0; tsc exit 0. Dev server: this worktree, pid cwd checked.
+
+### Fix-wave re-review (2026-10-18), final-fixwave-rereview.md
+task-reviewer-capable over ecdad04..6ce5372: CHANGES_REQUESTED, minor only; every ruling addressed. Tamper check clean (HEAD 6ce5372, empty status, ledger listing unchanged). Note: the reconnection merge kept the old :132 test (renamed) and gave it :80's "send answer" check, the reverse of the ruling's wording; same assertions.
+| Finding | Ruling | Commit |
+|---|---|---|
+| R1 fixture title shape untested against the sweep | Fix: create test asserts `fixtureTimestamp(quiz.title)` not null | 6dd3ab0 |
+| R2 spec lists the dropped true/false preset | Fix: dated note | 37519e6 |
+| R3 join helper reads the body on success | Fix: body read only when status ≠ 200 | 6dd3ab0 |
+| R4 invalid-code text unscoped | Fix: scoped to the form | 6dd3ab0 |
+| R5 two wide doc lines | Fix: rewrapped | 37519e6 |
+| R6 spec §6 "first request that reaches the database" | Fix: first request to a route that imports the services factory | 37519e6 |
+Verification: quiz-fixtures + player-join + player-reconnection `--retries=0`: 15 passed, exit 0; lint and tsc exit 0 on the touched files.
+Final verification at 37519e6, dev server from this worktree: full `yarn test:e2e` (default retries, failOnFlakyTests): 45 passed (24.2 s), 0 flaky, exit 0; `yarn test:run` Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523), exit 0; `yarn lint` 0 errors / 5 warnings (untouched files), exit 0.
+Doc sweep: decisions — none outlive the work (failOnFlakyTests is in e2e/README.md and CLAUDE.md pitfall 5); findings — pool findings "Outcome" added; conventions — README debugging tip 5 (dev overlay), flaky tip; CLAUDE.md pitfall 5 updated. Branch-passes skill FINDINGS.md entry (first run outside Bedtime Bloopers) offered to the user: it lives in ~/.claude.
+Fix branch not merged into test/e2e-isolated-quizzes yet: waits for the user's go-ahead.
