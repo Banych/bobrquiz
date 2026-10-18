@@ -41,8 +41,9 @@ a `.env.development.local` that Next loads over it in dev, then restart the dev 
 # its 15 s request timeout (docs/progress/findings/2026-10-18-e2e-db-pool-queueing.md)
 DATABASE_POOL_MAX=10
 
-# Join limit: a run makes ~7 UI joins, so two runs within a minute exceed the default 10 per
-# 60 s per IP and the reconnection tests get 429s. Local only; never raise it when deployed.
+# Join limit: a run makes 4 join requests (more with retries), so a few runs within a minute
+# exceed the default 10 per 60 s per IP and the joins get 429s. Local only; never raise it when
+# deployed.
 SESSION_JOIN_RATE_LIMIT=100
 ```
 
@@ -90,7 +91,7 @@ yarn playwright show-report
 - **`admin-question-crud.spec.ts`** - Question CRUD tests (requires auth)
 - **`admin-quiz-crud.spec.ts`** - Quiz create, update and delete tests, and no edit/delete buttons on an active quiz
 - **`round-transitions.spec.ts`** - Lock Question button, round summary dialog, and lock/advance state changes
-- **`player-reconnection.spec.ts`** - Player offline banner, auto-reconnect, disabled answering while offline and re-enabling after
+- **`player-reconnection.spec.ts`** - Player offline banner with answering disabled, then the banner clearing and answering re-enabled when the network returns
 - **`player-connection-status.spec.ts`** - Host view of player connection status, status transitions, API errors and quiz not found
 - **`supabase-clients.spec.ts`** - No duplicate GoTrueClient on the home page (anonymous) or the admin quizzes page (admin)
 
@@ -99,7 +100,7 @@ yarn playwright show-report
 1. **Auth failures**: Check that `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` are correct and the user exists in Supabase
    (for `admin-auth.spec.ts`: `TEST_AUTH_ADMIN_EMAIL` and `TEST_AUTH_ADMIN_PASSWORD`; its login tests skip when they are unset)
 2. **Timeout errors**: Increase timeout in `playwright.config.ts` or specific tests
-3. **Flaky tests**: Use `page.waitForURL()`, `page.waitForSelector()`, or `expect().toBeVisible()` to wait for async operations
+3. **Flaky tests**: Use `page.waitForURL()`, `page.waitForSelector()`, or `expect().toBeVisible()` to wait for async operations. A test that passes only on its retry still fails the run (`failOnFlakyTests`): find its cause rather than rerunning
 4. **View test traces**: After failure, open HTML report and click on failed test to see trace viewer
 
 ## CI/CD

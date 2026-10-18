@@ -14,6 +14,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // Retry once in dev, twice in CI for flaky tests
+  failOnFlakyTests: true, // A pass on retry still exits 1: a flake needs its own cause
   // Parallel execution in dev, sequential in CI for auth stability
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',

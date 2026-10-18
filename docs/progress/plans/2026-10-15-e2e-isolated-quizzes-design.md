@@ -140,6 +140,10 @@ joins per run, under the limit of 10; retries can exceed it. Removing the setup'
 saves one. Recorded as a risk: the verification checks for 429 responses, and it is handled only
 if one appears.
 
+2026-10-18, branch passes: three of the five reconnection tests asserted only what the other two
+already did and were dropped, so a run now makes 4 join requests (player-join's two, the
+reconnection tests' two). Every join asserts the response, so a 429 fails with its body.
+
 ### 6. Database pool size from the environment (added 2026-10-18)
 
 Measured cause of the full-run failures after Task 4
