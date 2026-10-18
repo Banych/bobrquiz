@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-10-18: E2E Isolated Quizzes ✅
+- **2026-10-18** — every E2E test builds and deletes its own quiz through the admin API, with a sweep for crashed runs; the shared seeded quiz is gone; the Prisma pool size and the join rate limit come from the environment (defaults unchanged, raised for local E2E); a pass on retry fails the run — [PR #110](https://github.com/Banych/bobrquiz/pull/110) — [spec](plans/2026-10-15-e2e-isolated-quizzes-design.md) — [plan](plans/2026-10-15-e2e-isolated-quizzes-plan.md) — [ledger](../../.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md) — [findings](findings/2026-10-18-e2e-db-pool-queueing.md)
+
 ### 2026-10-16: Persist the Answer Lock ✅
 - **2026-10-16** — the host's answer lock is saved and restored, so Lock stays disabled, late answers are refused and a second lock writes no snapshots; reset and start clear locks; a failed broadcast after locking no longer loses the round summary — [PR #81](https://github.com/Banych/bobrquiz/pull/81) — [spec](plans/2026-10-15-persist-answer-lock-design.md) — [plan](plans/2026-10-15-persist-answer-lock-plan.md) — [ledger](../../.superpowers/sdd/2026-10-15-persist-answer-lock-plan/progress.md) — [findings](findings/2026-10-16-persist-answer-lock.md)
 

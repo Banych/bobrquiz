@@ -1,50 +1,29 @@
-import { test, expect } from '@playwright/test';
-import { getQuizId, getJoinCode } from './fixtures';
+import { test, expect, QUESTIONS } from './support/quiz-fixtures';
+import { joinAsPlayer, submitJoinForm } from './support/player-join';
 
 /**
  * E2E test for player join flow.
  * Based on actual MCP-tested behavior.
  */
 
-// Get quiz info dynamically from setup phase
-const QUIZ_ID = () => getQuizId();
-const JOIN_CODE = () => getJoinCode();
-
 test.describe('Player Join Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear localStorage
-    await page.goto('/');
-    await page.evaluate(() => window.localStorage.clear());
-  });
-
-  test('should join quiz and navigate to play page', async ({ page }) => {
-    // Generate unique player name to avoid database constraint
-    const playerName = `E2E Player ${Date.now()}`;
-    const quizId = QUIZ_ID();
-    const joinCode = JOIN_CODE();
-
-    // Navigate to join page
-    await page.goto('/join');
-    await expect(page).toHaveURL('/join');
-
-    // Fill join form
-    await page.getByRole('textbox', { name: /join code/i }).fill(joinCode);
-    await page.getByRole('textbox', { name: /your name/i }).fill(playerName);
-
-    // Submit form
-    await page.getByRole('button', { name: /join quiz/i }).click();
-
-    // Wait for navigation to play page (30s timeout for API + navigation)
-    await page.waitForURL(new RegExp(`/play/${quizId}/[a-z0-9-]+`), {
-      timeout: 30000,
+  test('should join quiz and navigate to play page', async ({
+    page,
+    createQuiz,
+  }) => {
+    const quiz = await createQuiz({
+      label: 'player-join',
+      questions: [QUESTIONS.capitalOfFrance],
+      start: true,
     });
+    const playerName = await joinAsPlayer(page, quiz);
 
     // Verify we're on play page
-    await expect(page).toHaveURL(new RegExp(`/play/${quizId}/[a-z0-9-]+`));
+    await expect(page).toHaveURL(new RegExp(`/play/${quiz.id}/[a-z0-9-]+`));
 
     // Verify player info is displayed
     await expect(page.getByRole('heading', { name: playerName })).toBeVisible();
-    await expect(page.getByText(/Quiz: Trivia Night Demo/i)).toBeVisible();
+    await expect(page.getByText(`Quiz: ${quiz.title}`)).toBeVisible();
     await expect(page.getByText(/Status: Active/i)).toBeVisible();
 
     // Verify localStorage contains session
@@ -54,23 +33,19 @@ test.describe('Player Join Flow', () => {
     });
 
     expect(session).toBeTruthy();
-    expect(session.quizId).toBe(quizId);
+    expect(session.quizId).toBe(quiz.id);
     expect(session.playerName).toBe(playerName);
     expect(session.playerId).toBeTruthy();
   });
 
   test('should show error when join code is invalid', async ({ page }) => {
-    await page.goto('/join');
+    const response = await submitJoinForm(page, 'INVALID', 'Test Player');
 
-    // Try to join with invalid code
-    await page.getByRole('textbox', { name: /join code/i }).fill('INVALID');
-    await page.getByRole('textbox', { name: /your name/i }).fill('Test Player');
-    await page.getByRole('button', { name: /join quiz/i }).click();
-
-    // Wait and check for error message
-    await expect(page.getByText(/not found|invalid|unable/i)).toBeVisible({
-      timeout: 5000,
-    });
+    // The use case's not-found error, not the form's fallback for any failure
+    expect(response.status()).toBe(404);
+    await expect(
+      page.locator('form').getByText(/was not found/i)
+    ).toBeVisible();
 
     // Should still be on join page
     await expect(page).toHaveURL('/join');

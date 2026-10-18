@@ -1,25 +1,17 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/quiz-fixtures';
 import { AdminQuizDetailPage } from './pages';
 
 test.describe('Admin Question CRUD', () => {
   let quizId: string;
   let detailPage: AdminQuizDetailPage;
 
-  test.beforeEach(async ({ page, request }) => {
-    // Create a quiz for testing via API
-    const response = await request.post(
-      'http://localhost:3000/api/admin/quizzes',
-      {
-        data: {
-          title: `Question CRUD Test ${Date.now()}`,
-          timePerQuestion: 30,
-        },
-      }
-    );
-    const quiz = await response.json();
+  test.beforeEach(async ({ page, createQuiz }) => {
+    const quiz = await createQuiz({
+      label: 'admin-question-crud',
+      questions: [],
+    });
     quizId = quiz.id;
 
-    // Initialize page object and navigate
     detailPage = new AdminQuizDetailPage(page);
     await detailPage.goto(quizId);
   });

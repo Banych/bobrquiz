@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import { ADMIN_STORAGE_STATE, BASE_URL } from './e2e/support/paths';
 
 // Load test env from .env.local (where the docs put it), then .env; the first file wins and
 // variables already set in the shell win over both
@@ -14,12 +15,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // Retry once in dev, twice in CI for flaky tests
+  failOnFlakyTests: true, // A pass on retry still exits 1: a flake needs its own cause
   // Parallel execution in dev, sequential in CI for auth stability
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   timeout: 60000, // 60 seconds per test
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 15000, // 15 seconds per action
@@ -31,20 +33,26 @@ export default defineConfig({
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
     },
+    // Deletes fixture quizzes left by crashed runs (older than 30 minutes)
+    {
+      name: 'cleanup',
+      testMatch: /.*\.cleanup\.ts/,
+      dependencies: ['setup'],
+    },
     // Authenticated tests - use saved auth state
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: ADMIN_STORAGE_STATE,
       },
-      dependencies: ['setup'],
+      dependencies: ['cleanup'],
     },
   ],
 
   webServer: {
     command: 'yarn dev',
-    url: 'http://localhost:3000',
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
     stderr: 'pipe',
