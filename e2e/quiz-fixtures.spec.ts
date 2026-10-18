@@ -33,6 +33,8 @@ test.describe('quiz fixtures', () => {
     expect(
       quiz.title.startsWith(`${FIXTURE_TITLE_PREFIX}fixture-create `)
     ).toBe(true);
+    // The sweep must be able to age the titles the fixture writes
+    expect(fixtureTimestamp(quiz.title)).not.toBeNull();
     expect(quiz.joinCode).toMatch(/^JOIN-[A-Z0-9]{4}$/);
 
     const response = await adminApi.get(`/api/admin/quizzes/${quiz.id}`);

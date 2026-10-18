@@ -1,4 +1,4 @@
-import { expect, type Page, type Response } from '@playwright/test';
+import type { Page, Response } from '@playwright/test';
 import type { TestQuiz } from './quiz-fixtures';
 
 const isJoinRequest = (response: Response) =>
@@ -31,10 +31,11 @@ export async function joinAsPlayer(
   playerName = `E2E Player ${Date.now()}`
 ): Promise<string> {
   const response = await submitJoinForm(page, quiz.joinCode, playerName);
-  expect(
-    response.status(),
-    `POST /api/session/join: ${await response.text()}`
-  ).toBe(200);
+  if (response.status() !== 200) {
+    throw new Error(
+      `POST /api/session/join failed: ${response.status()} ${await response.text()}`
+    );
+  }
   await page.waitForURL(new RegExp(`/play/${quiz.id}/[a-z0-9-]+`), {
     timeout: 30_000,
   });

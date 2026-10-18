@@ -43,7 +43,9 @@ test.describe('Player Join Flow', () => {
 
     // The use case's not-found error, not the form's fallback for any failure
     expect(response.status()).toBe(404);
-    await expect(page.getByText(/was not found/i)).toBeVisible();
+    await expect(
+      page.locator('form').getByText(/was not found/i)
+    ).toBeVisible();
 
     // Should still be on join page
     await expect(page).toHaveURL('/join');
