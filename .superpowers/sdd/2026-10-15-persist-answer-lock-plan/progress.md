@@ -97,3 +97,5 @@ task-reviewer-capable over b9fc943..6620035: APPROVED, 4 minors (final-fixwave-r
 Branch passes: complete. Next: bring fix/persist-answer-lock-final-fixes into fix/persist-answer-lock (fast-forward), PR draft for the user's approval.
 Doc sweep after branch passes: PATTERNS.md realtime convention (broadcast after a write fails soft); nothing new measured beyond the mutation and red runs logged above; CLAUDE.md unaffected.
 PR #81 opened 2026-10-16 with the user-approved text ("approve"). Merge waits for the user's go-ahead; at merge: spec and plan status to "✅ Complete — PR #81", PROGRESS.md work index line.
+
+PR #81 merged 2026-10-16 (merge commit dfcd22e) on the user's "merge". Out-of-scope items: user chose GitHub issues; drafts checked against the code first (the timer and FIXED items were restated), posted 2026-10-18 on the user's "post" as #82–#89 (bug label); the spec's out-of-scope list links each item.
