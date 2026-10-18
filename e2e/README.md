@@ -8,7 +8,7 @@ Tests that require admin access (Quiz CRUD, Question CRUD) use a global authenti
 
 1. **`auth.setup.ts`** - Runs before all tests to create an authenticated session
 2. **`playwright/.auth/user.json`** - Stores the session state (gitignored)
-3. All test projects depend on the setup project and automatically use the saved auth state
+3. Projects run in the order `setup` → `cleanup` → `chromium`; `chromium` uses the saved auth state
 
 ## Environment Variables
 
@@ -69,6 +69,9 @@ yarn playwright show-report
 
 - **`auth.setup.ts`** - Global authentication setup (runs first)
 - **`admin-auth.spec.ts`** - Login, logout and redirect tests (own account, `TEST_AUTH_ADMIN_*`)
+- **`support/quiz-fixtures.ts`** - `createQuiz` fixture: each test that needs a quiz gets its own, created through the admin API and deleted after the test (titles start with `E2E fixture `)
+- **`stale-quizzes.cleanup.ts`** - `cleanup` project: deletes fixture quizzes older than 30 minutes, left by crashed runs
+- **`quiz-fixtures.spec.ts`** - Tests for the fixture itself
 - **`host-dashboard.spec.ts`** - Host quiz control panel tests
 - **`player-join.spec.ts`** - Player join flow tests
 - **`admin-question-crud.spec.ts`** - Question CRUD tests (requires auth)

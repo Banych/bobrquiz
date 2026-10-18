@@ -1,4 +1,9 @@
-import { test, expect } from '@playwright/test';
+import {
+  test,
+  expect,
+  QUESTIONS,
+  FIXTURE_TITLE_PREFIX,
+} from './support/quiz-fixtures';
 import { AdminQuizzesPage } from './pages';
 
 test.describe('Admin Quiz CRUD', () => {
@@ -18,7 +23,7 @@ test.describe('Admin Quiz CRUD', () => {
   });
 
   test('should create a new quiz', async () => {
-    const title = `E2E Test Quiz ${Date.now()}`;
+    const title = `${FIXTURE_TITLE_PREFIX}admin-quiz-crud ${Date.now()}`;
 
     // Create quiz using page object
     await quizzesPage.createQuiz({
@@ -41,8 +46,10 @@ test.describe('Admin Quiz CRUD', () => {
   });
 
   test('should update a pending quiz', async () => {
-    const originalTitle = `Update Test ${Date.now()}`;
-    const updatedTitle = `${originalTitle} - Updated`;
+    // Both titles end in a timestamp so the sweep can age them
+    const stamp = Date.now();
+    const originalTitle = `${FIXTURE_TITLE_PREFIX}admin-quiz-update ${stamp}`;
+    const updatedTitle = `${FIXTURE_TITLE_PREFIX}admin-quiz-updated ${stamp}`;
 
     // Create a quiz to update
     await quizzesPage.createQuiz({ title: originalTitle });
@@ -60,7 +67,7 @@ test.describe('Admin Quiz CRUD', () => {
   });
 
   test('should delete a pending quiz', async () => {
-    const title = `Delete Test ${Date.now()}`;
+    const title = `${FIXTURE_TITLE_PREFIX}admin-quiz-delete ${Date.now()}`;
 
     // Create a quiz to delete
     await quizzesPage.createQuiz({ title });
@@ -74,18 +81,23 @@ test.describe('Admin Quiz CRUD', () => {
     ).not.toBeVisible({ timeout: 10000 });
   });
 
-  test('should not show edit/delete buttons for active quiz', async () => {
-    // Find the "Trivia Night Demo" quiz which should be Active
-    const activeRow = quizzesPage.getQuizRow('Trivia Night Demo');
+  test('should not show edit/delete buttons for active quiz', async ({
+    createQuiz,
+  }) => {
+    const quiz = await createQuiz({
+      label: 'admin-quiz-list',
+      questions: [QUESTIONS.capitalOfFrance],
+      start: true,
+    });
+    await quizzesPage.goto();
 
-    // Verify it exists and has Active status
-    await expect(activeRow.getByText(/active/i)).toBeVisible({
+    const row = quizzesPage.getQuizRow(quiz.title);
+    await expect(row.getByText('Active', { exact: true })).toBeVisible({
       timeout: 10000,
     });
 
-    // Verify no Edit button (only Pending quizzes have Edit buttons)
-    await expect(await quizzesPage.hasEditButton('Trivia Night Demo')).toBe(
-      false
-    );
+    // Only Pending quizzes have Edit and Delete buttons
+    expect(await quizzesPage.hasEditButton(quiz.title)).toBe(false);
+    await expect(row.getByRole('button', { name: 'Delete' })).toHaveCount(0);
   });
 });

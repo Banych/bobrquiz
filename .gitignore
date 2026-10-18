@@ -16,7 +16,6 @@
 /playwright-report/
 /.playwright-mcp/
 /playwright/.auth/
-/playwright/.quiz-info.json
 
 # agent worktrees (Claude Code)
 /.claude/worktrees/
