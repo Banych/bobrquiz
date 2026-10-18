@@ -11,7 +11,8 @@ const JoinSessionBodySchema = z.object({
 
 const SESSION_JOIN_LIMIT = resolveRateLimit(
   process.env.SESSION_JOIN_RATE_LIMIT,
-  10
+  10,
+  'SESSION_JOIN_RATE_LIMIT'
 );
 
 type ErrorResponse = {

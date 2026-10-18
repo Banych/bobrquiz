@@ -28,12 +28,13 @@ type WindowState = {
  */
 export const resolveRateLimit = (
   value: string | undefined,
-  fallback: number
+  fallback: number,
+  name: string
 ): number => {
   const trimmed = value?.trim();
   if (!trimmed) return fallback;
   if (!/^\d+$/.test(trimmed) || Number(trimmed) < 1) {
-    throw new Error(`Rate limit must be a positive integer, got "${trimmed}".`);
+    throw new Error(`${name} must be a positive integer, got "${trimmed}".`);
   }
   return Number(trimmed);
 };

@@ -85,22 +85,26 @@ describe('rate-limit', () => {
 
   describe('resolveRateLimit', () => {
     it('falls back when unset or blank', () => {
-      expect(resolveRateLimit(undefined, 10)).toBe(10);
-      expect(resolveRateLimit('', 10)).toBe(10);
-      expect(resolveRateLimit('  ', 10)).toBe(10);
+      expect(resolveRateLimit(undefined, 10, 'LIMIT')).toBe(10);
+      expect(resolveRateLimit('', 10, 'LIMIT')).toBe(10);
+      expect(resolveRateLimit('  ', 10, 'LIMIT')).toBe(10);
     });
 
     it('uses a positive integer', () => {
-      expect(resolveRateLimit('100', 10)).toBe(100);
-      expect(resolveRateLimit(' 5 ', 10)).toBe(5);
+      expect(resolveRateLimit('100', 10, 'LIMIT')).toBe(100);
+      expect(resolveRateLimit(' 5 ', 10, 'LIMIT')).toBe(5);
     });
 
     it.each(['0', '-1', '2.5', 'ten', '10abc'])('throws on %s', (value) => {
-      expect(() => resolveRateLimit(value, 10)).toThrow(/positive integer/);
+      expect(() => resolveRateLimit(value, 10, 'LIMIT')).toThrow(
+        /positive integer/
+      );
     });
 
-    it('names the bad value in the error', () => {
-      expect(() => resolveRateLimit('ten', 10)).toThrow(/"ten"/);
+    it('names the variable and the bad value in the error', () => {
+      expect(() =>
+        resolveRateLimit('ten', 10, 'SESSION_JOIN_RATE_LIMIT')
+      ).toThrow(/SESSION_JOIN_RATE_LIMIT must be .*"ten"/);
     });
   });
 });

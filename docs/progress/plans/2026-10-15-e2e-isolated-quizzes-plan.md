@@ -1081,7 +1081,7 @@ Why: spec section 6; findings `docs/progress/findings/2026-10-18-e2e-db-pool-que
 ```ts
 // pool-size.ts
 export const DEFAULT_POOL_MAX = 2;
-/** Pool size for the pg adapter: unset or blank → DEFAULT_POOL_MAX; throws on anything but a positive integer. */
+/** Pool size for the pg adapter: unset or blank → DEFAULT_POOL_MAX; throws on anything but a positive integer, naming `name` in the message. */
 export function resolvePoolMax(value: string | undefined): number;
 ```
 
@@ -1140,12 +1140,16 @@ Why: spec section 7; Task 5's second back-to-back run (ledger).
 
 ```ts
 // src/lib/rate-limit.ts
-/** Limit from an env value: unset or blank → fallback; throws on anything but a positive integer. */
-export const resolveRateLimit = (value: string | undefined, fallback: number): number;
+/** Limit from an env value: unset or blank → fallback; throws on anything but a positive integer, naming `name` in the message. */
+export const resolveRateLimit = (
+  value: string | undefined,
+  fallback: number,
+  name: string
+): number;
 ```
 
 The join route resolves it once at module scope
-(`const SESSION_JOIN_LIMIT = resolveRateLimit(process.env.SESSION_JOIN_RATE_LIMIT, 10);`) and
+(`const SESSION_JOIN_LIMIT = resolveRateLimit(process.env.SESSION_JOIN_RATE_LIMIT, 10, 'SESSION_JOIN_RATE_LIMIT');`) and
 passes it as `limit`.
 
 **Tests** (added to `src/tests/lib/rate-limit.test.ts`):
@@ -1153,18 +1157,24 @@ passes it as `limit`.
 ```ts
   describe('resolveRateLimit', () => {
     it('falls back when unset or blank', () => {
-      expect(resolveRateLimit(undefined, 10)).toBe(10);
-      expect(resolveRateLimit('', 10)).toBe(10);
-      expect(resolveRateLimit('  ', 10)).toBe(10);
+      expect(resolveRateLimit(undefined, 10, 'LIMIT')).toBe(10);
+      expect(resolveRateLimit('', 10, 'LIMIT')).toBe(10);
+      expect(resolveRateLimit('  ', 10, 'LIMIT')).toBe(10);
     });
 
     it('uses a positive integer', () => {
-      expect(resolveRateLimit('100', 10)).toBe(100);
-      expect(resolveRateLimit(' 5 ', 10)).toBe(5);
+      expect(resolveRateLimit('100', 10, 'LIMIT')).toBe(100);
+      expect(resolveRateLimit(' 5 ', 10, 'LIMIT')).toBe(5);
     });
 
     it.each(['0', '-1', '2.5', 'ten', '10abc'])('throws on %s', (value) => {
-      expect(() => resolveRateLimit(value, 10)).toThrow(/positive integer/);
+      expect(() => resolveRateLimit(value, 10, 'LIMIT')).toThrow(/positive integer/);
+    });
+
+    it('names the variable and the bad value in the error', () => {
+      expect(() =>
+        resolveRateLimit('ten', 10, 'SESSION_JOIN_RATE_LIMIT')
+      ).toThrow(/SESSION_JOIN_RATE_LIMIT must be .*"ten"/);
     });
   });
 ```
