@@ -1202,6 +1202,6 @@ Commit: `feat(api): let the join rate limit come from the environment`.
 - [ ] List the leftovers from earlier runs for the user's approval (no deletion without it):
   quizzes titled `Question CRUD Test …`, `E2E Test Quiz …`, `Update Test …`, and the E2E players
   on the JOIN-KYTX quiz, with counts.
-- [ ] Ledger `.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md` (`git add -f`), spec
-  and plan status lines, the security item (unauthenticated `/api/quiz/*` host routes; the rate
+- [ ] Ledger `.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md` (`git add -f`),
+  spec and plan status lines, the security item (unauthenticated `/api/quiz/*` host routes; the rate
   limiter trusting `x-forwarded-for`) recorded where the user chooses.

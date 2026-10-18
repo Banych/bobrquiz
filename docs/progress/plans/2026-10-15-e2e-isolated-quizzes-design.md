@@ -95,7 +95,8 @@ New `e2e/support/quiz-fixtures.ts`:
 - Every request checks the response and throws with the method, path, status and body. (Today
   `admin-question-crud.spec.ts:8-25` ignores a failed create.)
 - Question presets: a free-text question, the multiple-choice "What is the capital of France?"
-  (options Paris, London, Berlin, Rome; answer Paris) and a true/false question.
+  (options Paris, London, Berlin, Rome; answer Paris) and a true/false question. 2026-10-18: the
+  true/false preset was dropped in the branch passes; no spec used it.
 
 ### 2. One quiz per test
 
@@ -154,7 +155,8 @@ it. User's choice (2026-10-18, of: env pool size, fewer workers, fewer queries p
 - `client.ts` takes the pool size from `DATABASE_POOL_MAX` through a pure helper
   (`resolvePoolMax`): unset or empty → 2, so Vercel keeps today's pool; a positive integer → that
   value; anything else throws when `client.ts` first loads (a typo must not silently fall back).
-  In dev that is the first request that reaches the database, not server start; whether
+  In dev that is the first request to a route or page that imports the services factory (which
+  imports the client), even one that never queries, not server start; whether
   `next build` loads it, and so fails the build, is unverified.
 - `.env.example` documents it; a dev machine sets 10 in `.env.local` or `.env.development.local`
   (a pool of 10 stayed flat at 8 concurrent creates). Each dev server then holds up to 10 of the project's 60 connections.

@@ -192,9 +192,9 @@ repeated here.
    any authenticated user upload and delete, and only admin accounts exist
    (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
 5. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
-   under load or on repeated runs within a minute (a pass on retry fails the run too): set `DATABASE_POOL_MAX=10` and
-   `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev server in a git worktree
-   needs its own `node_modules`, not a symlink (Turbopack rejects it).
+   under load or on repeated runs within a minute (a pass on retry fails the run too): set
+   `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
+   server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
 
 ## Debugging order
 
