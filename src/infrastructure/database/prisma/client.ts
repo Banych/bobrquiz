@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from './generated-client';
+import { resolvePoolMax } from './pool-size';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -14,7 +15,8 @@ const adapter = new PrismaPg({
   // In a serverless environment (Vercel), each lambda can open its own pool;
   // keeping max low prevents exhausting Supabase's connection limit (200).
   // The primary fix is using the Supavisor pooler URL (port 6543) in DATABASE_URL.
-  max: 2,
+  // DATABASE_POOL_MAX raises it for local dev (e.g. parallel E2E runs).
+  max: resolvePoolMax(process.env.DATABASE_POOL_MAX),
 });
 
 const globalForPrisma = globalThis as unknown as {
