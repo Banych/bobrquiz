@@ -4,6 +4,7 @@ import {
   QUESTIONS,
   FIXTURE_TITLE_PREFIX,
 } from './support/quiz-fixtures';
+import { ADMIN_STORAGE_STATE } from './support/paths';
 import { AdminQuizzesPage } from './pages';
 
 test.describe('Admin Quiz CRUD', () => {
@@ -15,7 +16,7 @@ test.describe('Admin Quiz CRUD', () => {
   test.beforeAll(async ({ browser }) => {
     // Create a persistent context with auth state for all tests
     const context = await browser.newContext({
-      storageState: 'playwright/.auth/user.json',
+      storageState: ADMIN_STORAGE_STATE,
     });
     const page = await context.newPage();
     quizzesPage = new AdminQuizzesPage(page);

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import { ADMIN_STORAGE_STATE, BASE_URL } from './e2e/support/paths';
 
 // Load test env from .env.local (where the docs put it), then .env; the first file wins and
 // variables already set in the shell win over both
@@ -20,7 +21,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60000, // 60 seconds per test
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 15000, // 15 seconds per action
@@ -43,7 +44,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: ADMIN_STORAGE_STATE,
       },
       dependencies: ['cleanup'],
     },
@@ -51,7 +52,7 @@ export default defineConfig({
 
   webServer: {
     command: 'yarn dev',
-    url: 'http://localhost:3000',
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
     stderr: 'pipe',
