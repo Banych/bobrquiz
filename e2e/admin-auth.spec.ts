@@ -47,7 +47,10 @@ authTest.describe('Admin Authentication', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Should show error message
-    await expect(page.getByText(/invalid login credentials/i)).toBeVisible();
+    // Scoped to the form: Next's dev overlay repeats the message
+    await expect(
+      page.locator('form').getByText(/invalid login credentials/i)
+    ).toBeVisible();
 
     // Should still be on login page
     await expect(page).toHaveURL('http://localhost:3000/login');
