@@ -170,3 +170,18 @@ Fix wave on `2026-10-15-e2e-isolated-quizzes-plan-final-fixes`, cut from ecdad04
 - 2c445e3 docs (W1, W2, W6, W7, S6) and the W4 ledger correction.
 - 746cc4e prettier fix in quiz-fixtures.spec.ts: missed in 8ed0f17 because only the edited support file was linted; caught by the full `yarn lint`.
 - After the wave: `yarn test:run` Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523), exit 0; `yarn lint` 0 errors / 5 warnings (untouched files), exit 0; tsc exit 0. Dev server: this worktree, pid cwd checked.
+
+### Fix-wave re-review (2026-10-18), final-fixwave-rereview.md
+task-reviewer-capable over ecdad04..6ce5372: CHANGES_REQUESTED, minor only; every ruling addressed. Tamper check clean (HEAD 6ce5372, empty status, ledger listing unchanged). Note: the reconnection merge kept the old :132 test (renamed) and gave it :80's "send answer" check, the reverse of the ruling's wording; same assertions.
+| Finding | Ruling | Commit |
+|---|---|---|
+| R1 fixture title shape untested against the sweep | Fix: create test asserts `fixtureTimestamp(quiz.title)` not null | 6dd3ab0 |
+| R2 spec lists the dropped true/false preset | Fix: dated note | 37519e6 |
+| R3 join helper reads the body on success | Fix: body read only when status ≠ 200 | 6dd3ab0 |
+| R4 invalid-code text unscoped | Fix: scoped to the form | 6dd3ab0 |
+| R5 two wide doc lines | Fix: rewrapped | 37519e6 |
+| R6 spec §6 "first request that reaches the database" | Fix: first request to a route that imports the services factory | 37519e6 |
+Verification: quiz-fixtures + player-join + player-reconnection `--retries=0`: 15 passed, exit 0; lint and tsc exit 0 on the touched files.
+Final verification at 37519e6, dev server from this worktree: full `yarn test:e2e` (default retries, failOnFlakyTests): 45 passed (24.2 s), 0 flaky, exit 0; `yarn test:run` Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523), exit 0; `yarn lint` 0 errors / 5 warnings (untouched files), exit 0.
+Doc sweep: decisions — none outlive the work (failOnFlakyTests is in e2e/README.md and CLAUDE.md pitfall 5); findings — pool findings "Outcome" added; conventions — README debugging tip 5 (dev overlay), flaky tip; CLAUDE.md pitfall 5 updated. Branch-passes skill FINDINGS.md entry (first run outside Bedtime Bloopers) offered to the user: it lives in ~/.claude.
+Fix branch not merged into test/e2e-isolated-quizzes yet: waits for the user's go-ahead.
