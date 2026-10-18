@@ -140,3 +140,20 @@ non-current questions, wrong route statuses), #78 to #80 (media).
   random, so no path traversal.
 - Supabase auth cookies default to `sameSite: lax`, so cross-site POST, PATCH and DELETE to admin
   routes carry no session.
+
+## Tracking
+
+S1 to S8 are tracked as draft repository security advisories, visible only to the repository's
+admins until published (an anonymous request for each returned 404 on 2026-10-18):
+
+| Findings | Advisory | Severity |
+|---|---|---|
+| S1, S1a | GHSA-j2j8-j6g6-5f29: anyone can control any quiz | critical |
+| S4 | GHSA-j6mg-7jc4-3gvf: players are identified only by a playerId | high |
+| S2, S3 | GHSA-rxxj-x7x9-9fh7: players receive the host's full quiz state | high |
+| S8 | GHSA-jv37-f2qr-6jg6: realtime channels are public | medium |
+| S5 | GHSA-rq7w-52rf-mq34: repeat answers all score | high |
+| S6 | GHSA-9q49-m59r-h4pq: kicked players keep scoring | medium |
+| S7 | GHSA-g2xx-cr9j-4q77: joining needs no join code | medium |
+
+This record stays unpushed until those fixes merge, because it describes the same attacks.
