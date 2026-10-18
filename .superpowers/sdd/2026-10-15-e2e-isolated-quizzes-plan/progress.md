@@ -129,3 +129,6 @@ Verdict runs after the user restarted dev with SESSION_JOIN_RATE_LIMIT=100 and D
 - Fixture leftovers: 10, all admin-quiz-crud / admin-quiz-updated, ages 1–17 min (under the 30 min sweep age); the sweep logged "deleted 2 stale fixture quizzes" in final run 1 — the sweep works as designed.
 - Records: e2e/README.md env section (DATABASE_POOL_MAX, SESSION_JOIN_RATE_LIMIT); CLAUDE.md pitfall 5 (E2E env values, worktree node_modules); persist-answer-lock findings "Still to come" marked met. Spec and plan stay "In progress" until the PR merges.
 Task 5: complete. Next: end-of-branch passes (production code changed: pool-size, client.ts, rate-limit, join route, host player-card test id) — awaiting the user's go-ahead.
+
+## End-of-branch passes
+User go-ahead 2026-10-18 ("go"). Range e39a9e0..23140ab (merge base with origin/master, which this branch merged at 3469ebc, to Task 5's records). Production code changed (pool-size + client.ts, rate-limit + join route, host player-card test id): all three reports — whole-branch review (task-reviewer-capable, handback saved as final-whole-branch-review.md), silent-failure hunt (final-silent-failure-hunt.md), simplification (final-simplification.md, report only). Code diff saved as review-branch.diff (src, e2e, playwright.config.ts, .env.example, .gitignore).
