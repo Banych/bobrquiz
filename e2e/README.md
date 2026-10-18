@@ -75,6 +75,11 @@ yarn playwright show-report
 - **`host-dashboard.spec.ts`** - Host quiz control panel tests
 - **`player-join.spec.ts`** - Player join flow tests
 - **`admin-question-crud.spec.ts`** - Question CRUD tests (requires auth)
+- **`admin-quiz-crud.spec.ts`** - Quiz create, update and delete tests, and no edit/delete buttons on an active quiz
+- **`round-transitions.spec.ts`** - Lock Question button, round summary dialog, and lock/advance state changes
+- **`player-reconnection.spec.ts`** - Player offline banner, auto-reconnect, disabled answering while offline and re-enabling after
+- **`player-connection-status.spec.ts`** - Host view of player connection status, status transitions, API errors and quiz not found
+- **`supabase-clients.spec.ts`** - No duplicate GoTrueClient on the home page (anonymous) or the admin quizzes page (admin)
 
 ## Debugging Tips
 
