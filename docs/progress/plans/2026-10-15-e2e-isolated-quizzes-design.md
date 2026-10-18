@@ -153,7 +153,9 @@ it. User's choice (2026-10-18, of: env pool size, fewer workers, fewer queries p
 
 - `client.ts` takes the pool size from `DATABASE_POOL_MAX` through a pure helper
   (`resolvePoolMax`): unset or empty → 2, so Vercel keeps today's pool; a positive integer → that
-  value; anything else throws at startup (a typo must not silently fall back).
+  value; anything else throws when `client.ts` first loads (a typo must not silently fall back).
+  In dev that is the first request that reaches the database, not server start; whether
+  `next build` loads it, and so fails the build, is unverified.
 - `.env.example` documents it; a dev machine sets 10 in `.env.local` or `.env.development.local`
   (a pool of 10 stayed flat at 8 concurrent creates). Each dev server then holds up to 10 of the project's 60 connections.
 - Not chosen: fewer Playwright workers (the ceiling stays; headroom unmeasured) and fewer
@@ -168,7 +170,8 @@ retry). User's choice (2026-10-18, of: an env override, or docs telling people t
 - `POST /api/session/join` reads its limit from `SESSION_JOIN_RATE_LIMIT` through a pure helper
   `resolveRateLimit(value, fallback, name)` in `src/lib/rate-limit.ts`: unset or blank → the
   fallback (10, today's limit, so production is unchanged); a positive integer → that value;
-  anything else throws when the route module loads, naming the variable in the message. The
+  anything else throws when the route module loads, naming the variable in the message, so every
+  join returns 500 until the value is fixed (the E2E join helper reports that body). The
   window stays 60 s; add-player and submit-answer keep their limits (no E2E run reaches them).
 - `.env.example` documents it; this worktree's `.env.development.local` sets 100.
 - Same parsing rule as `resolvePoolMax` (section 6), written twice on purpose: infrastructure
@@ -185,7 +188,9 @@ retry). User's choice (2026-10-18, of: an env override, or docs telling people t
 - No 429 response in either run.
 - After the runs, the dev database holds no `E2E fixture` quizzes younger than the sweep limit
   other than ones from a run in progress.
-- `yarn lint` and `tsc` pass; `yarn test:run` unchanged (no app code changes).
+- `yarn lint` and `tsc` pass; `yarn test:run` unchanged (no app code changes). 2026-10-18:
+  overtaken by sections 6 and 7, which change `client.ts` and the join route and add unit tests
+  (507 → 522).
 
 ## Out of scope
 

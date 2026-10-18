@@ -102,6 +102,7 @@ yarn playwright show-report
 2. **Timeout errors**: Increase timeout in `playwright.config.ts` or specific tests
 3. **Flaky tests**: Use `page.waitForURL()`, `page.waitForSelector()`, or `expect().toBeVisible()` to wait for async operations. A test that passes only on its retry still fails the run (`failOnFlakyTests`): find its cause rather than rerunning
 4. **View test traces**: After failure, open HTML report and click on failed test to see trace viewer
+5. **Strict-mode violations on error text**: In dev, Next's error overlay repeats `console.error` text, so an unscoped `getByText` can match twice depending on timing. Scope it to the element that shows the error (`page.locator('form').getByText(…)`)
 
 ## CI/CD
 

@@ -56,3 +56,18 @@ on top of polling; close to saturation the queue grows without bound.
 
 161 probe quizzes (`E2E fixture load-probe …`), each re-read after deletion: 161 × 404; SQL count of
 probe titles 0.
+
+## Outcome (2026-10-18)
+
+- Fix: `DATABASE_POOL_MAX` (spec section 6), 10 in the dev worktree's `.env.development.local`.
+  Full `yarn test:e2e --retries=0` with the pool at 10: 48 passed (35.3 s), exit 0.
+- A second limit appeared once the pool stopped queueing: two full runs back to back put ~14 UI
+  joins into one 60 s window, and four reconnection tests got 429 "Too many requests" (found in
+  the error contexts; the runs passed on retry, exit 0). Fix: `SESSION_JOIN_RATE_LIMIT` (spec
+  section 7), 100 in dev. Two default-retry runs back to back then gave 48 passed each (33.1 s,
+  26.9 s), no flaky, 0 "Too many requests".
+- Branch passes: three overlapping reconnection tests dropped, so a run makes 4 join requests;
+  every join asserts its response; `failOnFlakyTests` makes a pass on retry exit 1. Two runs back
+  to back: 45 passed each (24.2 s, 26.0 s), 0 flaky, exit 0.
+- Ledger: `.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md`, Tasks 4b and 5b
+  and the branch passes.

@@ -160,3 +160,4 @@ All three returned with HEAD ecdad04, empty status, and only their own report fi
 | Deferred minors triage (whole-branch review table) | All "fine as ruled" except the reconnection overlap, fixed above | — |
 
 Fix wave on `2026-10-15-e2e-isolated-quizzes-plan-final-fixes`, cut from ecdad04.
+- Correction (2026-10-18, whole-branch review W4) to Task 1's fix round 2 above: the sweep still throws one AggregateError after trying every delete, so the cleanup project still fails and chromium still does not run when a stale fixture cannot be deleted. Kept on purpose: loud over silent; the error names every quiz that failed.
