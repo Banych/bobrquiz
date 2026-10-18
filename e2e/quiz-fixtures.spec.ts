@@ -118,7 +118,9 @@ test.describe('quiz fixtures', () => {
     expect(fixtureTimestamp('E2E fixture round 2')).toBeNull();
     expect(fixtureTimestamp('E2E fixture demo 2024')).toBeNull();
     expect(fixtureTimestamp('E2E fixture x 5-bar')).toBeNull();
-    expect(fixtureTimestamp('E2E fixture host 1760000000000-ab12cd')).toBeNull();
+    expect(
+      fixtureTimestamp('E2E fixture host 1760000000000-ab12cd')
+    ).toBeNull();
   });
 
   test('sweep deletes stale prefixed quizzes and keeps fresh ones', async ({
