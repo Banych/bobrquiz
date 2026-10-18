@@ -5,6 +5,7 @@ import {
   QUESTIONS,
   type TestQuiz,
 } from './support/quiz-fixtures';
+import { joinAsPlayer } from './support/player-join';
 
 /**
  * Player reconnection after network disruptions.
@@ -20,17 +21,6 @@ import {
  * - Banner disappears after successful reconnection
  * - Answer input re-enabled with "Type your answer" placeholder
  */
-
-const joinAsPlayer = async (page: Page, quiz: TestQuiz) => {
-  const playerName = `E2E Reconnect ${Date.now()}`;
-  await page.goto('/join');
-  await page.getByRole('textbox', { name: /join code/i }).fill(quiz.joinCode);
-  await page.getByRole('textbox', { name: /your name/i }).fill(playerName);
-  await page.getByRole('button', { name: /join quiz/i }).click();
-  await page.waitForURL(new RegExp(`/play/${quiz.id}/[a-z0-9-]+`), {
-    timeout: 30000,
-  });
-};
 
 const setOnline = async (page: Page, online: boolean) => {
   await page.evaluate((value) => {
