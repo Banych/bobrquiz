@@ -122,3 +122,10 @@ Task 5b: fix round 1/5 (1 addressed, 0 open — the error names SESSION_JOIN_RAT
 Task 5b: complete (commits 589e1cf..f500d81, review clean)
 - Security item (premise change): the user approved my advisory text ("Host quiz controls under /api/quiz/* need no login"), but before posting the controller listed the repo's advisories: the release-review session had already drafted GHSA-j2j8-j6g6-5f29 (critical, "Anyone can control any quiz: the host routes and host pages have no authentication") and GHSA-j6mg-7jc4-3gvf (player identity), and public #95 covers x-forwarded-for and per-instance limits. Not posted (duplicate); the item is discharged by those.
 - Release-review session notice: a coming host/player credential change will alter /api/quiz/** contracts used by e2e/support/quiz-fixtures.ts (POST /api/quiz/start) and the player specs.
+#107 comment posted 2026-10-18 on the user's "post the #107 comment" (pool measurements), text as shown.
+Verdict runs after the user restarted dev with SESSION_JOIN_RATE_LIMIT=100 and DATABASE_POOL_MAX=10, HEAD f7d4115, default retries, back to back:
+- run 1: 48 passed (33.1s), exit 0; run 2: 48 passed (26.9s), exit 0; no flaky, no failed; 0 "Too many requests" in output or test-results for both.
+- yarn test:run exit 0, Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523); lint exit 0; tsc exit 0.
+- Fixture leftovers: 10, all admin-quiz-crud / admin-quiz-updated, ages 1–17 min (under the 30 min sweep age); the sweep logged "deleted 2 stale fixture quizzes" in final run 1 — the sweep works as designed.
+- Records: e2e/README.md env section (DATABASE_POOL_MAX, SESSION_JOIN_RATE_LIMIT); CLAUDE.md pitfall 5 (E2E env values, worktree node_modules); persist-answer-lock findings "Still to come" marked met. Spec and plan stay "In progress" until the PR merges.
+Task 5: complete. Next: end-of-branch passes (production code changed: pool-size, client.ts, rate-limit, join route, host player-card test id) — awaiting the user's go-ahead.

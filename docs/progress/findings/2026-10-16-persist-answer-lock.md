@@ -61,3 +61,7 @@ test (or a retry) that expects Lock Question enabled on that quiz can fail (end-
 The E2E branch's round-transitions tests "should disable Lock Question after locking" and "should
 re-enable Lock Question after advancing" become the automated check for this once
 `test/e2e-isolated-quizzes` has this fix.
+
+Update 2026-10-18: met. On `test/e2e-isolated-quizzes` (master with this fix merged at 3469ebc),
+both tests run on their own quiz and pass, and the shared-quiz spec is gone; two back-to-back full
+runs gave 48 passed each (ledger `.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/`).

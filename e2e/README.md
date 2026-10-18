@@ -33,6 +33,19 @@ account it would revoke the session the other admin tests use, and they would la
 The spec refuses to run if the two emails are the same; without the auth-spec variables its
 login tests are skipped.
 
+The dev server the tests run against also needs two limits raised. Set them in `.env.local`, or in
+a `.env.development.local` that Next loads over it in dev, then restart the dev server:
+
+```bash
+# Prisma pool: the default 2 caps the server at ~43 queries/s and the parallel suite queues past
+# its 15 s request timeout (docs/progress/findings/2026-10-18-e2e-db-pool-queueing.md)
+DATABASE_POOL_MAX=10
+
+# Join limit: a run makes ~7 UI joins, so two runs within a minute exceed the default 10 per
+# 60 s per IP and the reconnection tests get 429s. Local only; never raise it when deployed.
+SESSION_JOIN_RATE_LIMIT=100
+```
+
 ## Creating a Test User
 
 1. Sign up for Supabase (if not already done)
