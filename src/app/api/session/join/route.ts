@@ -2,12 +2,17 @@ import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServices } from '@application/services/factories';
-import { enforceRateLimit } from '@lib/rate-limit';
+import { enforceRateLimit, resolveRateLimit } from '@lib/rate-limit';
 
 const JoinSessionBodySchema = z.object({
   joinCode: z.string().min(4),
   playerName: z.string().min(1),
 });
+
+const SESSION_JOIN_LIMIT = resolveRateLimit(
+  process.env.SESSION_JOIN_RATE_LIMIT,
+  10
+);
 
 type ErrorResponse = {
   error: string;
@@ -15,7 +20,7 @@ type ErrorResponse = {
 
 export async function POST(request: Request) {
   const rateLimit = enforceRateLimit(request, 'session-join', {
-    limit: 10,
+    limit: SESSION_JOIN_LIMIT,
     windowMs: 60_000,
   });
 

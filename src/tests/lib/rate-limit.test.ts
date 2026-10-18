@@ -3,6 +3,7 @@ import {
   checkRateLimit,
   getClientIp,
   resetRateLimitStore,
+  resolveRateLimit,
 } from '@lib/rate-limit';
 
 describe('rate-limit', () => {
@@ -79,6 +80,27 @@ describe('rate-limit', () => {
       const request = new Request('http://localhost/api/session/join');
 
       expect(getClientIp(request)).toBe('unknown');
+    });
+  });
+
+  describe('resolveRateLimit', () => {
+    it('falls back when unset or blank', () => {
+      expect(resolveRateLimit(undefined, 10)).toBe(10);
+      expect(resolveRateLimit('', 10)).toBe(10);
+      expect(resolveRateLimit('  ', 10)).toBe(10);
+    });
+
+    it('uses a positive integer', () => {
+      expect(resolveRateLimit('100', 10)).toBe(100);
+      expect(resolveRateLimit(' 5 ', 10)).toBe(5);
+    });
+
+    it.each(['0', '-1', '2.5', 'ten', '10abc'])('throws on %s', (value) => {
+      expect(() => resolveRateLimit(value, 10)).toThrow(/positive integer/);
+    });
+
+    it('names the bad value in the error', () => {
+      expect(() => resolveRateLimit('ten', 10)).toThrow(/"ten"/);
     });
   });
 });

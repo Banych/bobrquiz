@@ -21,6 +21,23 @@ type WindowState = {
   windowStart: number;
 };
 
+/**
+ * Limit from an env value: unset or blank returns the fallback; throws on
+ * anything but a positive integer. Same rule as resolvePoolMax, written twice
+ * on purpose: infrastructure cannot import src/lib.
+ */
+export const resolveRateLimit = (
+  value: string | undefined,
+  fallback: number
+): number => {
+  const trimmed = value?.trim();
+  if (!trimmed) return fallback;
+  if (!/^\d+$/.test(trimmed) || Number(trimmed) < 1) {
+    throw new Error(`Rate limit must be a positive integer, got "${trimmed}".`);
+  }
+  return Number(trimmed);
+};
+
 const store = new Map<string, WindowState>();
 
 // Sweep expired entries occasionally so keys that stop being used don't
