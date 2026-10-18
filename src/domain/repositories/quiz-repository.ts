@@ -20,6 +20,14 @@ export interface IQuizRepository {
     quizId: string,
     leaderboard: LeaderboardScore[]
   ): Promise<void>;
+  /** Sets the lock if the question belongs to the quiz and is not locked yet; true if it set it. */
+  lockQuestion(
+    quizId: string,
+    questionId: string,
+    lockedAt: Date
+  ): Promise<boolean>;
+  /** Clears the lock on every question of the quiz. */
+  clearQuestionLocks(quizId: string): Promise<void>;
   delete(id: string): Promise<void>;
 
   // Admin CRUD operations

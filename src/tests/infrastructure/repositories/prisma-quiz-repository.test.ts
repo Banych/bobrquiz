@@ -21,6 +21,10 @@ const answerMocks = vi.hoisted(() => ({
   createMany: vi.fn(),
 }));
 
+const questionMocks = vi.hoisted(() => ({
+  updateMany: vi.fn(),
+}));
+
 const playerMocks = vi.hoisted(() => ({
   update: vi.fn(),
   updateMany: vi.fn(),
@@ -37,6 +41,7 @@ vi.mock('@infrastructure/database/prisma/client', () => ({
     quiz: quizMocks,
     answer: answerMocks,
     player: playerMocks,
+    question: questionMocks,
     $transaction: transactionMock,
   },
 }));
@@ -48,6 +53,7 @@ describe('PrismaQuizRepository', () => {
     Object.values(quizMocks).forEach((mockFn) => mockFn.mockReset());
     Object.values(answerMocks).forEach((mockFn) => mockFn.mockReset());
     Object.values(playerMocks).forEach((mockFn) => mockFn.mockReset());
+    Object.values(questionMocks).forEach((mockFn) => mockFn.mockReset());
     transactionMock.mockClear();
   });
 
@@ -83,6 +89,7 @@ describe('PrismaQuizRepository', () => {
           points: 5,
           orderIndex: 2,
           isPublished: true,
+          answersLockedAt: null,
           createdAt: now,
           updatedAt: now,
         },
@@ -98,6 +105,7 @@ describe('PrismaQuizRepository', () => {
           points: 10,
           orderIndex: 1,
           isPublished: true,
+          answersLockedAt: null,
           createdAt: now,
           updatedAt: now,
         },
@@ -124,6 +132,7 @@ describe('PrismaQuizRepository', () => {
 
     expect(aggregate).toBeInstanceOf(QuizSessionAggregate);
     expect(aggregate?.quizQuestions[0].id).toBe('q1');
+    expect(aggregate?.quizQuestions[0].answersLockedAt).toBeUndefined();
     expect(aggregate?.playerIds).toContain('player-1');
     expect(aggregate?.answers.get('player-1')).toHaveLength(1);
     expect(aggregate?.answers.get('player-1')?.[0].timeTaken).toBe(5);
@@ -131,6 +140,90 @@ describe('PrismaQuizRepository', () => {
     expect(aggregate?.timerEndTime?.toISOString()).toBe(
       new Date(now.getTime() + 30_000).toISOString()
     );
+  });
+
+  it('restores a persisted answer lock when loading the aggregate', async () => {
+    const now = new Date('2025-01-01T00:00:00Z');
+    const lockedAt = new Date('2025-01-01T00:00:20Z');
+    quizMocks.findUnique.mockResolvedValue({
+      id: 'quiz-1',
+      title: 'Math',
+      status: 'Active',
+      currentQuestionIndex: 0,
+      activeQuestionId: 'q1',
+      timePerQuestion: 30,
+      allowSkipping: false,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      scoringDecayRate: 2.0,
+      joinCode: 'JOIN',
+      startTime: now,
+      endTime: null,
+      timerStartedAt: now,
+      timerExpiresAt: new Date(now.getTime() + 30_000),
+      createdAt: now,
+      updatedAt: now,
+      questions: [
+        {
+          id: 'q1',
+          quizId: 'quiz-1',
+          text: 'What is 2 + 2?',
+          mediaUrl: null,
+          mediaType: null,
+          options: [],
+          correctAnswers: ['4'],
+          type: 'text',
+          points: 10,
+          orderIndex: 0,
+          isPublished: true,
+          answersLockedAt: lockedAt,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+      players: [{ id: 'player-1' }],
+      answers: [],
+    });
+
+    const aggregate = await repository.findById('quiz-1');
+
+    expect(aggregate?.quizQuestions[0].answersLockedAt).toEqual(lockedAt);
+    expect(aggregate?.isQuestionLocked('q1')).toBe(true);
+    expect(() => aggregate?.submitAnswer('player-1', 'q1', '4')).toThrow(
+      'Answers are locked for this question.'
+    );
+  });
+
+  it('locks a question only if it belongs to the quiz and is not locked yet', async () => {
+    const lockedAt = new Date('2025-01-01T00:00:20Z');
+    questionMocks.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      repository.lockQuestion('quiz-1', 'q1', lockedAt)
+    ).resolves.toBe(true);
+
+    expect(questionMocks.updateMany).toHaveBeenCalledWith({
+      where: { id: 'q1', quizId: 'quiz-1', answersLockedAt: null },
+      data: { answersLockedAt: lockedAt },
+    });
+  });
+
+  it('reports a lost race when the question is already locked', async () => {
+    questionMocks.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      repository.lockQuestion('quiz-1', 'q1', new Date())
+    ).resolves.toBe(false);
+  });
+
+  it('clears every question lock in the quiz', async () => {
+    questionMocks.updateMany.mockResolvedValue({ count: 3 });
+
+    await repository.clearQuestionLocks('quiz-1');
+
+    expect(questionMocks.updateMany).toHaveBeenCalledWith({
+      where: { quizId: 'quiz-1' },
+      data: { answersLockedAt: null },
+    });
   });
 
   it('finds a quiz by join code', async () => {

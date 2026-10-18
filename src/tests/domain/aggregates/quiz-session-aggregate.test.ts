@@ -220,10 +220,11 @@ describe('QuizSessionAggregate', () => {
 
     expect(aggregate.isQuestionLocked()).toBe(false);
 
-    aggregate.lockCurrentQuestion();
+    const lockedAt = aggregate.lockCurrentQuestion();
 
     expect(aggregate.isQuestionLocked()).toBe(true);
-    expect(aggregate.currentQuestion?.answersLockedAt).toBeDefined();
+    expect(lockedAt).toBeInstanceOf(Date);
+    expect(aggregate.currentQuestion?.answersLockedAt).toBe(lockedAt);
   });
 
   it('should throw error when locking with no active question', () => {

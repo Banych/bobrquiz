@@ -22,6 +22,15 @@ Infrastructure → MUST NOT import from app/, components/, hooks/
 Presentation → MUST NOT import domain entities, Prisma types, or infrastructure directly
 ```
 
+Accepted exceptions (the checks below already skip them):
+
+- `src/application/services/factories.ts` is the composition root and imports infrastructure to
+  wire the services.
+- API routes import the realtime broadcasters (`@infrastructure/realtime/broadcast-*`) directly
+  (ADR-024).
+- The generated Prisma client (`src/infrastructure/database/prisma/generated/`) is not our code;
+  its `any` types are not violations.
+
 ## Check 1: Domain Layer Purity
 
 ```bash
@@ -44,8 +53,8 @@ grep -r "from '@domain/entities/" src/hooks/
 grep -r "from '@domain/aggregates/" src/components/
 grep -r "from '@domain/aggregates/" src/hooks/
 
-# API routes must not import Prisma types or entities directly
-grep -r "from '@infrastructure/" src/app/api/
+# API routes must not import Prisma types or entities directly (the broadcasters are allowed)
+grep -r "from '@infrastructure/" src/app/api/ | grep -v "from '@infrastructure/realtime/broadcast-"
 grep -r "from '@domain/entities/" src/app/api/
 ```
 
@@ -66,7 +75,8 @@ Expected: **no results** (the adapter pattern requires the custom import).
 ```bash
 # DTOs must not reference Prisma types
 grep -r "Prisma\." src/application/dtos/
-grep -r "from '@infrastructure/" src/application/
+# Application must not import infrastructure (the composition root is allowed)
+grep -r "from '@infrastructure/" src/application/ | grep -v '^src/application/services/factories.ts:'
 ```
 
 Expected: **no results**.
@@ -85,9 +95,10 @@ Expected: **no results** in cross-layer cases.
 ## Check 6: `any` Type Usage
 
 ```bash
-grep -rn ": any" src/
-grep -rn "as any" src/
-grep -rn "<any>" src/
+# The generated Prisma client is excluded
+grep -rn ": any" --exclude-dir=generated src/
+grep -rn "as any" --exclude-dir=generated src/
+grep -rn "<any>" --exclude-dir=generated src/
 ```
 
 All `any` usages are violations. Each one must be typed properly.
@@ -100,24 +111,34 @@ grep -rn "params\." src/app/api/ | grep -v "await params"
 grep -rn "params\." src/app/ | grep -v "await" | grep "\.tsx"
 ```
 
-Check manually that every route handler has `const { id } = await params;` pattern.
+Check manually that every route handler has `const { id } = await params;` pattern. A hit in a
+`'use client'` page that takes `params` from `useParams()` is not a violation: that hook returns
+a plain object.
 
 ## Quick Full Sweep
 
-Run all checks at once:
+Run all checks at once. An empty section means clean. A `No such file or directory` line means
+that check did not run, so it says nothing about the code. Keep stderr visible and don't print
+"CLEAN" on a non-zero exit, because grep exits non-zero both for "no match" and for a missing
+path.
 
 ```bash
-echo "=== Domain imports from other layers ===" && \
-grep -rn "from '@application/\|from '@infrastructure/\|from 'next" src/domain/ 2>/dev/null || echo "CLEAN"
+echo "=== Domain imports from other layers ==="
+grep -rn "from '@application/\|from '@infrastructure/\|from 'next" src/domain/
 
-echo "=== Entities in presentation ===" && \
-grep -rn "from '@domain/entities/\|from '@domain/aggregates/" src/components/ src/hooks/ src/app/ 2>/dev/null || echo "CLEAN"
+echo "=== Entities in presentation ==="
+grep -rn "from '@domain/entities/\|from '@domain/aggregates/" src/components/ src/hooks/ src/app/
 
-echo "=== Wrong Prisma import ===" && \
-grep -rn "from '@prisma/client'" src/ 2>/dev/null || echo "CLEAN"
+echo "=== Infrastructure in application or API routes (exceptions skipped) ==="
+grep -rn "from '@infrastructure/" src/application/ src/app/api/ \
+  | grep -v '^src/application/services/factories.ts:' \
+  | grep -v "from '@infrastructure/realtime/broadcast-"
 
-echo "=== Any types ===" && \
-grep -rn ": any\|as any" src/ 2>/dev/null | grep -v ".test." | grep -v node_modules || echo "CLEAN"
+echo "=== Wrong Prisma import ==="
+grep -rn "from '@prisma/client'" src/
+
+echo "=== Any types ==="
+grep -rn ": any\|as any\|<any>" --exclude-dir=generated src/ | grep -v ".test."
 ```
 
 ## Reviewing a Specific File
@@ -153,21 +174,42 @@ yarn lint        # Check import order and style
 
 ## Observed vs assumed
 
-**Observed** — none yet. No run of this skill against the repo has been recorded since it
-moved from `.claude/commands/` (2026-10-15).
+Runs are named by their ledger: `.superpowers/sdd/2026-10-15-architecture-check-false-hits/`.
+
+**Observed**
+
+- On the whole tree at 039249c, every grep in Checks 1-6 and Check 7's API-route grep is empty,
+  except for the three exceptions now skipped: 6 lines in `factories.ts` (Check 4), 11
+  broadcaster imports in API routes (Check 2) and 31 `any` lines, all in the generated Prisma
+  client (Check 6). With the exclusions, all three are empty too. Check 7's second grep
+  (`src/app/`, `.tsx`) returns one line, `src/app/(admin)/admin/quizzes/[quizId]/page.tsx:21`. It
+  is a `'use client'` page reading `useParams()`, not an unawaited route param (confirmed
+  2026-10-15, hand run and review).
+- The Quick Full Sweep, extracted from this file and run as written, prints one line for each
+  violation planted in a fake tree (domain → application, an entity in a component, infrastructure
+  in an application service and in an API route, `@prisma/client`, `: any`). It skips the three
+  exceptions planted next to them, and prints nothing on the real tree (confirmed 2026-10-15,
+  hand run).
+- With `src/domain/` missing, the sweep prints `No such file or directory` under its heading
+  instead of an empty section. The old `2>/dev/null ... || echo "CLEAN"` form printed `CLEAN`
+  for a missing path (both confirmed 2026-10-15, hand run).
+- The Bash tool's `grep` (bundled ugrep) and the system grep gave identical output for every
+  check and both sweeps. Started at `src/`, ugrep does not apply the repo root's `.gitignore`,
+  so it searches the git-ignored generated client too (confirmed 2026-10-15, hand run).
 
 **Assumed — attack these first**
 
-- Each `grep -r` in Checks 1-5 prints a line for every import breach under the named directory,
-  so empty output means no breach; a planted `from '@application/x'` in `src/domain/` is caught
-  by Check 1 (lines 27-36).
-- The Quick Full Sweep prints `CLEAN` only when the code is clean; a mistyped or missing path
-  also prints `CLEAN` because of `2>/dev/null ... || echo "CLEAN"` (lines 110-121).
-- Check 2 finds every entity or aggregate import in `src/components/`, `src/hooks/` and
-  `src/app/api/`; the Quick Full Sweep also scans all of `src/app/` (lines 42-50 and 113-114).
+- Checks 1-7 run one by one catch the same planted violations the sweep does; the planted tree
+  was run through the sweep only.
 - Check 5 catches every cross-layer relative import; its patterns are `../../domain/`,
-  `../../application/` and `../../..` only (lines 78-80).
+  `../../application/` and `../../..` only.
 - Check 7 finds a route handler that reads `params` without awaiting it; a handler with
-  `const { id } = params;` has no `params.` text for the grep to match (lines 99-103).
-- Plain `grep -r` over `src/` visits every source file, with no ignore-file filtering (lines
-  27-34).
+  `const { id } = params;` has no `params.` text for the grep to match.
+- Infrastructure imports in the presentation layer are checked in `src/app/api/` only. Outside
+  it, 8 lines in 6 files import `@infrastructure/` today (`src/app/providers.tsx`, three admin
+  components using `@infrastructure/storage/supabase-storage`, `src/hooks/use-presence.tsx`,
+  `src/hooks/use-realtime-client.tsx`). No check reports them yet. Ruled violations (2026-10-15),
+  except `providers.tsx` as the browser's composition root; the code fix extends the checks.
+- `--exclude-dir=generated` skips only the Prisma client; it would also skip any other
+  directory named `generated` under `src/` (none exists today).
+- No run on a single diff yet (the case ADR-023 waits for before an agent is considered).

@@ -98,6 +98,10 @@ See [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) for realtime subscription pat
 - Debounce broadcast events (e.g., player score updates) to avoid flooding the WebSocket
 - Use `src/lib/debounce-broadcast.ts` to batch updates every 500ms
 - Unsubscribe from unused channels to reduce server load
+- A route that broadcasts after a write wraps the broadcast in its own `try/catch` with a
+  `console.warn` and still returns 200: the write already happened, and an error response invites a
+  retry the domain may refuse (the lock route's retry got "Question already locked", 2026-10-16;
+  start and reset routes follow the same shape)
 
 ### Implementation reference
 

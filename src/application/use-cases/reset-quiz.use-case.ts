@@ -9,6 +9,7 @@ export class ResetQuizUseCase {
       throw new Error('Quiz not found.');
     }
     quiz.reset();
+    await this.quizRepository.clearQuestionLocks(quizId);
     await this.quizRepository.save(quiz);
   }
 }

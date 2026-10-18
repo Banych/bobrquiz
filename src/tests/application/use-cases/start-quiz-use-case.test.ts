@@ -19,6 +19,7 @@ describe('StartQuizUseCase', () => {
       updateCurrentQuestion: vi.fn(),
       updateLeaderboard: vi.fn(),
       delete: vi.fn(),
+      clearQuestionLocks: vi.fn(),
     } as unknown as Mocked<IQuizRepository>;
     startQuizUseCase = new StartQuizUseCase(quizRepository);
   });
@@ -39,6 +40,10 @@ describe('StartQuizUseCase', () => {
     expect(quiz.quizStatus).toBe(QuizStatus.Active);
     expect(quiz.timerStartTime).toBeDefined();
     expect(quizRepository.save).toHaveBeenCalledWith(quiz);
+    expect(quizRepository.clearQuestionLocks).toHaveBeenCalledWith('quiz1');
+    expect(
+      quizRepository.clearQuestionLocks.mock.invocationCallOrder[0]
+    ).toBeLessThan(quizRepository.save.mock.invocationCallOrder[0]);
   });
 
   it('should throw an error if the quiz is not found', async () => {
@@ -48,6 +53,25 @@ describe('StartQuizUseCase', () => {
       'Quiz not found.'
     );
     expect(quizRepository.findById).toHaveBeenCalledWith('invalidQuizId');
+    expect(quizRepository.save).not.toHaveBeenCalled();
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
+  });
+
+  it('rejects a quiz that is not Pending and clears nothing', async () => {
+    const quiz = new QuizSessionAggregate(
+      new Quiz('quiz1', 'Sample Quiz', [], {
+        timePerQuestion: 30,
+        allowSkipping: true,
+      }),
+      30
+    );
+    quiz.startQuiz();
+    quizRepository.findById.mockResolvedValue(quiz);
+
+    await expect(startQuizUseCase.execute('quiz1')).rejects.toThrow(
+      'Quiz can only be started if it is in Pending status.'
+    );
+    expect(quizRepository.clearQuestionLocks).not.toHaveBeenCalled();
     expect(quizRepository.save).not.toHaveBeenCalled();
   });
 
