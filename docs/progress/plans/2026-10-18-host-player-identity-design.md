@@ -1,7 +1,7 @@
 # Host and player identity — design
 
 **Date:** 2026-10-18
-**Status:** Draft, pending the user's approval
+**Status:** Approved design, pending implementation plan
 **Branch:** `design/host-player-identity` (from `origin/master` at e39a9e0)
 **Tracks:** private draft advisories GHSA-j2j8-j6g6-5f29 (host control), GHSA-j6mg-7jc4-3gvf
 (player identity), GHSA-rxxj-x7x9-9fh7 (host state reaching players), GHSA-jv37-f2qr-6jg6
