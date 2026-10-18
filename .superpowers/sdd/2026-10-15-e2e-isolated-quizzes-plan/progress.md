@@ -111,3 +111,8 @@ User choices 2026-10-18: (1) join limit from env, like the pool → spec section
 Leftovers deleted (scratch t5-delete-leftovers.mjs, admin API): 153 quizzes (113 Question CRUD Test, 20 E2E Test Quiz, 20 Update Test), reset first when Active; re-read 153/153 → 404; 0 failures. 23 E2E players (18 E2E-Setup, 5 E2E Reconnect) removed from JOIN-KYTX "Trivia Night Demo" via DELETE /api/quiz/{id}/player/{playerId}; players left on it: 0. Quizzes in the dev DB after: 14 (8 of them recent sweepable admin-UI fixture quizzes).
 ## Task 5b
 Task 5b implementer DONE, commit 78b7c75 (4 files). Red 8 failed | 7 passed (15); green 15 passed. One extra test: the bad value appears in the message. Controller: yarn test:run exit 0, Test Files 69 passed | 1 skipped (70), Tests 522 passed | 1 skipped (523); lint exit 0.
+Task 5b review (task-reviewer): APPROVED, 3 minors. Tamper check clean (HEAD 90f62e8, status empty).
+- Minor 1 fixed in the task's own round: the error names no variable (resolvePoolMax names DATABASE_POOL_MAX) — add a name argument so the message names SESSION_JOIN_RATE_LIMIT.
+- Ruling: minor 2 "no route test for the default 10" — no change; the default is the literal at the call site plus the unit test of the fallback, and the diff shows nothing else in the route — cost: a future edit of the literal is caught only in review.
+- Ruling: minor 3 "a huge digit string disables the limit" — no change; same as resolvePoolMax, and only a deliberate setting reaches it; .env.example forbids raising it in deployed environments.
+Fix round 1 dispatched (implementer).
