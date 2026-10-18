@@ -1,7 +1,7 @@
 # E2E isolated quizzes — design
 
 **Date:** 2026-10-15
-**Status:** In progress
+**Status:** ✅ Complete — PR #110
 **Branch:** `test/e2e-isolated-quizzes` (from `origin/master` at eddd33f)
 
 ## Why
