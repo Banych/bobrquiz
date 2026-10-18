@@ -75,3 +75,7 @@ Controller re-run admin specs: 14 passed (20.0s), exit 0, 0 "Too many requests".
 - Cause found by the controller (t4-full.txt): strict-mode violation — getByText(/invalid login credentials/i) resolves to the form's error div and Next's dev overlay `#nextjs__container_errors_desc`, because login/page.tsx logs the expected auth failure with console.error; the overlay's presence at assertion time depends on timing (fails under parallel load, passed once alone).
 - Ruling: fix in Task 4's fix round by scoping the assertion to the form (test-only) — the spec target is 0 failures, each with its own cause; the dev overlay is not what the test checks — cost if wrong: none to users; the app's console.error on a wrong password stays (dev-overlay noise only).
 - Watch item for Task 5: the one-off player-reconnection waitForURL failures (no artefacts kept).
+Task 4 review (task-reviewer): APPROVED, spec ✅, 2 minors + 1 observation. Tamper check clean (HEAD 874dd70, status empty). Reviewer ran the fixtureTimestamp regex on all four admin titles: each parses; 2 sweepable leftovers per run (create, update), as reported.
+- Fixed in the task's own round: README "Test Structure" list omits five specs (pre-existing; same file as this task's README edit), and the admin-auth:39 form-scoped assertion (ruling above).
+- Ruling: observation "admin-quiz-crud beforeAll opens a browser context it never closes" — no change; pre-existing, Playwright disposes contexts with the worker — cost: none observed.
+Fix round 1 dispatched (implementer).
