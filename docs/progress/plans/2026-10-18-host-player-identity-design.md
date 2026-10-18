@@ -230,17 +230,20 @@ so the removal reason is stored:
     holes before they are closed. Whether CI runs in that fork is unverified; if it doesn't, the
     verdict is the local `yarn test:run`, `yarn build` and the e2e suite. *Revisitable.*
 
-## Assumptions to verify before the plan (attack these first)
+## Assumptions checked before the plan
+
+Checked on dev on 2026-10-18 (`docs/progress/findings/2026-10-18-realtime-private-channels.md`):
 
 - **The public key on a private channel.** A browser holding only the public key, with no
-  signed-in user, is checked as the `anon` role. A `select`-only policy then lets it receive, and
-  its sends fail. A service-role send reaches it. The Supabase docs show policies for
-  `authenticated` only. Check on dev with a two-client spike, after agreeing a time with the e2e
-  session, because turning off public access breaks the current dev app until the code changes
-  land.
-- **Admin realtime.** The host dashboard's realtime client gets host data through the topic key,
-  not through the admin's Supabase session. Check that receiving host topics needs no JWT beyond
-  the public key.
+  signed-in user, is checked as `anon`. A `select`-only policy lets it receive, and its sends are
+  refused. A service-role send reaches it. A topic no policy covers is refused.
+- **Public and private stay apart.** Public and private channels with the same topic name don't
+  exchange messages. Turning off "Allow public access" is extra protection, so it can happen after
+  the code lands, with no window where the dev app breaks.
+- **Admin realtime.** The host dashboard receives host topics with the public key alone, using
+  the same mechanism, so it needs no admin JWT on the socket.
+
+Still unchecked: the new `sb_publishable_…` keys. The projects use the legacy keys today.
 
 ## Testing
 
