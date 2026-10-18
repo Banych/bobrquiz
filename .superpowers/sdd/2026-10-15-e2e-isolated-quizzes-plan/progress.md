@@ -63,3 +63,8 @@ Task 2 review (task-reviewer): APPROVED, spec ✅, 2 minors. Tamper check clean 
 - Ruling: minor 2 "unanchored heading regexes (/timer/, /leaderboard/, /questions/, /players/, /Pending/)" — no change; a new heading containing the word fails loudly with a strict-mode violation rather than passing silently — cost: one locator edit when such a heading appears.
 Fix round 1 dispatched (implementer).
 Task 2 fix round 1 commit 279fe7b (1 file): question-list assertions scoped to page.locator('ol') (QuestionTimeline, the only <ol> in src), both question texts, no .first(). Implementer negative run (largestPlanet text altered): 1 failed | 4 passed, exit 1; positive 5 passed. Controller: host-dashboard + round-transitions --retries=0: 9 passed (11.6s), exit 0, 0 'Too many requests'.
+Task 2 re-review: ADDRESSED; tamper check clean (HEAD 56e9a07, status empty).
+- Ruling: minor "bare `ol` selector is coupled to QuestionTimeline being the only <ol> in src" — no change; no stable hook exists without a component change (outside this task), the spec comment documents the assumption, and a second <ol> keeps the check meaningful (text must still be found) — cost: one locator edit if a second list appears.
+Task 2: fix round 1/5 (1 addressed, 0 open — question list scoped to the timeline, both questions asserted; commits 946b875..279fe7b).
+Task 2: complete (commits 411d8c4..279fe7b, review clean)
+Doc sweep after Task 2: the deferral premise "Task 2 waits for the persisted lock" discharged (PR #81); nothing measured beyond the runs above; the lock-fix findings' "Still to come" (round-transitions lock tests as the automated check) is now met on this branch — recorded here, the master doc updates when this branch merges.
