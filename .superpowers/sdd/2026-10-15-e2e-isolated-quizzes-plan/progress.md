@@ -52,3 +52,8 @@ Task 3: fix round 1/5 (1 addressed, 0 open — reconnection test renamed to 'sho
 - Task 3: minor (deferred): 'should show reconnecting state during sync', 'should auto-reconnect when network returns' and the renamed test overlap heavily (offline → banner → online → box enabled). Deferred to the branch passes' simplification report — premise: the spec keeps the five existing reconnection tests and only moves them to their own quizzes; merging them is a test-design change outside Task 3. Reopen if the branch passes or the user want the suite trimmed.
 Task 3: complete (commits 21c1bbc..a732a9e, review clean)
 Doc sweep after Task 3: nothing measured or decided beyond the ledger lines above.
+
+User go-ahead 2026-10-18 ("merge and go next"): fix/persist-answer-lock merged to master as PR #81 (dfcd22e), its follow-ups filed as #82–#89 and linked in PR #90 (e39a9e0). origin/master merged into this branch: 3469ebc, no conflicts. Controller: yarn test:run exit 0, Test Files 68 passed | 1 skipped (69), Tests 507 passed | 1 skipped (508).
+- Premise discharged: Task 2 waited for the persisted answer lock; it is now on this branch.
+## Task 2
+BASE 3469ebc. Brief from task-brief. Waiting for the dev server on :3000 from this worktree.
