@@ -1125,6 +1125,57 @@ describe('resolvePoolMax', () => {
 
 Commit: `perf(db): size the pg pool from DATABASE_POOL_MAX`.
 
+### Task 5b: Join rate limit from the environment (added 2026-10-18)
+
+**Agent:** `implementer`
+
+Why: spec section 7; Task 5's second back-to-back run (ledger).
+
+**Files:**
+- Modify: `src/lib/rate-limit.ts` (add `resolveRateLimit`), `src/app/api/session/join/route.ts`,
+  `src/tests/lib/rate-limit.test.ts`, `.env.example`
+- Not in git: `SESSION_JOIN_RATE_LIMIT=100` in the worktree's `.env.development.local` (controller).
+
+**Interface:**
+
+```ts
+// src/lib/rate-limit.ts
+/** Limit from an env value: unset or blank → fallback; throws on anything but a positive integer. */
+export const resolveRateLimit = (value: string | undefined, fallback: number): number;
+```
+
+The join route resolves it once at module scope
+(`const SESSION_JOIN_LIMIT = resolveRateLimit(process.env.SESSION_JOIN_RATE_LIMIT, 10);`) and
+passes it as `limit`.
+
+**Tests** (added to `src/tests/lib/rate-limit.test.ts`):
+
+```ts
+  describe('resolveRateLimit', () => {
+    it('falls back when unset or blank', () => {
+      expect(resolveRateLimit(undefined, 10)).toBe(10);
+      expect(resolveRateLimit('', 10)).toBe(10);
+      expect(resolveRateLimit('  ', 10)).toBe(10);
+    });
+
+    it('uses a positive integer', () => {
+      expect(resolveRateLimit('100', 10)).toBe(100);
+      expect(resolveRateLimit(' 5 ', 10)).toBe(5);
+    });
+
+    it.each(['0', '-1', '2.5', 'ten', '10abc'])('throws on %s', (value) => {
+      expect(() => resolveRateLimit(value, 10)).toThrow(/positive integer/);
+    });
+  });
+```
+
+**Acceptance:**
+- The new tests fail before `resolveRateLimit` exists, pass after.
+- `yarn test:run`, `yarn lint`, `yarn -s tsc --noEmit -p .`: exit 0.
+- After the user restarts the dev server: Task 5's two back-to-back full runs (controller).
+
+Commit: `feat(api): let the join rate limit come from the environment`.
+
 ### Task 5: Verification and records (main session)
 
 **Agent:** none — the controller runs this; counts come from the runs' own output.

@@ -155,6 +155,23 @@ it. User's choice (2026-10-18, of: env pool size, fewer workers, fewer queries p
 - Not chosen: fewer Playwright workers (the ceiling stays; headroom unmeasured) and fewer
   statements per quiz (an API contract change or a preview Prisma feature; its own work).
 
+### 7. Join rate limit from the environment (added 2026-10-18)
+
+Section 5's risk appeared in Task 5: two full runs back to back (run 1 took 28 s) put ~14 UI joins
+into one 60 s window, and the four reconnection tests got 429 "Too many requests" (they passed on
+retry). User's choice (2026-10-18, of: an env override, or docs telling people to wait a minute):
+
+- `POST /api/session/join` reads its limit from `SESSION_JOIN_RATE_LIMIT` through a pure helper
+  `resolveRateLimit(value, fallback)` in `src/lib/rate-limit.ts`: unset or blank → the fallback
+  (10, today's limit, so production is unchanged); a positive integer → that value; anything else
+  throws when the route module loads. The window stays 60 s; add-player and submit-answer keep
+  their limits (no E2E run reaches them).
+- `.env.example` documents it; this worktree's `.env.development.local` sets 100.
+- Same parsing rule as `resolvePoolMax` (section 6), written twice on purpose: infrastructure
+  cannot import `src/lib`, and a shared module for two six-line helpers costs more than it saves.
+- The limiter's trust in `x-forwarded-for` is the separate security item; this change does not
+  touch key derivation.
+
 ## Testing and verification
 
 - No unit test for the quiz fixture helper: it is E2E support code, exercised by every spec that
