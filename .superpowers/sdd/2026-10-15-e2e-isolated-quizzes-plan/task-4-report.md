@@ -51,3 +51,35 @@ yarn lint: exit 0. yarn -s tsc --noEmit -p .: exit 0.
 - Cause of the one-off player-reconnection failures (evidence overwritten).
 - That the sweep actually removes the quizzes the admin UI tests leave: only the regex was reasoned through, not run (tests leave 2 quizzes per run; the next run's cleanup only deletes ones older than 30 minutes).
 - Raw output files: /tmp/claude-1000/-home-banykinv-Documents-repos-bobrquiz/479c38f6-ccc5-4fd2-a196-c9a45435d594/scratchpad/t4-*.txt
+
+## Fix round 1
+
+Commits:
+- f98c6ca test(e2e): scope the invalid-login check to the form (e2e/admin-auth.spec.ts, +4/-1)
+- 0175ca6 docs(e2e): list every spec in the e2e readme (e2e/README.md, +5)
+
+Hook: `page.locator('form').getByText(/invalid login credentials/i)`. The login page
+has no role="alert" or test id on the error div (it is a plain div inside the form),
+so the form element is the narrowest real hook. The Next dev overlay renders outside
+the form, so it can no longer match. No app code changed.
+
+README: prettier --check still warns on e2e/README.md, but the same warning exists on
+the HEAD version (a blank line it wants at line 95, outside my lines); left alone.
+
+Full run: 5 failed, 3 did not run, 40 passed. Not caused by this fix round.
+- admin-auth.spec.ts:145 "should persist session across page reloads": after sign-in, URL stayed /login (expected /admin).
+- admin-quiz-crud.spec.ts:25 "should create a new quiz": Create New Quiz dialog still visible after 5s.
+- host-dashboard.spec.ts:56 "should start quiz and update status": createQuiz fixture POST /api/admin/quizzes timed out at 15000ms.
+- player-connection-status.spec.ts:89 "player status transitions over time": same fixture POST timeout.
+- admin-question-crud.spec.ts:95 "should display correct question numbering": Create Question dialog still visible.
+- Did not run (3): admin-quiz-crud.spec.ts update, delete and "not show edit/delete buttons" (serial describe, after the create failure). Inferred from serial mode and the count; the output does not name them.
+No flaky tests (retries=0).
+Failure error-contexts (cookie and password lines removed): /tmp/claude-1000/-home-banykinv-Documents-repos-bobrquiz/479c38f6-ccc5-4fd2-a196-c9a45435d594/scratchpad/fr1-failures/. Full output: /tmp/claude-1000/-home-banykinv-Documents-repos-bobrquiz/479c38f6-ccc5-4fd2-a196-c9a45435d594/scratchpad/fr1-full.txt.
+Incident: printing a failure excerpt from fr1-full.txt put an admin session cookie into my own transcript; it was then deleted from the saved files.
+
+## Evidence
+
+- admin-auth + player-join, --retries=0: "11 passed (13.9s)", exit 0, Too many requests: 0 (output) / 0 (test-results)
+- admin-auth --repeat-each=3 --retries=0: "20 passed (12.2s)", exit 0, Too many requests: 0 / 0 (20 = 5 tests x 3 + auth setup/cleanup projects)
+- negative check (expected text changed to /zzz never shown/i, -g "invalid credentials"): "1 failed, 2 passed (7.9s)", exit 1, Error: expect(locator).toBeVisible() failed, Locator: locator('form').getByText(/zzz never shown/i), element(s) not found; text restored, git diff shows only the scoping change; Too many requests: 0
+- full yarn test:e2e --retries=0: "5 failed ... 3 did not run ... 40 passed (59.7s)", exit 1, Too many requests: 0 (output) / 0 (test-results)
