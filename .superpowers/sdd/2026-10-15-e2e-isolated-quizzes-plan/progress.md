@@ -98,3 +98,11 @@ Verdict run after the user restarted dev with DATABASE_POOL_MAX=10 (.env.develop
 Task 4: complete (commits 5b309ba..0175ca6, review clean; full suite green after Task 4b)
 Task 4b: complete (commit ad06c3f, review clean)
 Doc sweep after Tasks 4 and 4b: findings 2026-10-18-e2e-db-pool-queueing.md (measured); spec section 6 and plan Task 4b (decision); .env.example documents DATABASE_POOL_MAX. Convention for CLAUDE.md "Commands"/pitfalls: E2E locally needs DATABASE_POOL_MAX≈10 — to add in Task 5's records with the E2E README.
+
+## Task 5 (controller)
+User go-ahead 2026-10-18 ("go"). Dev server with DATABASE_POOL_MAX=10.
+- Full run 1 (default retries): 48 passed (27.9s), exit 0; 0 "Too many requests" in output and test-results.
+- Full run 2, started right after: 4 flaky, 44 passed (59.1s), exit 0. Flaky: player-reconnection.spec.ts:80 auto-reconnect, :100 disable submission while offline, :117 reconnecting state during sync, :132 re-enable answer box. All four error contexts contain "Too many requests": the join limit (10 per 60 s per IP, in-memory fixed window, session-join route) — ~7 UI joins per run, run 1 took 28 s, so run 2's joins landed in the same window. The spec's section 5 recorded this risk to be handled only if a 429 appeared; it has. Earlier one-off reconnection waitForURL failures (Task 4) fit the same cause.
+- yarn test:run exit 0, Test Files 69 passed | 1 skipped (70), Tests 514 passed | 1 skipped (515); lint exit 0 (5 warnings, untouched files); tsc exit 0.
+- Fixture leftovers: 8 "E2E fixture" quizzes, all admin-quiz-crud and admin-quiz-updated (the two UI-created quizzes per run, 4 recent runs); the cleanup project sweeps them after 30 min, as designed. No fixture-created (createQuiz) leftovers.
+- Old leftovers for the user's approval: 113 "Question CRUD Test…", 20 "E2E Test Quiz…", 20 "Update Test…" quizzes; 23 players on JOIN-KYTX ("Trivia Night Demo", Active): 18 "E2E-Setup…", 5 "E2E Reconnect…". Nothing deleted.
