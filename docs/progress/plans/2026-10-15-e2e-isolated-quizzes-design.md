@@ -140,6 +140,21 @@ joins per run, under the limit of 10; retries can exceed it. Removing the setup'
 saves one. Recorded as a risk: the verification checks for 429 responses, and it is handled only
 if one appears.
 
+### 6. Database pool size from the environment (added 2026-10-18)
+
+Measured cause of the full-run failures after Task 4
+(`docs/progress/findings/2026-10-18-e2e-db-pool-queueing.md`): the Prisma pg adapter pool is
+`max: 2`, which caps the dev server at ~43 statements/s, and per-test quizzes plus polling exceed
+it. User's choice (2026-10-18, of: env pool size, fewer workers, fewer queries per quiz):
+
+- `client.ts` takes the pool size from `DATABASE_POOL_MAX` through a pure helper
+  (`resolvePoolMax`): unset or empty → 2, so Vercel keeps today's pool; a positive integer → that
+  value; anything else throws at startup (a typo must not silently fall back).
+- `.env.example` documents it; a dev machine sets 10 in `.env.local` or `.env.development.local`
+  (a pool of 10 stayed flat at 8 concurrent creates). Each dev server then holds up to 10 of the project's 60 connections.
+- Not chosen: fewer Playwright workers (the ceiling stays; headroom unmeasured) and fewer
+  statements per quiz (an API contract change or a preview Prisma feature; its own work).
+
 ## Testing and verification
 
 - No unit test for the helper: it is E2E support code, exercised by every spec that uses it.

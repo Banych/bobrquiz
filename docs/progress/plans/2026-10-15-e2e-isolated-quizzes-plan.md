@@ -1062,6 +1062,69 @@ git commit -m "test(e2e): move admin specs to the fixture, drop the shared quiz"
 
 ---
 
+### Task 4b: Database pool size from the environment (added 2026-10-18)
+
+**Agent:** `implementer`
+
+Why: spec section 6; findings `docs/progress/findings/2026-10-18-e2e-db-pool-queueing.md`.
+
+**Files:**
+- Create: `src/infrastructure/database/prisma/pool-size.ts`,
+  `src/tests/infrastructure/database/prisma/pool-size.test.ts`
+- Modify: `src/infrastructure/database/prisma/client.ts`, `.env.example`
+- Not in git: the worktree's `.env.development.local` holds `DATABASE_POOL_MAX=10` (written by the
+  controller; `.env.local` is a symlink to the main checkout's, which this branch doesn't touch;
+  Next loads `.env.development.local` over `.env.local` in dev).
+
+**Interface:**
+
+```ts
+// pool-size.ts
+export const DEFAULT_POOL_MAX = 2;
+/** Pool size for the pg adapter: unset or blank → DEFAULT_POOL_MAX; throws on anything but a positive integer. */
+export function resolvePoolMax(value: string | undefined): number;
+```
+
+`client.ts` passes `max: resolvePoolMax(process.env.DATABASE_POOL_MAX)` and keeps its comment's
+reason for the low default (serverless instances each open a pool).
+
+**Tests** (`pool-size.test.ts`, no mocks):
+
+```ts
+import { describe, it, expect } from 'vitest';
+import {
+  DEFAULT_POOL_MAX,
+  resolvePoolMax,
+} from '@infrastructure/database/prisma/pool-size';
+
+describe('resolvePoolMax', () => {
+  it('defaults to 2 when unset or blank', () => {
+    expect(DEFAULT_POOL_MAX).toBe(2);
+    expect(resolvePoolMax(undefined)).toBe(2);
+    expect(resolvePoolMax('')).toBe(2);
+    expect(resolvePoolMax('  ')).toBe(2);
+  });
+
+  it('uses a positive integer', () => {
+    expect(resolvePoolMax('10')).toBe(10);
+    expect(resolvePoolMax(' 4 ')).toBe(4);
+  });
+
+  it.each(['0', '-1', '2.5', 'ten', '10abc'])('throws on %s', (value) => {
+    expect(() => resolvePoolMax(value)).toThrow(/DATABASE_POOL_MAX/);
+  });
+});
+```
+
+**Acceptance:**
+- `yarn test:run src/tests/infrastructure/database/prisma/pool-size.test.ts` fails before the
+  helper exists, passes after.
+- `yarn test:run`, `yarn lint`, `yarn -s tsc --noEmit -p .`: exit 0.
+- After the user restarts the dev server with the new `.env.local`: the full
+  `yarn test:e2e --retries=0` (controller, Task 5 style counts).
+
+Commit: `perf(db): size the pg pool from DATABASE_POOL_MAX`.
+
 ### Task 5: Verification and records (main session)
 
 **Agent:** none — the controller runs this; counts come from the runs' own output.
