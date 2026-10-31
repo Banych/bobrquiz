@@ -70,7 +70,7 @@
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.12"
+    "vitest": "^5.0.5"
   },
   "prisma": {
     "seed": "tsx src/infrastructure/database/prisma/seed.ts"
