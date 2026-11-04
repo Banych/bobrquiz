@@ -35,9 +35,9 @@ Accepted exceptions (the checks below already skip them):
 
 ```bash
 # Domain must not import from other layers
-grep -r "from '@application/" src/domain/
-grep -r "from '@infrastructure/" src/domain/
-grep -r "from '@components/" src/domain/
+grep -rE "from '@/?application/" src/domain/
+grep -rE "from '@/?infrastructure/" src/domain/
+grep -rE "from '@/?components/" src/domain/
 grep -r "from 'next" src/domain/
 grep -r "from '@prisma/" src/domain/
 ```
@@ -48,14 +48,14 @@ Expected: **no results**. Any output = violation.
 
 ```bash
 # Components/hooks must not import domain entities
-grep -r "from '@domain/entities/" src/components/
-grep -r "from '@domain/entities/" src/hooks/
-grep -r "from '@domain/aggregates/" src/components/
-grep -r "from '@domain/aggregates/" src/hooks/
+grep -rE "from '@/?domain/entities/" src/components/
+grep -rE "from '@/?domain/entities/" src/hooks/
+grep -rE "from '@/?domain/aggregates/" src/components/
+grep -rE "from '@/?domain/aggregates/" src/hooks/
 
 # API routes must not import Prisma types or entities directly (the broadcasters are allowed)
-grep -r "from '@infrastructure/" src/app/api/ | grep -v "from '@infrastructure/realtime/broadcast-"
-grep -r "from '@domain/entities/" src/app/api/
+grep -rE "from '@/?infrastructure/" src/app/api/ | grep -vE "from '@/?infrastructure/realtime/broadcast-"
+grep -rE "from '@/?domain/entities/" src/app/api/
 ```
 
 Expected: **no results**.
@@ -76,7 +76,7 @@ Expected: **no results** (the adapter pattern requires the custom import).
 # DTOs must not reference Prisma types
 grep -r "Prisma\." src/application/dtos/
 # Application must not import infrastructure (the composition root is allowed)
-grep -r "from '@infrastructure/" src/application/ | grep -v '^src/application/services/factories.ts:'
+grep -rE "from '@/?infrastructure/" src/application/ | grep -v '^src/application/services/factories.ts:'
 ```
 
 Expected: **no results**.
@@ -106,7 +106,7 @@ All `any` usages are violations. Each one must be typed properly.
 ## Check 7: `await params` in Route Handlers
 
 ```bash
-# Next.js 15 requires awaiting params before accessing
+# Next.js 15 and later (this repo: 16) require awaiting params before accessing
 grep -rn "params\." src/app/api/ | grep -v "await params"
 grep -rn "params\." src/app/ | grep -v "await" | grep "\.tsx"
 ```
@@ -124,15 +124,15 @@ path.
 
 ```bash
 echo "=== Domain imports from other layers ==="
-grep -rn "from '@application/\|from '@infrastructure/\|from 'next" src/domain/
+grep -rnE "from '@/?application/|from '@/?infrastructure/|from 'next" src/domain/
 
 echo "=== Entities in presentation ==="
-grep -rn "from '@domain/entities/\|from '@domain/aggregates/" src/components/ src/hooks/ src/app/
+grep -rnE "from '@/?domain/entities/|from '@/?domain/aggregates/" src/components/ src/hooks/ src/app/
 
 echo "=== Infrastructure in application or API routes (exceptions skipped) ==="
-grep -rn "from '@infrastructure/" src/application/ src/app/api/ \
+grep -rnE "from '@/?infrastructure/" src/application/ src/app/api/ \
   | grep -v '^src/application/services/factories.ts:' \
-  | grep -v "from '@infrastructure/realtime/broadcast-"
+  | grep -vE "from '@/?infrastructure/realtime/broadcast-"
 
 echo "=== Wrong Prisma import ==="
 grep -rn "from '@prisma/client'" src/
@@ -151,7 +151,7 @@ When reviewing a single file, check:
 
 ```bash
 # Find all consumers of a file
-grep -rn "from '@domain/entities/quiz'" src/
+grep -rnE "from '@/?domain/entities/quiz'" src/
 ```
 
 ## Common Violations Found in This Codebase
@@ -176,7 +176,15 @@ yarn lint        # Check import order and style
 
 Runs are named by their ledger: `.superpowers/sdd/2026-10-15-architecture-check-false-hits/`.
 
+> **Before 2026-11-04 every alias grep missed `@/`-spelled imports and reported them as clean**
+> (FINDINGS.md, top entry). The patterns now match both spellings. Presentation importing
+> infrastructure outside `src/app/api/` is still unchecked.
+
 **Observed**
+
+- With `'@/?<layer>/` patterns, the Quick Full Sweep prints one line for each `@/`-spelled
+  violation planted in a fake tree and skips the `@/`-spelled exceptions; on origin/master
+  (4d2eb8a) it prints nothing (confirmed 2026-11-04, hand run, system grep).
 
 - On the whole tree at 039249c, every grep in Checks 1-6 and Check 7's API-route grep is empty,
   except for the three exceptions now skipped: 6 lines in `factories.ts` (Check 4), 11

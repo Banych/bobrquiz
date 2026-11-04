@@ -14,6 +14,28 @@ Entry shape:
     **Why:** <the mechanism, or "unknown">
     **Change:** <what was edited in the body, or "none — recorded only">
 
+## 2026-11-04 — every alias grep missed the `@/` spelling (silent: it reported clean)
+
+**Ran:** architecture-check's Quick Full Sweep, extracted from the body, against bobrquiz at
+4d2eb8a (origin/master) and against a planted tree; found by the 2026-11-04 setup audit from
+the open issue "The architecture check misses `@/infrastructure` imports" (#104, 2026-10-18)
+**Kind:** trap
+**What the skill said:** `grep -r "from '@infrastructure/" …` and the same shape for
+`@application/`, `@domain/` and `@components/`
+**What happened:** `tsconfig.json` also maps `@/*` to `src/*`, so `from '@/infrastructure/…'`
+reaches the same module, and the code uses it (`src/app/(admin)/admin/layout.tsx:4`,
+`src/app/(admin)/login/page.tsx:5`). Every grep matched only `'@infrastructure/`, so an `@/`
+import in a checked layer would have printed nothing, which reads as clean. After the fix,
+the planted tree (`@/application` in domain, `@/domain/entities` in a component,
+`@/infrastructure` in an application service and an API route, plus `@/`-spelled exceptions
+in `factories.ts` and a `broadcast-*` import) printed one line per planted violation and none
+for the exceptions; the real tree printed nothing.
+**Why:** the patterns were written for one alias spelling; the second alias was added to
+`tsconfig.json` without a check of the greps
+**Change:** body: every alias pattern is `'@/?<layer>/` under `grep -E` (BRE `\|` became ERE
+`|`). Still not covered, as the 2026-10-15 gap entry below says: presentation importing
+infrastructure outside `src/app/api/`, where both of the `@/` lines above sit.
+
 ## 2026-10-15 — the Quick Full Sweep printed CLEAN for a path it never searched
 
 **Ran:** architecture-check, by hand, against bobrquiz at 039249c (whole `src/`)

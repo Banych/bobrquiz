@@ -38,10 +38,17 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
-Two exceptions: `@application/services/factories` is the composition root. It imports
+Three exceptions: `@application/services/factories` is the composition root. It imports
 infrastructure to wire the services, and API routes and server-component pages call its
 `getServices()`. API routes also import the realtime broadcasters
-(`@infrastructure/realtime/broadcast-*`) directly (ADR-024).
+(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). `src/app/providers.tsx` is the
+browser's composition root and may import infrastructure.
+
+Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
+presentation files that import infrastructure (realtime in `use-presence.tsx` and
+`use-realtime-client.tsx`, storage in the three admin question/media components, auth in the
+two `(admin)` layout and login pages). Don't add more; the check doesn't catch them yet.
+`@/infrastructure/…` is the same import as `@infrastructure/…`.
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook
@@ -68,7 +75,7 @@ Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/
 
 ## Testing
 
-Tests are written with the code, not after. Every feature needs:
+Every feature needs:
 
 | What | Where |
 |---|---|
@@ -85,7 +92,8 @@ Tests are written with the code, not after. Every feature needs:
 - Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
   `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
   (see `prisma-player-repository.test.ts`).
-- `yarn test:run` must pass before moving to the next task. No `.skip` left behind.
+- No `.skip` left behind. A task is done when `yarn test:run`, `yarn lint` and `yarn build`
+  pass (CI gates on all three); a UI or flow change also runs `yarn test:e2e`.
 
 ## Key patterns
 
@@ -152,8 +160,10 @@ Long form: `docs/guides/PATTERNS.md`.
 ## Capable-tier files
 
 Route any task touching these to `implementer-capable` and `task-reviewer-capable`: realtime
-subscriptions, presence, timers and provider wiring. Every fix in #58, #59, #60 and #63 touched at
-least one of them.
+subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats, the
+presence provider's channel reuse, the host's leaderboard subscription and the broadcast
+listener leak (#58, #59, #60, #63) touched at least one of them. This repo has no agents of its
+own; the user-level ones apply.
 
 - `src/infrastructure/realtime/**`
 - `src/hooks/use-presence.tsx`
@@ -184,14 +194,11 @@ repeated here.
 
 ## Common pitfalls
 
-1. Route `params` is a Promise: `await params` in handlers before reading it.
-2. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
-3. `yarn test` enters watch mode in an interactive terminal (it runs once without a TTY); use
-   `yarn test:run` for verdicts.
-4. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
+1. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
+2. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
    any authenticated user upload and delete, and only admin accounts exist
    (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
-5. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
+3. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
@@ -201,8 +208,8 @@ repeated here.
 Find the layer first: API 500 (application/infrastructure), stale UI (realtime or TanStack Query),
 401 or redirect loops (`src/proxy.ts`), constraint errors (schema).
 
-1. `mcp__supabase__get_logs(service: 'postgres')`: DB errors.
-2. `mcp__supabase__get_logs(service: 'auth')` or `'realtime'`: auth and channel errors.
+1. `mcp__supabase__query_logs` for the `postgres` service: DB errors.
+2. `mcp__supabase__query_logs` for `auth` or `realtime`: auth and channel errors.
 3. `mcp__supabase__execute_sql(query: 'SELECT * FROM "Quiz" ORDER BY "createdAt" DESC LIMIT 5')`;
    `mcp__supabase__get_advisors(type: 'security')` for RLS after schema changes.
 4. `mcp__plugin_playwright_playwright__browser_navigate` to `http://localhost:3000`, then
@@ -219,11 +226,13 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 
 ## Working rules
 
-- Use the yarn scripts in `package.json`, not raw CLI calls, when one exists.
 - Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to
   start it if it does not.
 - Verify UI changes in the browser with the Playwright plugin before calling them done.
-- Never commit to `master` (branch-protected). Branch from `origin/master`, open a PR.
-- No `Co-Authored-By` or other AI attribution in commits or PRs.
+- Never commit to `master` (branch-protected). Branch with
+  `git switch -c <name> --no-track origin/master`; every change reaches `master` through a PR,
+  opened only after the user approves its text and merged on GitHub. This overrides the
+  user-level workflow's local merges.
+- Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
 - Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
   `.claude/settings.local.json`, which is git-ignored.
