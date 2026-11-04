@@ -84,7 +84,15 @@ yarn test:run
 yarn build
 ```
 
+### 8. Row-level security
+Every table has RLS enabled (the `enable_rls_all_tables` migration). A new table needs it too:
+enable RLS on it in the migration, then run `mcp__supabase__get_advisors(type: 'security')`
+and read every finding before calling the migration done (CLAUDE.md, "Debugging order").
+*Assumed (2026-11-04, setup audit): not yet run as part of this skill.*
+
 ## Rollback (if needed)
+Ask the user before any of these: a reset destroys data, and the target is whatever
+`DATABASE_URL` points at.
 ```bash
 # See migration status
 npx prisma migrate status --schema src/infrastructure/database/prisma/schema.prisma

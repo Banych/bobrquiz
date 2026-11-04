@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(yarn *)",
+      "Bash(yarn dev*)",
+      "Bash(yarn build*)",
+      "Bash(yarn lint*)",
+      "Bash(yarn test*)",
+      "Bash(yarn prisma:generate*)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
@@ -12,24 +16,22 @@
       "Bash(git stash show*)",
       "Bash(git fetch*)",
       "Bash(git pull*)",
-      "Bash(npx prisma *)",
+      "Bash(npx prisma migrate status*)",
+      "Bash(npx prisma validate*)",
+      "Bash(npx prisma format*)",
       "Bash(npx playwright *)",
       "Bash(npx shadcn@latest *)",
-      "Bash(ls:*)",
+      "Bash(ls *)",
       "Bash(grep *)",
       "mcp__supabase__list_tables",
       "mcp__supabase__list_extensions",
       "mcp__supabase__list_migrations",
-      "mcp__supabase__get_logs",
+      "mcp__supabase__query_logs",
       "mcp__supabase__get_advisors",
       "mcp__supabase__get_project_url",
       "mcp__supabase__get_publishable_keys",
-      "mcp__supabase__get_anon_key",
       "mcp__supabase__generate_typescript_types",
       "mcp__supabase__search_docs",
-      "mcp__supabase__list_edge_functions",
-      "mcp__supabase__get_edge_function",
-      "mcp__supabase__list_branches",
       "mcp__supabase__list_storage_buckets",
       "mcp__supabase__get_storage_config",
       "mcp__plugin_playwright_playwright__*",
@@ -65,5 +67,18 @@
       "Bash(git clean -f*)"
     ]
   },
-  "enabledMcpjsonServers": ["supabase"]
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "prisma@claude-plugins-official": false,
+    "swiftui-expert@swiftui-expert-skill": false,
+    "chrisbanes-skills@chrisbanes-skills": false
+  }
 }
