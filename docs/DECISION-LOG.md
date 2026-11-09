@@ -847,6 +847,12 @@ fails, and no data; every public game route already runs more queries per call.
 - `pingDatabaseUseCase` is on the service container, ready for the health check that the
   error-reporting issue (#98) asks for.
 
+### Note (2026-11-09, after deploy)
+Vercel registered the cron (Settings → Cron Jobs: Active, 09:00 UTC) but labels Cron Jobs
+"Legacy": its docs say `vercel.json` `crons` "will be migrated to Schedules", with no end date
+given. The keepalive stays on `crons` until that is forced or Schedules are confirmed on this
+plan; the migration is a row in `docs/parking-lot.md`.
+
 ---
 
 ## Open ideas (not decisions)
