@@ -59,3 +59,9 @@ supabase/.temp/
 
 # Plan workspaces (ledger, briefs, review diffs); commit a ledger with git add -f
 /.superpowers/
+
+# Written by tooling at run time, not project config: next dev regenerates
+# AGENTS.md (CLAUDE.md is the agent file here); launch.json is the Claude
+# desktop app's dev-server preview config
+/AGENTS.md
+.claude/launch.json
