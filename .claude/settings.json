@@ -1,4 +1,5 @@
 {
+  "autoMemoryDirectory": "~/.claude/memory/bobrquiz",
   "permissions": {
     "allow": [
       "Bash(yarn dev*)",
