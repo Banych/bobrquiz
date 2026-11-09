@@ -4,6 +4,7 @@ import { PrismaQuizRepository } from '@infrastructure/repositories/prisma-quiz.r
 import { PrismaQuestionRepository } from '@infrastructure/repositories/prisma-question.repository';
 import { PrismaLeaderboardSnapshotRepository } from '@infrastructure/repositories/prisma-leaderboard-snapshot.repository';
 import { PrismaAuditLogRepository } from '@infrastructure/repositories/prisma-audit-log.repository';
+import { PrismaDatabaseHealthRepository } from '@infrastructure/repositories/prisma-database-health.repository';
 import { AddPlayerUseCase } from '@application/use-cases/add-player.use-case';
 import { FindPlayerByIdUseCase } from '@application/use-cases/find-player-by-id.use-case';
 import { ListQuizPlayersUseCase } from '@application/use-cases/list-quiz-players.use-case';
@@ -37,6 +38,7 @@ import { ListQuizQuestionsUseCase } from '@application/use-cases/list-quiz-quest
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
 import { ListAllQuestionsUseCase } from '@application/use-cases/list-all-questions.use-case';
 import { ListAuditLogsUseCase } from '@application/use-cases/audit/list-audit-logs.use-case';
+import { PingDatabaseUseCase } from '@application/use-cases/ping-database.use-case';
 import type {
   CreateQuestionDTO,
   UpdateQuestionDTO,
@@ -84,6 +86,7 @@ type ServiceContainer = {
   joinSessionUseCase: JoinSessionUseCase;
   lockQuestionUseCase: LockQuestionUseCase;
   getPlayerConnectionStatusUseCase: GetPlayerConnectionStatusUseCase;
+  pingDatabaseUseCase: PingDatabaseUseCase;
 };
 
 let container: ServiceContainer | null = null;
@@ -95,6 +98,7 @@ const getRepositories = () => {
   const leaderboardSnapshotRepository =
     new PrismaLeaderboardSnapshotRepository();
   const auditLogRepository = new PrismaAuditLogRepository();
+  const databaseHealthRepository = new PrismaDatabaseHealthRepository();
 
   return {
     quizRepository,
@@ -102,6 +106,7 @@ const getRepositories = () => {
     questionRepository,
     leaderboardSnapshotRepository,
     auditLogRepository,
+    databaseHealthRepository,
   } as const;
 };
 
@@ -116,6 +121,7 @@ export const getServices = (): ServiceContainer => {
     questionRepository,
     leaderboardSnapshotRepository,
     auditLogRepository,
+    databaseHealthRepository,
   } = getRepositories();
 
   const addPlayerUseCase = new AddPlayerUseCase(
@@ -260,6 +266,7 @@ export const getServices = (): ServiceContainer => {
     joinSessionUseCase,
     lockQuestionUseCase,
     getPlayerConnectionStatusUseCase,
+    pingDatabaseUseCase: new PingDatabaseUseCase(databaseHealthRepository),
   };
 
   return container;

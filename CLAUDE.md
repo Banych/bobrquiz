@@ -132,6 +132,10 @@ the end of a session). Paths below are under `src/`.
 - Composition root `application/services/factories.ts` (`getServices()`); env checks
   `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
   `infrastructure/database/prisma/seed*.ts`.
+- Keepalive: the daily Vercel cron in `vercel.json` → `api/cron/keepalive` →
+  `ping-database.use-case.ts` → `prisma-database-health.repository.ts`. Production Supabase is on
+  the Free plan and pauses after a quiet week without it (ADR-026); `Quiz-game-dev` has no
+  keepalive and may need restoring before local work.
 - Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
   (repo root, not `src/`).

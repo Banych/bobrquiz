@@ -44,6 +44,7 @@ describe('Quiz API routes', () => {
       lockQuestionUseCase: {} as ServiceContainer['lockQuestionUseCase'],
       getPlayerConnectionStatusUseCase:
         {} as ServiceContainer['getPlayerConnectionStatusUseCase'],
+      pingDatabaseUseCase: {} as ServiceContainer['pingDatabaseUseCase'],
     });
   });
 
