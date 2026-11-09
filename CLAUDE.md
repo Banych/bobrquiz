@@ -159,11 +159,12 @@ Long form: `docs/guides/PATTERNS.md`.
 
 ## Capable-tier files
 
-Route any task touching these to `implementer-capable` and `task-reviewer-capable`: realtime
-subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats, the
-presence provider's channel reuse, the host's leaderboard subscription and the broadcast
-listener leak (#58, #59, #60, #63) touched at least one of them. This repo has no agents of its
-own; the user-level ones apply.
+Realtime subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats,
+the presence provider's channel reuse, the host's leaderboard subscription and the broadcast
+listener leak (#58, #59, #60, #63) touched at least one of them. In rigorous mode, route any task
+touching these to `implementer-capable` and `task-reviewer-capable`. In ship mode, implement them
+in the main session on Opus; the whole-branch review uses `task-reviewer-capable` as usual. This
+repo has no agents of its own; the user-level ones apply.
 
 - `src/infrastructure/realtime/**`
 - `src/hooks/use-presence.tsx`
@@ -188,9 +189,14 @@ Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/`.
 | Index line | `docs/progress/PROGRESS.md` → "Work index" | when the PR merges |
 | ADR | `docs/DECISION-LOG.md` | only for a decision that outlives the work |
 
-Plan shape and status lines: `docs/progress/plans/README.md`. Process (brainstorming → spec →
-plan → subagent-driven development → branch passes) follows the user-level workflow and is not
-repeated here.
+The table is for rigorous mode. In ship mode, write a spec only for the expensive-to-reverse
+changes the ship-mode workflow names (schema and migrations, API contracts, auth, payments and
+webhooks), with no plan file or ledger; anything outside the current issue goes to
+`docs/parking-lot.md`. The index line and ADR rows apply in both modes.
+
+Plan shape and status lines: `docs/progress/plans/README.md`. Process follows the workflow mode
+injected at session start (`# Workflow mode: …`), which `.claude/settings.json` selects through
+`enabledPlugins`; it is not repeated here. If no mode appears, say so before starting work.
 
 ## Common pitfalls
 
@@ -232,7 +238,7 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 - Never commit to `master` (branch-protected). Branch with
   `git switch -c <name> --no-track origin/master`; every change reaches `master` through a PR,
   opened only after the user approves its text and merged on GitHub. This overrides the
-  user-level workflow's local merges.
+  user-level branching rule's local merges.
 - Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
 - Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
   `.claude/settings.local.json`, which is git-ignored.
