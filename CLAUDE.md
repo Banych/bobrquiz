@@ -59,6 +59,83 @@ Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/
 `@utils/*` (`src/lib/utils/*`: configured, resolves to nothing), `@ui/*` (`src/components/ui/*`),
 `@/*` (`src/*`).
 
+## Code map
+
+Start from this map, not from a search of the tree. Each flow runs page → component → hook →
+API route → service → use case → repository or broadcaster, so a change inside one flow rarely
+needs files outside its entry. Search only for what the map doesn't name; when a search finds
+something the next session will need, add it here (the user-level `wrap-up` skill does this at
+the end of a session). Paths below are under `src/`.
+
+**Host: run a live game**
+- Pages: `app/(host)/host/page.tsx` (quiz picker, server component),
+  `app/(host)/quiz/[quizId]/page.tsx` → `components/host/host-quiz-dashboard.tsx`,
+  `app/(host)/quiz/[quizId]/live/page.tsx` → `components/host/live-game-screen.tsx`, whose phase
+  views (lobby, question, round results, final results) are in `components/host/live/`.
+- State and actions: `hooks/use-host-quiz-state.ts` reads `api/quiz/[quizId]/state` and has one
+  mutation per host action: `api/quiz/start`, then `api/quiz/[quizId]/` `advance`,
+  `lock-question`, `timer/reset`, `leaderboard/snapshot`, `finish`, `reset`.
+- Players panel: `components/host/player-list-with-status.tsx` (in the dashboard) →
+  `hooks/use-host-quiz-players.ts` → `api/quiz/[quizId]/players/status`; kicking is DELETE
+  `api/quiz/[quizId]/player/[playerId]`. Question timer: `components/host/timer-countdown.tsx`.
+- Server: `application/services/quiz-service.ts` → use cases `start-quiz`, `advance-question`,
+  `reset-quiz-timer`, `snapshot-leaderboard`, `end-quiz`, `reset-quiz`, `get-quiz-state`; the
+  lock route calls `lock-question.use-case.ts` directly through `getServices()`. The routes then
+  broadcast through `infrastructure/realtime/` `broadcast-quiz-state.ts`,
+  `broadcast-round-summary.ts` and `broadcast-leaderboard.ts`.
+- Domain: `domain/aggregates/quiz-session-aggregate.ts`, `domain/entities/quiz.ts` (status
+  transitions), `domain/value-objects/timer.ts`.
+
+**Player: join, answer, reconnect**
+- Join: `app/(player)/join/page.tsx` → `components/player/player-join-form.tsx` → POST
+  `api/session/join` (rate-limited by `lib/rate-limit.ts`) → `join-session.use-case.ts` (looks
+  the code up; codes are generated at quiz creation by `lib/join-code.ts`), then
+  `player-service.ts` adds the player.
+- Play: `app/(player)/play/[quizId]/[playerId]/page.tsx` →
+  `components/player/player-session-screen.tsx` → `hooks/use-player-session.ts` (reads
+  `api/quiz/[quizId]/player/[playerId]`; answers go to POST `api/player/answer` →
+  `answer-service.ts` → `submit-answer.use-case.ts`, and the route sends the answer ack through
+  `broadcast-player-events.ts` and the leaderboard through `broadcast-leaderboard.ts`), plus
+  `use-round-summary-listener.ts` and `use-countdown-timer.ts`.
+- Reconnect: `hooks/use-reconnection.ts` → POST `api/quiz/[quizId]/player/[playerId]/sync`;
+  banner `components/player/connection-status-banner.tsx`.
+
+**Presence (connection status)**: most of these files are listed under "Capable-tier files".
+- Client: `app/providers.tsx` wires `infrastructure/realtime/presence-tracker.ts` into
+  `hooks/use-presence.tsx` (heartbeat timing in `lib/presence-heartbeat-controller.ts`), which
+  POSTs `api/quiz/[quizId]/player/[playerId]/presence` → `playerService.updatePresence`.
+- Status: `application/services/presence-monitor.ts` → `get-player-connection-status.use-case.ts`,
+  `domain/value-objects/connection-status.ts`.
+
+**Scoring**
+- Rules: `domain/value-objects/scoring-strategy.ts` and `score.ts`; leaderboard type
+  `domain/types/leaderboard-score.ts`; snapshots `prisma-leaderboard-snapshot.repository.ts`.
+- Config UI `components/admin/scoring-settings.tsx` (inside the create and edit quiz dialogs);
+  client-side previews `lib/scoring-preview.ts`, `lib/scoring-client.ts`; player badge
+  `components/player/scoring-info-badge.tsx`.
+
+**Admin**
+- Quizzes: `app/(admin)/admin/quizzes/page.tsx` → `components/admin/quiz-list.tsx` and the
+  `create-`, `edit-`, `delete-quiz-dialog.tsx` → `api/admin/quizzes/**` → quiz CRUD use cases.
+- Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
+  `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
+  `reorder`); across quizzes, `app/(admin)/admin/questions` → `all-questions-view.tsx` →
+  `api/admin/questions`.
+- Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
+  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`).
+- Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
+  `application/use-cases/audit/`.
+- Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
+  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`.
+
+**Cross-cutting**
+- Composition root `application/services/factories.ts` (`getServices()`); env checks
+  `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
+  `infrastructure/database/prisma/seed*.ts`.
+- Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
+  `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
+  (repo root, not `src/`).
+
 ## Prisma v7 setup (non-standard)
 
 1. Schema: `src/infrastructure/database/prisma/schema.prisma`.
