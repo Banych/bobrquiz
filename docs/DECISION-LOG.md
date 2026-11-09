@@ -816,6 +816,39 @@ This reverses the "keep" rows of the 2026-10-11 Claude config and records spec.
 
 ---
 
+## ADR-026: A Daily Keepalive Keeps the Free-Plan Production Database Awake (2026-11-09)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-09
+
+### Decision
+Production stays on the Supabase Free plan. A Vercel cron (`vercel.json`, daily within the
+09:00 UTC hour) calls `GET /api/cron/keepalive`, which reads one quiz id through
+`PingDatabaseUseCase`, so `quiz-game-prod` sees database activity every day and is not paused for
+inactivity. The route takes no secret: it returns `{ ok: true }`, or a bare 500 when the ping
+fails, and no data; every public game route already runs more queries per call.
+
+### Rationale
+- Production was paused for inactivity before 2026-10-30 and no game could run on it
+  (`docs/progress/findings/2026-11-09-production-supabase-paused.md`).
+- Supabase's docs say a few user database requests a day prevent the pause; the keepalive costs
+  nothing, while Pro is a monthly fee before any revenue.
+
+### Rejected
+- **Supabase Pro**: never pauses and adds backups, but costs from day one. Revisit when a paying
+  user is close; the keepalive can then be removed.
+- **Doing nothing**: the next quiet week takes production down again.
+- **A `CRON_SECRET` bearer check**: a setup step whose omission silently stops the keepalive,
+  for an endpoint that exposes nothing. Revisit if the route ever returns data.
+
+### Consequences
+- Vercel runs crons only on production deployments: `Quiz-game-dev` can still pause and is
+  restored by hand.
+- `pingDatabaseUseCase` is on the service container, ready for the health check that the
+  error-reporting issue (#98) asks for.
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)
