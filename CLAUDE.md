@@ -285,6 +285,12 @@ injected at session start (`# Workflow mode: …`), which `.claude/settings.json
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
+4. A Claude desktop session in a git worktree reads `.claude/settings.json` from the main
+   checkout, not from the worktree. The main checkout's branch therefore decides the workflow
+   mode and `autoMemoryDirectory` for every worktree session. A branch without `master`'s
+   settings gives `# Workflow mode: rigorous` and the per-machine memory folder (seen
+   2026-11-09; user-level `claude-config-sync` findings). Keep the main checkout's branch up to
+   date with `master`'s `.claude/settings.json`.
 
 ## Debugging order
 
