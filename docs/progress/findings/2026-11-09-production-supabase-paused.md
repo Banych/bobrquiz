@@ -61,6 +61,44 @@ is the round summary, which `use-round-summary-listener.ts` clears on a fixed 10
 than on the next question. The run above waited 11 s after the lock. Recorded in
 `docs/parking-lot.md`.
 
+### Three-player game on production
+
+Run at 23:03–23:05 UTC on bobrquiz.vercel.app (master `5aef973`, before the keepalive deployed;
+the game doesn't depend on it). The host was driven by hand in a browser with the owner's existing
+admin session, on a new quiz "Prod check 2026-11-09" with two multiple-choice questions. A scratch
+script joined three players in separate browser contexts and answered each question as it opened.
+It recorded every screen change against the realtime broadcast that preceded it. The 5 s poll would
+show changes with no broadcast just before them.
+
+| Screen change | After its broadcast, 3 players |
+|---|---|
+| question 1 opens (after `state:update`) | 66 / 142 / 191 ms |
+| question 1 locks (after `question:locked`) | 62 / 63 / 62 ms |
+| question 2 opens | 24 / 94 / 145 ms |
+| question 2 locks | 45 / 43 / 43 ms |
+
+Every player was on `wss://noyjptzwsagwofwsevwm.supabase.co/realtime/v1/websocket` and received
+6 `state:update`, 2 `question:locked`, 2 `answer:ack` and 3 `leaderboard:update`, including the
+`Completed` state. The quiz ended `Completed`. The production admin pages loaded the quiz list and
+saved the new quiz and questions, which exercises `DATABASE_URL` and `ADMIN_EMAILS`. The realtime
+broadcasts exercise `SUPABASE_SERVICE_ROLE_KEY`.
+
+**Answers were lost** (issue #82, concurrent answers). The three players submitted within ~100 ms of
+each other and all three got an `answer:ack`. The `Answer` table then held no rows for Ann and two
+identical rows each for Ben's and Cat's question-1 answers; question 2 kept Ben's and Cat's, not
+Ann's. The rewrite-every-answer `save` explains the loss. The duplicates are a variant #82 doesn't
+describe.
+
+### Also seen
+
+- **The production admin password** isn't the dev one. The owner's attempts failed with
+  `invalid_credentials`; the production admin password from July is in
+  `quiz-game-prod-admin-passwords.json` on the Windows machine (prod-isolation plan, 2026-07-03).
+- **Auth Site URL may still be `http://localhost:3000`**: every production auth log line, including
+  requests from bobrquiz.vercel.app, has `referer: http://localhost:3000`. GoTrue falls back to the
+  Site URL there (from memory of GoTrue's behaviour, not checked). If so, password-reset and sign-up
+  confirmation links point at localhost. Check under Authentication → URL Configuration.
+
 ## Decision: a daily keepalive
 
 Chosen by the user on 2026-11-09 over upgrading to Pro (ADR-026). A Vercel cron
@@ -70,9 +108,6 @@ is kept awake; `Quiz-game-dev` may pause again and is restored by hand when need
 
 ## Still open
 
-- **A game on production.** The issue's acceptance criterion is a three-player game on
-  bobrquiz.vercel.app. Logging in as host there needs the owner's production credentials, so it
-  runs with the owner hosting after this change deploys.
 - **Whether the keepalive counts as "user database activity"** is assumed from the docs'
   wording, not observed. On 2026-11-16 (7 days), check that `quiz-game-prod` is still
   `ACTIVE_HEALTHY` and that Vercel's cron logs show a daily 200. A failing ping returns 500 and
