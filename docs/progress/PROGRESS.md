@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-09: Restore Production, Daily Keepalive ✅
+- **2026-11-09** — production Supabase was paused for inactivity on the Free plan; restored with no pending migrations, a three-player game verified over realtime on bobrquiz.vercel.app, and a daily Vercel cron (`/api/cron/keepalive`) keeps the database awake (ADR-026) — [PR #135](https://github.com/Banych/bobrquiz/pull/135) — [findings](findings/2026-11-09-production-supabase-paused.md)
+
 ### 2026-10-18: E2E Isolated Quizzes ✅
 - **2026-10-18** — every E2E test builds and deletes its own quiz through the admin API, with a sweep for crashed runs; the shared seeded quiz is gone; the Prisma pool size and the join rate limit come from the environment (defaults unchanged, raised for local E2E); a pass on retry fails the run — [PR #110](https://github.com/Banych/bobrquiz/pull/110) — [spec](plans/2026-10-15-e2e-isolated-quizzes-design.md) — [plan](plans/2026-10-15-e2e-isolated-quizzes-plan.md) — [ledger](../../.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md) — [findings](findings/2026-10-18-e2e-db-pool-queueing.md)
 
