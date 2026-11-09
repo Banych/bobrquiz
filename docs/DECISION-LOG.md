@@ -788,6 +788,34 @@ from `@application/dtos/*` only", next to the `factories` composition root.
 
 ---
 
+## ADR-025: Scaffolding Skills Retired; Patterns Live in PATTERNS.md (2026-11-04)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-04
+
+### Decision
+The `create-entity`, `create-use-case`, `create-hook` and `product-owner` skills are removed.
+CLAUDE.md's "Key patterns" and `docs/guides/PATTERNS.md` are the one place for code patterns;
+CLAUDE.md names the product docs directly. `architecture-check` and `prisma-migrate` stay.
+This reverses the "keep" rows of the 2026-10-11 Claude config and records spec.
+
+### Rationale
+- None of the four was called in a month of sessions (2026-10-03 to 11-04, user-level setup
+  audit): work now goes spec → plan → named implementers, and plans carry the interfaces.
+- Their FINDINGS files were placeholders, so every claim in them was assumed, and some were
+  wrong: `create-entity` said there is no domain events system (`src/domain/events/` has 4
+  files); `create-use-case` gave an "exact" not-found message format most use cases don't use
+  (only `/not found/i` matters) and a route path template that doesn't match the tree.
+- A copyable template that is wrong gets copied.
+
+### Rejected
+- Fixing all four: they duplicate CLAUDE.md and PATTERNS.md, so they would drift again.
+
+### References
+- ADR-023 (procedures as skills, not commands): still holds for the skills that remain.
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)

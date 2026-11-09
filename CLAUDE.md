@@ -38,10 +38,17 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
-Two exceptions: `@application/services/factories` is the composition root. It imports
+Three exceptions: `@application/services/factories` is the composition root. It imports
 infrastructure to wire the services, and API routes and server-component pages call its
 `getServices()`. API routes also import the realtime broadcasters
-(`@infrastructure/realtime/broadcast-*`) directly (ADR-024).
+(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). `src/app/providers.tsx` is the
+browser's composition root and may import infrastructure.
+
+Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
+presentation files that import infrastructure (realtime in `use-presence.tsx` and
+`use-realtime-client.tsx`, storage in the three admin question/media components, auth in the
+two `(admin)` layout and login pages). Don't add more; the check doesn't catch them yet.
+`@/infrastructure/…` is the same import as `@infrastructure/…`.
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook
@@ -51,6 +58,83 @@ Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/
 `@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`),
 `@utils/*` (`src/lib/utils/*`: configured, resolves to nothing), `@ui/*` (`src/components/ui/*`),
 `@/*` (`src/*`).
+
+## Code map
+
+Start from this map, not from a search of the tree. Each flow runs page → component → hook →
+API route → service → use case → repository or broadcaster, so a change inside one flow rarely
+needs files outside its entry. Search only for what the map doesn't name; when a search finds
+something the next session will need, add it here (the user-level `wrap-up` skill does this at
+the end of a session). Paths below are under `src/`.
+
+**Host: run a live game**
+- Pages: `app/(host)/host/page.tsx` (quiz picker, server component),
+  `app/(host)/quiz/[quizId]/page.tsx` → `components/host/host-quiz-dashboard.tsx`,
+  `app/(host)/quiz/[quizId]/live/page.tsx` → `components/host/live-game-screen.tsx`, whose phase
+  views (lobby, question, round results, final results) are in `components/host/live/`.
+- State and actions: `hooks/use-host-quiz-state.ts` reads `api/quiz/[quizId]/state` and has one
+  mutation per host action: `api/quiz/start`, then `api/quiz/[quizId]/` `advance`,
+  `lock-question`, `timer/reset`, `leaderboard/snapshot`, `finish`, `reset`.
+- Players panel: `components/host/player-list-with-status.tsx` (in the dashboard) →
+  `hooks/use-host-quiz-players.ts` → `api/quiz/[quizId]/players/status`; kicking is DELETE
+  `api/quiz/[quizId]/player/[playerId]`. Question timer: `components/host/timer-countdown.tsx`.
+- Server: `application/services/quiz-service.ts` → use cases `start-quiz`, `advance-question`,
+  `reset-quiz-timer`, `snapshot-leaderboard`, `end-quiz`, `reset-quiz`, `get-quiz-state`; the
+  lock route calls `lock-question.use-case.ts` directly through `getServices()`. The routes then
+  broadcast through `infrastructure/realtime/` `broadcast-quiz-state.ts`,
+  `broadcast-round-summary.ts` and `broadcast-leaderboard.ts`.
+- Domain: `domain/aggregates/quiz-session-aggregate.ts`, `domain/entities/quiz.ts` (status
+  transitions), `domain/value-objects/timer.ts`.
+
+**Player: join, answer, reconnect**
+- Join: `app/(player)/join/page.tsx` → `components/player/player-join-form.tsx` → POST
+  `api/session/join` (rate-limited by `lib/rate-limit.ts`) → `join-session.use-case.ts` (looks
+  the code up; codes are generated at quiz creation by `lib/join-code.ts`), then
+  `player-service.ts` adds the player.
+- Play: `app/(player)/play/[quizId]/[playerId]/page.tsx` →
+  `components/player/player-session-screen.tsx` → `hooks/use-player-session.ts` (reads
+  `api/quiz/[quizId]/player/[playerId]`; answers go to POST `api/player/answer` →
+  `answer-service.ts` → `submit-answer.use-case.ts`, and the route sends the answer ack through
+  `broadcast-player-events.ts` and the leaderboard through `broadcast-leaderboard.ts`), plus
+  `use-round-summary-listener.ts` and `use-countdown-timer.ts`.
+- Reconnect: `hooks/use-reconnection.ts` → POST `api/quiz/[quizId]/player/[playerId]/sync`;
+  banner `components/player/connection-status-banner.tsx`.
+
+**Presence (connection status)**: most of these files are listed under "Capable-tier files".
+- Client: `app/providers.tsx` wires `infrastructure/realtime/presence-tracker.ts` into
+  `hooks/use-presence.tsx` (heartbeat timing in `lib/presence-heartbeat-controller.ts`), which
+  POSTs `api/quiz/[quizId]/player/[playerId]/presence` → `playerService.updatePresence`.
+- Status: `application/services/presence-monitor.ts` → `get-player-connection-status.use-case.ts`,
+  `domain/value-objects/connection-status.ts`.
+
+**Scoring**
+- Rules: `domain/value-objects/scoring-strategy.ts` and `score.ts`; leaderboard type
+  `domain/types/leaderboard-score.ts`; snapshots `prisma-leaderboard-snapshot.repository.ts`.
+- Config UI `components/admin/scoring-settings.tsx` (inside the create and edit quiz dialogs);
+  client-side previews `lib/scoring-preview.ts`, `lib/scoring-client.ts`; player badge
+  `components/player/scoring-info-badge.tsx`.
+
+**Admin**
+- Quizzes: `app/(admin)/admin/quizzes/page.tsx` → `components/admin/quiz-list.tsx` and the
+  `create-`, `edit-`, `delete-quiz-dialog.tsx` → `api/admin/quizzes/**` → quiz CRUD use cases.
+- Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
+  `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
+  `reorder`); across quizzes, `app/(admin)/admin/questions` → `all-questions-view.tsx` →
+  `api/admin/questions`.
+- Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
+  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`).
+- Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
+  `application/use-cases/audit/`.
+- Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
+  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`.
+
+**Cross-cutting**
+- Composition root `application/services/factories.ts` (`getServices()`); env checks
+  `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
+  `infrastructure/database/prisma/seed*.ts`.
+- Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
+  `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
+  (repo root, not `src/`).
 
 ## Prisma v7 setup (non-standard)
 
@@ -68,7 +152,7 @@ Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/
 
 ## Testing
 
-Tests are written with the code, not after. Every feature needs:
+Every feature needs:
 
 | What | Where |
 |---|---|
@@ -85,7 +169,8 @@ Tests are written with the code, not after. Every feature needs:
 - Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
   `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
   (see `prisma-player-repository.test.ts`).
-- `yarn test:run` must pass before moving to the next task. No `.skip` left behind.
+- No `.skip` left behind. A task is done when `yarn test:run`, `yarn lint` and `yarn build`
+  pass (CI gates on all three); a UI or flow change also runs `yarn test:e2e`.
 
 ## Key patterns
 
@@ -151,9 +236,12 @@ Long form: `docs/guides/PATTERNS.md`.
 
 ## Capable-tier files
 
-Route any task touching these to `implementer-capable` and `task-reviewer-capable`: realtime
-subscriptions, presence, timers and provider wiring. Every fix in #58, #59, #60 and #63 touched at
-least one of them.
+Realtime subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats,
+the presence provider's channel reuse, the host's leaderboard subscription and the broadcast
+listener leak (#58, #59, #60, #63) touched at least one of them. In rigorous mode, route any task
+touching these to `implementer-capable` and `task-reviewer-capable`. In ship mode, implement them
+in the main session on Opus; the whole-branch review uses `task-reviewer-capable` as usual. This
+repo has no agents of its own; the user-level ones apply.
 
 - `src/infrastructure/realtime/**`
 - `src/hooks/use-presence.tsx`
@@ -178,20 +266,22 @@ Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/`.
 | Index line | `docs/progress/PROGRESS.md` → "Work index" | when the PR merges |
 | ADR | `docs/DECISION-LOG.md` | only for a decision that outlives the work |
 
-Plan shape and status lines: `docs/progress/plans/README.md`. Process (brainstorming → spec →
-plan → subagent-driven development → branch passes) follows the user-level workflow and is not
-repeated here.
+The table is for rigorous mode. In ship mode, write a spec only for the expensive-to-reverse
+changes the ship-mode workflow names (schema and migrations, API contracts, auth, payments and
+webhooks), with no plan file or ledger; anything outside the current issue goes to
+`docs/parking-lot.md`. The index line and ADR rows apply in both modes.
+
+Plan shape and status lines: `docs/progress/plans/README.md`. Process follows the workflow mode
+injected at session start (`# Workflow mode: …`), which `.claude/settings.json` selects through
+`enabledPlugins`; it is not repeated here. If no mode appears, say so before starting work.
 
 ## Common pitfalls
 
-1. Route `params` is a Promise: `await params` in handlers before reading it.
-2. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
-3. `yarn test` enters watch mode in an interactive terminal (it runs once without a TTY); use
-   `yarn test:run` for verdicts.
-4. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
+1. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
+2. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
    any authenticated user upload and delete, and only admin accounts exist
    (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
-5. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
+3. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
@@ -201,8 +291,8 @@ repeated here.
 Find the layer first: API 500 (application/infrastructure), stale UI (realtime or TanStack Query),
 401 or redirect loops (`src/proxy.ts`), constraint errors (schema).
 
-1. `mcp__supabase__get_logs(service: 'postgres')`: DB errors.
-2. `mcp__supabase__get_logs(service: 'auth')` or `'realtime'`: auth and channel errors.
+1. `mcp__supabase__query_logs` for the `postgres` service: DB errors.
+2. `mcp__supabase__query_logs` for `auth` or `realtime`: auth and channel errors.
 3. `mcp__supabase__execute_sql(query: 'SELECT * FROM "Quiz" ORDER BY "createdAt" DESC LIMIT 5')`;
    `mcp__supabase__get_advisors(type: 'security')` for RLS after schema changes.
 4. `mcp__plugin_playwright_playwright__browser_navigate` to `http://localhost:3000`, then
@@ -219,11 +309,13 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 
 ## Working rules
 
-- Use the yarn scripts in `package.json`, not raw CLI calls, when one exists.
 - Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to
   start it if it does not.
 - Verify UI changes in the browser with the Playwright plugin before calling them done.
-- Never commit to `master` (branch-protected). Branch from `origin/master`, open a PR.
-- No `Co-Authored-By` or other AI attribution in commits or PRs.
+- Never commit to `master` (branch-protected). Branch with
+  `git switch -c <name> --no-track origin/master`; every change reaches `master` through a PR,
+  opened only after the user approves its text and merged on GitHub. This overrides the
+  user-level branching rule's local merges.
+- Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
 - Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
   `.claude/settings.local.json`, which is git-ignored.
