@@ -126,9 +126,10 @@ the end of a session). Paths below are under `src/`.
   `docs/progress/plans/2026-11-10-quiz-owner-design.md`.
 - Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
   `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
-  `reorder`). Each handler runs the quiz owner guard first; the question use cases go through
-  `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from another quiz is "not
-  found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
+  `reorder`, which no UI calls yet) → the `create-`, `update-`, `delete-`, `reorder-` and
+  `list-quiz-questions` use cases. Each handler runs the quiz owner guard first; the question use
+  cases go through `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from
+  another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
   `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
   `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
@@ -142,7 +143,8 @@ the end of a session). Paths below are under `src/`.
   login check until the quiz-owner part 3 issue (140) lands.
 
 **Cross-cutting**
-- Composition root `application/services/factories.ts` (`getServices()`); env checks
+- Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
+  `auditService` are object literals there, with no service file of their own; env checks
   `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
   `infrastructure/database/prisma/seed*.ts` (owner from `SEED_QUIZ_OWNER_ID`); migrations in
   `infrastructure/database/prisma/migrations/`; one-off owner backfill
@@ -175,6 +177,10 @@ the end of a session). Paths below are under `src/`.
    This repo keeps its dev values in `.env.local`, so export both variables in the shell first.
    `db execute` takes no `--schema` flag in Prisma 7 (it fails); `migrate` commands still need
    it (seen 2026-11-10, Prisma 7.10.1).
+6. No `psql` or Docker here. For a read-only query, run a `.ts` script with
+   `node --env-file=.env.local node_modules/.bin/tsx <script>`; a script outside the repo must
+   import `@prisma/adapter-pg` and the generated client by absolute path, or they don't resolve
+   (seen 2026-11-10).
 
 ## Testing
 
