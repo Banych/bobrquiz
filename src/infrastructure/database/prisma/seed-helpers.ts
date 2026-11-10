@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '@infrastructure/database/prisma/client';
+import { UUID_PATTERN } from '@infrastructure/database/prisma/assign-quiz-owner-core';
 import type {
   Player,
   Prisma,
@@ -7,9 +8,6 @@ import type {
   Quiz,
   QuestionType,
 } from '@infrastructure/database/prisma/generated-client';
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Owner for every seeded quiz, read from SEED_QUIZ_OWNER_ID (a Supabase user

@@ -1,4 +1,4 @@
-const UUID_PATTERN =
+export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The slice of the Prisma client the backfill needs (keeps tests mock-friendly). */
