@@ -21,6 +21,18 @@ describe('Quiz', () => {
     expect(quiz.settings.allowSkipping).toBe(true);
   });
 
+  it('carries the owner id given in the options', () => {
+    const quiz = new Quiz(
+      'quiz1',
+      'Math Quiz',
+      [],
+      { timePerQuestion: 30, allowSkipping: true },
+      { ownerId: 'owner-1' }
+    );
+
+    expect(quiz.ownerId).toBe('owner-1');
+  });
+
   it('should start the quiz', () => {
     const quiz = new Quiz('quiz1', 'Math Quiz', [], {
       timePerQuestion: 30,

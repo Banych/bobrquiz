@@ -16,6 +16,7 @@ model Quiz {
   timePerQuestion      Int                   @default(30)
   allowSkipping        Boolean               @default(false)
   joinCode             String?               @unique
+  ownerId              String                @db.Uuid
   startTime            DateTime?
   endTime              DateTime?
   timerStartedAt       DateTime?
@@ -29,6 +30,8 @@ model Quiz {
   questions            Question[]
   leaderboardSnapshots LeaderboardSnapshot[]
   auditLogs            AuditLog[]
+
+  @@index([ownerId])
 }
 
 model Question {
