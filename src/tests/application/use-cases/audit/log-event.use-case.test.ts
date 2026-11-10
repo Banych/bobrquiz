@@ -5,8 +5,7 @@ import { AuditEventType } from '@domain/entities/audit-log';
 
 const mockAuditRepo: IAuditLogRepository = {
   save: vi.fn(),
-  findByQuizId: vi.fn(),
-  findRecent: vi.fn(),
+  findForOwner: vi.fn(),
 };
 
 describe('LogEventUseCase', () => {

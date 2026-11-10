@@ -334,8 +334,7 @@ describe('LockQuestionUseCase', () => {
     beforeEach(() => {
       auditLogRepository = {
         save: vi.fn().mockResolvedValue(undefined),
-        findByQuizId: vi.fn(),
-        findRecent: vi.fn(),
+        findForOwner: vi.fn(),
       };
     });
 

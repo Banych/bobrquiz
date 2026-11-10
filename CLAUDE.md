@@ -129,12 +129,13 @@ the end of a session). Paths below are under `src/`.
   `reorder`). Each handler runs the quiz owner guard first; the question use cases go through
   `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from another quiz is "not
   found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
-  `all-questions-view.tsx` → `api/admin/questions`.
+  `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
   `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
   is no media API route: both talk to Supabase Storage from the browser.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
-  `application/use-cases/audit/`.
+  `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
+  filters through the quiz relation, so logs with no quiz never show.
 - Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
   `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`. The proxy
   matches nothing else: `/host`, `/quiz/**` and the host actions under `api/quiz/**` have no

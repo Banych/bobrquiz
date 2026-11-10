@@ -8,18 +8,23 @@ export class ListAllQuestionsUseCase {
     private readonly questionRepo: IQuestionRepository
   ) {}
 
+  /**
+   * Questions across the owner's quizzes only. The quizId and type filters
+   * apply inside that set: another owner's quizId gives an empty list.
+   */
   async execute(params: {
+    ownerId: string;
     quizId?: string;
     type?: string;
   }): Promise<QuestionListItemDTO[]> {
-    const { quizId, type } = params;
+    const { ownerId, quizId, type } = params;
 
-    const quizzes = quizId
-      ? [await this.quizRepo.findEntityById(quizId)].filter(Boolean)
-      : await this.quizRepo.findAll();
+    const quizzes = (await this.quizRepo.listByOwner(ownerId)).filter(
+      (quiz) => !quizId || quiz.id === quizId
+    );
 
     const allResults = await Promise.all(
-      (quizzes as NonNullable<(typeof quizzes)[number]>[]).map(async (quiz) => {
+      quizzes.map(async (quiz) => {
         const questions = await this.questionRepo.listByQuizId(quiz.id);
         return questions
           .filter((q) => !type || q.type === type)

@@ -21,14 +21,19 @@ const mapToDTO = (log: AuditLog): AuditLogDTO => ({
 export class ListAuditLogsUseCase {
   constructor(private readonly auditLogRepository: IAuditLogRepository) {}
 
+  /**
+   * Logs of the owner's quizzes only; another owner's quizId gives an empty
+   * list, and logs with no quiz are not shown.
+   */
   async execute(params: {
+    ownerId: string;
     quizId?: string;
     limit?: number;
   }): Promise<AuditLogDTO[]> {
-    const limit = params.limit ?? 100;
-    const logs = params.quizId
-      ? await this.auditLogRepository.findByQuizId(params.quizId, limit)
-      : await this.auditLogRepository.findRecent(limit);
+    const logs = await this.auditLogRepository.findForOwner(params.ownerId, {
+      quizId: params.quizId,
+      limit: params.limit ?? 100,
+    });
     return logs.map(mapToDTO);
   }
 }
