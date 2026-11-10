@@ -38,11 +38,13 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
-Three exceptions: `@application/services/factories` is the composition root. It imports
+Four exceptions: `@application/services/factories` is the composition root. It imports
 infrastructure to wire the services, and API routes and server-component pages call its
 `getServices()`. API routes also import the realtime broadcasters
-(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). `src/app/providers.tsx` is the
-browser's composition root and may import infrastructure.
+(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). API routes and server-component
+pages may import the current-user helper (`@infrastructure/auth/get-current-user`) to read the
+signed-in user id. `src/app/providers.tsx` is the browser's composition root and may import
+infrastructure.
 
 Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
 presentation files that import infrastructure (realtime in `use-presence.tsx` and

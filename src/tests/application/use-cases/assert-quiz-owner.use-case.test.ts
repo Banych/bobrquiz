@@ -48,4 +48,14 @@ describe('AssertQuizOwnerUseCase', () => {
       'Quiz with ID quiz-1 not found'
     );
   });
+
+  it('throws not-found for an empty owner id even when the quiz has none', async () => {
+    vi.mocked(mockQuizRepository.findEntityById).mockResolvedValue(
+      makeQuiz('')
+    );
+
+    await expect(useCase.execute('quiz-1', '')).rejects.toThrow(
+      'Quiz with ID quiz-1 not found'
+    );
+  });
 });

@@ -10,7 +10,7 @@ export class AssertQuizOwnerUseCase {
   async execute(quizId: string, ownerId: string): Promise<void> {
     const quiz = await this.quizRepository.findEntityById(quizId);
 
-    if (!quiz || quiz.ownerId !== ownerId) {
+    if (!ownerId || !quiz || quiz.ownerId !== ownerId) {
       throw new Error(`Quiz with ID ${quizId} not found`);
     }
   }
