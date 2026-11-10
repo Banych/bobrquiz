@@ -128,8 +128,8 @@ the end of a session). Paths below are under `src/`.
   `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
   `reorder`). Each handler runs the quiz owner guard first; the question use cases go through
   `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from another quiz is "not
-  found" like a missing one. Across quizzes, `app/(admin)/admin/questions` → `all-questions-view.tsx` →
-  `api/admin/questions`.
+  found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
+  `all-questions-view.tsx` → `api/admin/questions`.
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
   `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
   is no media API route: both talk to Supabase Storage from the browser.
