@@ -28,6 +28,9 @@ Accepted exceptions (the checks below already skip them):
   wire the services.
 - API routes import the realtime broadcasters (`@infrastructure/realtime/broadcast-*`) directly
   (ADR-024).
+- API routes and server-component pages import the current-user helper
+  (`@infrastructure/auth/get-current-user`) to read the signed-in user id (the fourth
+  exception in CLAUDE.md).
 - The generated Prisma client (`src/infrastructure/database/prisma/generated/`) is not our code;
   its `any` types are not violations.
 
@@ -53,8 +56,9 @@ grep -rE "from '@/?domain/entities/" src/hooks/
 grep -rE "from '@/?domain/aggregates/" src/components/
 grep -rE "from '@/?domain/aggregates/" src/hooks/
 
-# API routes must not import Prisma types or entities directly (the broadcasters are allowed)
-grep -rE "from '@/?infrastructure/" src/app/api/ | grep -vE "from '@/?infrastructure/realtime/broadcast-"
+# API routes must not import Prisma types or entities directly (the broadcasters and the
+# current-user helper are allowed)
+grep -rE "from '@/?infrastructure/" src/app/api/ | grep -vE "from '@/?infrastructure/(realtime/broadcast-|auth/get-current-user')"
 grep -rE "from '@/?domain/entities/" src/app/api/
 ```
 
@@ -132,7 +136,7 @@ grep -rnE "from '@/?domain/entities/|from '@/?domain/aggregates/" src/components
 echo "=== Infrastructure in application or API routes (exceptions skipped) ==="
 grep -rnE "from '@/?infrastructure/" src/application/ src/app/api/ \
   | grep -v '^src/application/services/factories.ts:' \
-  | grep -vE "from '@/?infrastructure/realtime/broadcast-"
+  | grep -vE "from '@/?infrastructure/(realtime/broadcast-|auth/get-current-user')"
 
 echo "=== Wrong Prisma import ==="
 grep -rn "from '@prisma/client'" src/

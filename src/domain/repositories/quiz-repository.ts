@@ -34,5 +34,6 @@ export interface IQuizRepository {
   create(quiz: Quiz): Promise<Quiz>;
   update(quiz: Quiz): Promise<void>;
   findAll(): Promise<Quiz[]>;
+  listByOwner(ownerId: string): Promise<Quiz[]>;
   findEntityById(id: string): Promise<Quiz | null>;
 }

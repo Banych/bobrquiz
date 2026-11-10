@@ -12,6 +12,7 @@ vi.mock('node:crypto', () => ({
 const quizMocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findMany: vi.fn(),
+  create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
 }));
@@ -70,6 +71,7 @@ describe('PrismaQuizRepository', () => {
       scoringAlgorithm: 'FIXED',
       scoringDecayRate: null,
       joinCode: 'JOIN',
+      ownerId: 'owner-1',
       startTime: now,
       endTime: null,
       timerStartedAt: now,
@@ -131,6 +133,7 @@ describe('PrismaQuizRepository', () => {
     const aggregate = await repository.findById('quiz-1');
 
     expect(aggregate).toBeInstanceOf(QuizSessionAggregate);
+    expect(aggregate?.ownerId).toBe('owner-1');
     expect(aggregate?.quizQuestions[0].id).toBe('q1');
     expect(aggregate?.quizQuestions[0].answersLockedAt).toBeUndefined();
     expect(aggregate?.playerIds).toContain('player-1');
@@ -327,6 +330,154 @@ describe('PrismaQuizRepository', () => {
       data: { rank: null },
     });
     expect(transactionMock).not.toHaveBeenCalled();
+  });
+
+  it('does not write the owner when saving a quiz session', async () => {
+    const quiz = new Quiz(
+      'quiz-1',
+      'Math',
+      [],
+      { timePerQuestion: 30, allowSkipping: false, scoringAlgorithm: 'FIXED' },
+      { ownerId: 'owner-1' }
+    );
+
+    await repository.save(new QuizSessionAggregate(quiz, 30));
+
+    const { data } = quizMocks.update.mock.calls[0][0];
+    expect(data).not.toHaveProperty('ownerId');
+  });
+
+  describe('create and update', () => {
+    const makeQuiz = (ownerId?: string) =>
+      new Quiz(
+        '',
+        'Math',
+        [],
+        { timePerQuestion: 30, allowSkipping: false },
+        { joinCode: 'JOIN', ownerId }
+      );
+
+    it('writes the owner id when creating a quiz', async () => {
+      quizMocks.create.mockResolvedValue({ id: 'new-id' });
+
+      const created = await repository.create(makeQuiz('owner-1'));
+
+      expect(prisma.quiz.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ ownerId: 'owner-1', title: 'Math' }),
+      });
+      expect(created.id).toBe('new-id');
+    });
+
+    it('refuses to create a quiz without an owner', async () => {
+      await expect(repository.create(makeQuiz())).rejects.toThrow(
+        'Quiz owner is required.'
+      );
+      expect(prisma.quiz.create).not.toHaveBeenCalled();
+    });
+
+    it('never changes the owner when updating a quiz', async () => {
+      quizMocks.update.mockResolvedValue({ id: 'quiz-1' });
+      const quiz = makeQuiz('owner-1');
+      quiz.id = 'quiz-1';
+
+      await repository.update(quiz);
+
+      const { data } = quizMocks.update.mock.calls[0][0];
+      expect(data).not.toHaveProperty('ownerId');
+    });
+  });
+
+  describe('listByOwner', () => {
+    const ownedRecord = {
+      id: 'quiz-1',
+      title: 'Mine',
+      status: 'Pending',
+      currentQuestionIndex: 0,
+      timePerQuestion: 30,
+      allowSkipping: false,
+      joinCode: null,
+      ownerId: 'owner-1',
+      startTime: null,
+      endTime: null,
+      questions: [],
+      players: [{ id: 'player-1' }],
+      _count: { questions: 0, players: 1 },
+    };
+
+    it('filters by owner with the same include and ordering as findAll', async () => {
+      quizMocks.findMany.mockResolvedValue([ownedRecord]);
+
+      const quizzes = await repository.listByOwner('owner-1');
+
+      expect(prisma.quiz.findMany).toHaveBeenCalledWith({
+        where: { ownerId: 'owner-1' },
+        include: {
+          questions: true,
+          players: {
+            where: { status: { not: 'Removed' } },
+            select: { id: true },
+          },
+          _count: {
+            select: { questions: true, players: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(quizzes).toHaveLength(1);
+      expect(quizzes[0].ownerId).toBe('owner-1');
+      expect(quizzes[0].players.has('player-1')).toBe(true);
+    });
+
+    it('returns an empty list when the owner has no quizzes', async () => {
+      quizMocks.findMany.mockResolvedValue([]);
+
+      await expect(repository.listByOwner('owner-2')).resolves.toEqual([]);
+    });
+  });
+
+  it('reads the owner when finding an entity by id', async () => {
+    quizMocks.findUnique.mockResolvedValue({
+      id: 'quiz-1',
+      title: 'Mine',
+      status: 'Pending',
+      currentQuestionIndex: 0,
+      timePerQuestion: 30,
+      allowSkipping: false,
+      joinCode: null,
+      ownerId: 'owner-1',
+      startTime: null,
+      endTime: null,
+      questions: [],
+      players: [],
+    });
+
+    const quiz = await repository.findEntityById('quiz-1');
+
+    expect(quiz?.ownerId).toBe('owner-1');
+  });
+
+  it('reads the owner for every quiz in findAll', async () => {
+    quizMocks.findMany.mockResolvedValue([
+      {
+        id: 'quiz-1',
+        title: 'Mine',
+        status: 'Pending',
+        currentQuestionIndex: 0,
+        timePerQuestion: 30,
+        allowSkipping: false,
+        joinCode: null,
+        ownerId: 'owner-9',
+        startTime: null,
+        endTime: null,
+        questions: [],
+        players: [],
+        _count: { questions: 0, players: 0 },
+      },
+    ]);
+
+    const [quiz] = await repository.findAll();
+
+    expect(quiz.ownerId).toBe('owner-9');
   });
 
   it('deletes a quiz by id', async () => {

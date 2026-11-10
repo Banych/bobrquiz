@@ -111,7 +111,7 @@ http_req_failed................: 0.00%   ✓ 0 ✗ 573
 
 **"Quiz not found" error:**
 - Update `quizId` in `config.js` with valid ID from your database
-- Run `yarn prisma:seed` to create demo quiz
+- Run `yarn prisma:seed` to create demo quiz (set `SEED_QUIZ_OWNER_ID` to the owner's Supabase auth user id first, Authentication → Users; without it the seed exits before touching the database)
 
 **Timeout during setup:**
 - Reduce `totalPlayers` in test file

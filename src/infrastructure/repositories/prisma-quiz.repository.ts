@@ -33,15 +33,21 @@ const mapQuizRecordToAggregate = (
     .sort((a, b) => a.orderIndex - b.orderIndex)
     .map((question) => mapPrismaQuestionToDomain(question));
 
-  const quiz = new Quiz(record.id, record.title, questions, {
-    timePerQuestion: record.timePerQuestion,
-    allowSkipping: record.allowSkipping,
-    scoringAlgorithm: record.scoringAlgorithm as
-      | 'EXPONENTIAL_DECAY'
-      | 'LINEAR'
-      | 'FIXED',
-    scoringDecayRate: record.scoringDecayRate ?? undefined,
-  });
+  const quiz = new Quiz(
+    record.id,
+    record.title,
+    questions,
+    {
+      timePerQuestion: record.timePerQuestion,
+      allowSkipping: record.allowSkipping,
+      scoringAlgorithm: record.scoringAlgorithm as
+        | 'EXPONENTIAL_DECAY'
+        | 'LINEAR'
+        | 'FIXED',
+      scoringDecayRate: record.scoringDecayRate ?? undefined,
+    },
+    { ownerId: record.ownerId }
+  );
   quiz.joinCode = record.joinCode ?? undefined;
 
   quiz.status = record.status as QuizStatus;
@@ -238,6 +244,10 @@ export class PrismaQuizRepository implements IQuizRepository {
 
   // Admin CRUD operations
   async create(quiz: Quiz): Promise<Quiz> {
+    if (!quiz.ownerId) {
+      throw new Error('Quiz owner is required.');
+    }
+
     const record = await prisma.quiz.create({
       data: {
         title: quiz.title,
@@ -248,6 +258,7 @@ export class PrismaQuizRepository implements IQuizRepository {
         scoringAlgorithm: quiz.settings.scoringAlgorithm ?? 'EXPONENTIAL_DECAY',
         scoringDecayRate: quiz.settings.scoringDecayRate ?? 2.0,
         joinCode: quiz.joinCode ?? null,
+        ownerId: quiz.ownerId,
       },
     });
 
@@ -269,7 +280,18 @@ export class PrismaQuizRepository implements IQuizRepository {
   }
 
   async findAll(): Promise<Quiz[]> {
+    return this.findManyEntities();
+  }
+
+  async listByOwner(ownerId: string): Promise<Quiz[]> {
+    return this.findManyEntities({ ownerId });
+  }
+
+  private async findManyEntities(
+    where?: Prisma.QuizWhereInput
+  ): Promise<Quiz[]> {
     const records = await prisma.quiz.findMany({
+      ...(where ? { where } : {}),
       include: {
         questions: true,
         players: {
@@ -288,10 +310,16 @@ export class PrismaQuizRepository implements IQuizRepository {
         .sort((a, b) => a.orderIndex - b.orderIndex)
         .map((question) => mapPrismaQuestionToDomain(question));
 
-      const quiz = new Quiz(record.id, record.title, questions, {
-        timePerQuestion: record.timePerQuestion,
-        allowSkipping: record.allowSkipping,
-      });
+      const quiz = new Quiz(
+        record.id,
+        record.title,
+        questions,
+        {
+          timePerQuestion: record.timePerQuestion,
+          allowSkipping: record.allowSkipping,
+        },
+        { ownerId: record.ownerId }
+      );
 
       quiz.status = record.status as QuizStatus;
       quiz.currentQuestionIndex = record.currentQuestionIndex;
@@ -323,10 +351,16 @@ export class PrismaQuizRepository implements IQuizRepository {
       .sort((a, b) => a.orderIndex - b.orderIndex)
       .map((question) => mapPrismaQuestionToDomain(question));
 
-    const quiz = new Quiz(record.id, record.title, questions, {
-      timePerQuestion: record.timePerQuestion,
-      allowSkipping: record.allowSkipping,
-    });
+    const quiz = new Quiz(
+      record.id,
+      record.title,
+      questions,
+      {
+        timePerQuestion: record.timePerQuestion,
+        allowSkipping: record.allowSkipping,
+      },
+      { ownerId: record.ownerId }
+    );
 
     quiz.status = record.status as QuizStatus;
     quiz.currentQuestionIndex = record.currentQuestionIndex;

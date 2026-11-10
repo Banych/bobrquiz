@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServices } from '@application/services/factories';
 import { UpdateQuizDTO } from '@application/dtos/quiz-admin.dto';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 type RouteContext = {
   params: Promise<{ quizId: string }>;
@@ -12,8 +13,14 @@ type RouteContext = {
  */
 export async function GET(request: Request, context: RouteContext) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { quizId } = await context.params;
     const { quizService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     const quiz = await quizService.getQuizState(quizId);
 
     return NextResponse.json(quiz);
@@ -37,11 +44,17 @@ export async function GET(request: Request, context: RouteContext) {
  */
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { quizId } = await context.params;
     const body = await request.json();
     const data = UpdateQuizDTO.parse(body);
 
     const { quizService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     await quizService.updateQuiz(quizId, data);
 
     return NextResponse.json({ success: true });
@@ -81,8 +94,14 @@ export async function PATCH(request: Request, context: RouteContext) {
  */
 export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { quizId } = await context.params;
     const { quizService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     await quizService.deleteQuiz(quizId);
 
     return NextResponse.json({ success: true });

@@ -132,6 +132,8 @@ yarn prisma:migrate -- --name initial
 yarn prisma:seed
 ```
 
+Set `SEED_QUIZ_OWNER_ID` to the owner's Supabase auth user id (Authentication → Users) first; without it the seed exits before touching the database.
+
 **What this does**:
 - Applies all migrations in `src/infrastructure/database/prisma/migrations/`
 - Populates sample quiz/questions via `seed.ts`
@@ -294,6 +296,8 @@ This:
 # Reset database + seed demo data
 yarn prisma:seed
 ```
+
+Set `SEED_QUIZ_OWNER_ID` to the owner's Supabase auth user id (Authentication → Users) first; without it the seed exits before touching the database.
 
 This runs `src/infrastructure/database/prisma/seed.ts`, which:
 1. Calls `resetDatabase()` (drops all tables, recreates schema)

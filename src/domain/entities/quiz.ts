@@ -24,6 +24,8 @@ export class Quiz {
   settings: QuizSettings;
   answers: Map<string, Answer[]>;
   joinCode?: string;
+  /** Supabase auth user id of the host who owns the quiz; empty until set. */
+  ownerId: string;
 
   constructor(
     id: string,
@@ -32,6 +34,7 @@ export class Quiz {
     settings: QuizSettings,
     options?: {
       joinCode?: string;
+      ownerId?: string;
     }
   ) {
     // Validate scoring settings
@@ -46,6 +49,7 @@ export class Quiz {
     this.settings = settings;
     this.answers = new Map();
     this.joinCode = options?.joinCode;
+    this.ownerId = options?.ownerId ?? '';
   }
 
   private validateScoringSettings(settings: QuizSettings): void {
