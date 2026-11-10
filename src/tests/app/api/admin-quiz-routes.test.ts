@@ -144,6 +144,41 @@ describe('Admin quiz routes ownership', () => {
     });
   });
 
+  describe('a quiz owned by someone else vs a missing quiz', () => {
+    const MISSING_QUIZ = 'quiz-missing';
+    const handlers = [
+      ['GET', (id: string) => getQuiz(jsonRequest({}), ctx(id))],
+      [
+        'PATCH',
+        (id: string) => updateQuiz(jsonRequest({ title: 'New' }), ctx(id)),
+      ],
+      ['DELETE', (id: string) => deleteQuiz(jsonRequest({}), ctx(id))],
+      ['reset', (id: string) => resetQuiz(jsonRequest({}), ctx(id))],
+    ] as const;
+
+    beforeEach(() => {
+      vi.mocked(getCurrentUserId).mockResolvedValue(HOST_B);
+    });
+
+    it.each(handlers)(
+      '%s answers both with the same status and body',
+      async (_name, run) => {
+        const notYours = await run(A_QUIZ);
+        const missing = await run(MISSING_QUIZ);
+
+        expect(notYours.status).toBe(404);
+        expect(missing.status).toBe(notYours.status);
+        // The message echoes the id the caller sent; apart from that id the
+        // two bodies must be identical.
+        const normalize = async (response: Response, id: string) =>
+          JSON.stringify(await response.json()).replaceAll(id, '<id>');
+        expect(await normalize(missing, MISSING_QUIZ)).toBe(
+          await normalize(notYours, A_QUIZ)
+        );
+      }
+    );
+  });
+
   describe('without a session', () => {
     beforeEach(() => {
       vi.mocked(getCurrentUserId).mockResolvedValue(null);
