@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-10: Quiz Owners, Part 1 ✅
+- **2026-11-10** — every quiz has one owner (`Quiz.ownerId`, the Supabase auth user id); the admin quiz routes answer 401 without a session and the same 404 as a missing quiz for someone else's quiz; rolled out on dev and production with two migrations and a backfill (ADR-027). Questions and audit (issue 139) and the live-game routes (issue 140) follow — [PR #141](https://github.com/Banych/bobrquiz/pull/141) — [spec](plans/2026-11-10-quiz-owner-design.md)
+
 ### 2026-11-09: Restore Production, Daily Keepalive ✅
 - **2026-11-09** — production Supabase was paused for inactivity on the Free plan; restored with no pending migrations, a three-player game verified over realtime on bobrquiz.vercel.app, and a daily Vercel cron (`/api/cron/keepalive`) keeps the database awake (ADR-026) — [PR #135](https://github.com/Banych/bobrquiz/pull/135) — [findings](findings/2026-11-09-production-supabase-paused.md)
 
