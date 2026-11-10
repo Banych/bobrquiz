@@ -119,28 +119,40 @@ the end of a session). Paths below are under `src/`.
 **Admin**
 - Quizzes: `app/(admin)/admin/quizzes/page.tsx` → `components/admin/quiz-list.tsx` and the
   `create-`, `edit-`, `delete-quiz-dialog.tsx` → `api/admin/quizzes/**` → quiz CRUD use cases.
+  Ownership: each route reads the user with `infrastructure/auth/get-current-user.ts` (401 when
+  none), lists through `list-quizzes-by-owner.use-case.ts` and runs
+  `assert-quiz-owner.use-case.ts` (404, same as missing) before acting; list items are built by
+  `application/mappers/quiz-list-item-mapper.ts`. Spec:
+  `docs/progress/plans/2026-11-10-quiz-owner-design.md`.
 - Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
   `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
   `reorder`); across quizzes, `app/(admin)/admin/questions` → `all-questions-view.tsx` →
   `api/admin/questions`.
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
-  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`).
+  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
+  is no media API route: both talk to Supabase Storage from the browser.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/`.
 - Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
-  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`.
+  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`. The proxy
+  matches nothing else: `/host`, `/quiz/**` and the host actions under `api/quiz/**` have no
+  login check until the quiz-owner part 3 issue (140) lands.
 
 **Cross-cutting**
 - Composition root `application/services/factories.ts` (`getServices()`); env checks
   `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
-  `infrastructure/database/prisma/seed*.ts`.
+  `infrastructure/database/prisma/seed*.ts` (owner from `SEED_QUIZ_OWNER_ID`); migrations in
+  `infrastructure/database/prisma/migrations/`; one-off owner backfill
+  `assign-quiz-owner.ts` (`yarn quiz:assign-owner`).
 - Keepalive: the daily Vercel cron in `vercel.json` → `api/cron/keepalive` →
   `ping-database.use-case.ts` → `prisma-database-health.repository.ts`. Production Supabase is on
   the Free plan and pauses after a quiet week without it (ADR-026); `Quiz-game-dev` has no
   keepalive and may need restoring before local work.
 - Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
-  (repo root, not `src/`).
+  (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
+  main admin account) and every spec reuses that session; quizzes come from
+  `e2e/support/quiz-fixtures.ts` and stale ones are removed by `e2e/stale-quizzes.cleanup.ts`.
 
 ## Prisma v7 setup (non-standard)
 
@@ -155,6 +167,11 @@ the end of a session). Paths below are under `src/`.
    const prisma = new PrismaClient({ adapter });
    ```
 4. Run `yarn prisma:generate` after every schema change.
+5. CLI commands that reach a database (`migrate status`, `migrate deploy`, `db execute`) get the
+   URL from `prisma.config.ts` (`DIRECT_URL`, else `DATABASE_URL`), which loads only `.env`.
+   This repo keeps its dev values in `.env.local`, so export both variables in the shell first.
+   `db execute` takes no `--schema` flag in Prisma 7 (it fails); `migrate` commands still need
+   it (seen 2026-11-10, Prisma 7.10.1).
 
 ## Testing
 
