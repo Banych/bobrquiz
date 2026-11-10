@@ -191,8 +191,9 @@ them. So export both variables for the target environment in the shell before ev
 
 ```bash
 export DATABASE_URL='<target pooler url>' DIRECT_URL='<target direct url>'
-# Check both hosts (no password printed); they must be the same project before continuing:
-echo "$DATABASE_URL" | sed 's/.*@//'; echo "$DIRECT_URL" | sed 's/.*@//'
+# Print username and host of each URL (no password). The project ref in the DATABASE_URL
+# username (postgres.<ref>@...pooler...) must equal the ref in the DIRECT_URL host (db.<ref>....):
+for u in "$DATABASE_URL" "$DIRECT_URL"; do echo "$u" | sed 's#.*//\([^:]*\):[^@]*@#\1@#'; done
 ```
 
 ### During development (dev only)
