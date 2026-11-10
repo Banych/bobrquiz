@@ -855,6 +855,39 @@ plan; the migration is a row in `docs/parking-lot.md`.
 
 ---
 
+## ADR-027: Every Quiz Has Exactly One Owner (2026-11-10)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-10
+**Decided by**: Vlad (spec: `docs/progress/plans/2026-11-10-quiz-owner-design.md`)
+
+### Decision
+- Every quiz has exactly one owner: the Supabase auth user id in `Quiz.ownerId` (required, indexed).
+  There is no foreign key to `auth.users`: Prisma does not model the `auth` schema, and deleting
+  a user deleting their quizzes is a product decision for later.
+- Someone else's quiz answers 404, identical to a missing quiz, never 403, so a quiz id reveals
+  nothing about who owns it.
+- There is no operator view of other hosts' quizzes. Support goes through the Supabase dashboard
+  and logs when a host asks; a read-only operator view is parked in `docs/parking-lot.md`.
+- API routes and server-component pages may import the current-user helper
+  (`@infrastructure/auth/get-current-user`) to read the signed-in user id. This is the fourth
+  layer exception, like the broadcasters in ADR-024.
+- Rollout is two migrations with a backfill script between them: migration 1 adds `ownerId`
+  nullable, a one-off script (`yarn quiz:assign-owner`) gives every existing quiz to the main
+  account, and migration 2 sets NOT NULL (it fails loudly if any quiz still has no owner). The
+  owner's user id differs per Supabase project and is not committed.
+
+### Rationale
+- Hosts need their own quizzes before more than one person can use the product.
+- A 404 for both cases is the one answer that leaks nothing.
+
+### Consequences
+- Parts 2 and 3 move the remaining admin and live-game routes onto the same guard.
+- The owner guard loads the whole quiz to compare one column; part 3 should add a select-only
+  owner lookup before using it per host action.
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)
@@ -863,6 +896,7 @@ plan; the migration is a row in `docs/parking-lot.md`.
 
 ### TBD: Multi-tenancy / Teams (Post-launch)
 - Support org-based quiz ownership
+  (ADR-027 settles one owner per quiz for now; orgs would build on top of it.)
 - RLS policies gate access per org
 
 ---

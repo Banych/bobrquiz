@@ -125,7 +125,9 @@ routes only. That relies on quiz ids being unguessable, and is accepted for this
   `auth.users`: Prisma doesn't model the `auth` schema, and deleting a user deleting their
   quizzes is a product decision for later. (My call.)
 - Existing quizzes go to Vlad's main account in each environment (Vlad, 2026-11-10). The e2e
-  account owns only what its tests create.
+  account is the main account (`TEST_ADMIN_EMAIL`, the one that owns the backfilled quizzes), so
+  the quizzes its tests create are owned by that account; `e2e/stale-quizzes.cleanup.ts` deletes
+  only the "E2E fixture" quizzes it sees there.
 - Migrations are applied by hand with `prisma migrate deploy`; nothing runs them on deploy, and
   a merge to `master` deploys production automatically (ADR-019). Local dev and every PR preview
   share the `Quiz-game-dev` database (ADR-018). Because the owner's user id differs per Supabase
@@ -153,8 +155,9 @@ routes only. That relies on quiz ids being unguessable, and is accepted for this
   variable (an email or a user id), and fail with a clear message if it is unset.
 - **e2e** (`e2e/support/quiz-fixtures.ts`): `createAdminApi()` already creates and starts quizzes
   with the signed-in e2e admin's session, so they own them; no change there.
-  `e2e/stale-quizzes.cleanup.ts` now sees only the e2e account's quizzes, which is what it should
-  delete. Every spec runs signed in (`playwright.config.ts`), so add one player join-and-answer
+  `e2e/stale-quizzes.cleanup.ts` now sees only the signed-in account's quizzes (the main
+  account, which also owns the backfilled ones; the cleanup deletes only "E2E fixture" titles).
+  Every spec runs signed in (`playwright.config.ts`), so add one player join-and-answer
   test with no session, to catch a player flow that starts requiring a login.
 - **Load tests** (`tests/load/*.js`, run by hand): call `/api/quiz/start` and
   `/api/quiz/[quizId]/advance` anonymously (`answer-submission-storm.js`) and use a quiz id
@@ -191,22 +194,29 @@ them. So export both variables for the target environment in the shell before ev
 
 ```bash
 export DATABASE_URL='<target pooler url>' DIRECT_URL='<target direct url>'
-# Print username and host of each URL (no password). The project ref in the DATABASE_URL
-# username (postgres.<ref>@...pooler...) must equal the ref in the DIRECT_URL host (db.<ref>....):
-for u in "$DATABASE_URL" "$DIRECT_URL"; do echo "$u" | sed 's#.*//\([^:]*\):[^@]*@#\1@#'; done
+# Print username and host of each URL (no password; the host is the text after the LAST @,
+# so a password containing @ does not leak). The project ref must be the same in both URLs: it
+# appears as postgres.<ref> in a pooler username or as db.<ref> in a direct host.
+for u in "$DATABASE_URL" "$DIRECT_URL"; do echo "$u" | sed -E 's#^[a-z]+://([^:]*):.*@([^@]*)$#\1@\2#'; done
 ```
+
+Start the `export` line with a space (zsh `HIST_IGNORE_SPACE`) or load the values from a file, so
+the URLs do not land in shell history.
 
 ### During development (dev only)
 
 0. List the leftover "E2E fixture" quizzes, and delete them only after Vlad says yes (they have
    no owner and would otherwise be handed to the real owner):
    `SELECT id, title FROM "Quiz" WHERE title LIKE 'E2E fixture %';` in the Supabase SQL editor.
-1. Apply migration 1 alone (nullable column and index), then mark it applied:
+   After the yes, delete by the listed ids:
+   `DELETE FROM "Quiz" WHERE id IN (...) AND title LIKE 'E2E fixture %';`. Child rows cascade
+   (players, answers, questions, snapshots); audit logs keep their rows with `quizId` set to null.
+1. Apply migration 1 alone (nullable column and index), then mark it applied. `db execute` takes
+   no `--schema` flag in Prisma 7.10.1 (it fails), and `&&` keeps a failed execute from being
+   recorded as applied:
    ```bash
-   yarn prisma db execute --schema ./src/infrastructure/database/prisma/schema.prisma \
-     --file ./src/infrastructure/database/prisma/migrations/20261110100000_add_quiz_owner/migration.sql
-   yarn prisma migrate resolve --schema ./src/infrastructure/database/prisma/schema.prisma \
-     --applied 20261110100000_add_quiz_owner
+   yarn -s prisma db execute --file ./src/infrastructure/database/prisma/migrations/20261110100000_add_quiz_owner/migration.sql \
+     && yarn -s prisma migrate resolve --schema ./src/infrastructure/database/prisma/schema.prisma --applied 20261110100000_add_quiz_owner
    ```
 2. Backfill: copy the owner's user id from the Supabase dashboard (Authentication > Users), then
    ```bash
