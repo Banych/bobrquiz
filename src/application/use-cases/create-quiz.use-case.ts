@@ -12,7 +12,7 @@ export class CreateQuizUseCase {
     private readonly auditLogRepository?: IAuditLogRepository
   ) {}
 
-  async execute(data: CreateQuizDTO): Promise<string> {
+  async execute(data: CreateQuizDTO, ownerId: string): Promise<string> {
     const settings: QuizSettings = {
       timePerQuestion: data.timePerQuestion,
       allowSkipping: data.allowSkipping,
@@ -24,7 +24,7 @@ export class CreateQuizUseCase {
       data.title,
       [], // No questions initially
       settings,
-      { joinCode }
+      { joinCode, ownerId }
     );
 
     const savedQuiz = await this.quizRepository.create(quiz);

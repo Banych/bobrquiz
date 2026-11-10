@@ -30,12 +30,15 @@ describe('CreateQuizUseCase', () => {
 
     vi.spyOn(mockQuizRepository, 'create').mockResolvedValueOnce(mockSavedQuiz);
 
-    const result = await createQuizUseCase.execute({
-      title: 'Test Quiz',
-      timePerQuestion: 30,
-      allowSkipping: false,
-      scoringAlgorithm: 'EXPONENTIAL_DECAY',
-    });
+    const result = await createQuizUseCase.execute(
+      {
+        title: 'Test Quiz',
+        timePerQuestion: 30,
+        allowSkipping: false,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      },
+      'owner-1'
+    );
 
     expect(result).toBe('quiz-123');
     expect(mockQuizRepository.create).toHaveBeenCalledTimes(1);
@@ -52,19 +55,25 @@ describe('CreateQuizUseCase', () => {
     vi.spyOn(mockQuizRepository, 'create').mockResolvedValue(mockSavedQuiz);
 
     // Create multiple quizzes
-    await createQuizUseCase.execute({
-      title: 'Quiz 1',
-      timePerQuestion: 30,
-      allowSkipping: false,
-      scoringAlgorithm: 'EXPONENTIAL_DECAY',
-    });
+    await createQuizUseCase.execute(
+      {
+        title: 'Quiz 1',
+        timePerQuestion: 30,
+        allowSkipping: false,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      },
+      'owner-1'
+    );
 
-    await createQuizUseCase.execute({
-      title: 'Quiz 2',
-      timePerQuestion: 30,
-      allowSkipping: false,
-      scoringAlgorithm: 'EXPONENTIAL_DECAY',
-    });
+    await createQuizUseCase.execute(
+      {
+        title: 'Quiz 2',
+        timePerQuestion: 30,
+        allowSkipping: false,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      },
+      'owner-1'
+    );
 
     const calls = vi.mocked(mockQuizRepository.create).mock.calls;
     const joinCode1 = calls[0][0].joinCode;
@@ -75,17 +84,39 @@ describe('CreateQuizUseCase', () => {
     expect(joinCode2).toMatch(/^JOIN-[A-Z2-9]{4}$/);
   });
 
+  it('passes the caller-supplied owner to the repository', async () => {
+    vi.spyOn(mockQuizRepository, 'create').mockResolvedValueOnce({
+      id: 'quiz-789',
+    } as Quiz);
+
+    await createQuizUseCase.execute(
+      {
+        title: 'Owned Quiz',
+        timePerQuestion: 30,
+        allowSkipping: false,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      },
+      'owner-42'
+    );
+
+    const createCall = vi.mocked(mockQuizRepository.create).mock.calls[0][0];
+    expect(createCall.ownerId).toBe('owner-42');
+  });
+
   it('should create a quiz with correct settings', async () => {
     const mockSavedQuiz = { id: 'quiz-456' } as Quiz;
 
     vi.spyOn(mockQuizRepository, 'create').mockResolvedValueOnce(mockSavedQuiz);
 
-    await createQuizUseCase.execute({
-      title: 'My Quiz',
-      timePerQuestion: 45,
-      allowSkipping: true,
-      scoringAlgorithm: 'EXPONENTIAL_DECAY',
-    });
+    await createQuizUseCase.execute(
+      {
+        title: 'My Quiz',
+        timePerQuestion: 45,
+        allowSkipping: true,
+        scoringAlgorithm: 'EXPONENTIAL_DECAY',
+      },
+      'owner-1'
+    );
 
     const createCall = vi.mocked(mockQuizRepository.create).mock.calls[0][0];
     expect(createCall.title).toBe('My Quiz');
@@ -114,12 +145,15 @@ describe('CreateQuizUseCase', () => {
         mockQuizRepository,
         auditLogRepository
       );
-      await useCase.execute({
-        title: 'Test Quiz',
-        timePerQuestion: 30,
-        allowSkipping: false,
-        scoringAlgorithm: 'EXPONENTIAL_DECAY',
-      });
+      await useCase.execute(
+        {
+          title: 'Test Quiz',
+          timePerQuestion: 30,
+          allowSkipping: false,
+          scoringAlgorithm: 'EXPONENTIAL_DECAY',
+        },
+        'owner-1'
+      );
       await new Promise((r) => setImmediate(r));
 
       expect(auditLogRepository.save).toHaveBeenCalledWith(
@@ -140,12 +174,15 @@ describe('CreateQuizUseCase', () => {
       );
 
       await expect(
-        useCase.execute({
-          title: 'Test Quiz',
-          timePerQuestion: 30,
-          allowSkipping: false,
-          scoringAlgorithm: 'EXPONENTIAL_DECAY',
-        })
+        useCase.execute(
+          {
+            title: 'Test Quiz',
+            timePerQuestion: 30,
+            allowSkipping: false,
+            scoringAlgorithm: 'EXPONENTIAL_DECAY',
+          },
+          'owner-1'
+        )
       ).resolves.not.toThrow();
     });
   });
