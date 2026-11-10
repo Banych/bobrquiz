@@ -18,6 +18,9 @@ const mapToDTO = (log: AuditLog): AuditLogDTO => ({
   createdAt: log.createdAt.toISOString(),
 });
 
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 500;
+
 export class ListAuditLogsUseCase {
   constructor(private readonly auditLogRepository: IAuditLogRepository) {}
 
@@ -32,7 +35,7 @@ export class ListAuditLogsUseCase {
   }): Promise<AuditLogDTO[]> {
     const logs = await this.auditLogRepository.findForOwner(params.ownerId, {
       quizId: params.quizId,
-      limit: params.limit ?? 100,
+      limit: Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT),
     });
     return logs.map(mapToDTO);
   }

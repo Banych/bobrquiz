@@ -77,6 +77,17 @@ describe('ListAuditLogsUseCase', () => {
     });
   });
 
+  it('caps the limit at 500', async () => {
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([]);
+
+    await useCase.execute({ ownerId: OWNER, limit: 2_147_483_648 });
+
+    expect(mockAuditRepo.findForOwner).toHaveBeenCalledWith(OWNER, {
+      quizId: undefined,
+      limit: 500,
+    });
+  });
+
   it('returns empty array when no logs exist', async () => {
     vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([]);
 

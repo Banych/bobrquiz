@@ -15,13 +15,13 @@ export default function AdminQuestionsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Questions</h1>
         <p className="text-muted-foreground">
-          Browse and manage questions across all quizzes
+          Browse and manage questions across your quizzes
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Questions</CardTitle>
+          <CardTitle>Your Questions</CardTitle>
           <CardDescription>
             Filter by quiz or manage individual questions
           </CardDescription>
