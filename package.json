@@ -13,6 +13,7 @@
     "prisma:migrate": "prisma migrate dev --schema ./src/infrastructure/database/prisma/schema.prisma",
     "prisma:seed": "prisma db seed --schema ./src/infrastructure/database/prisma/schema.prisma",
     "seed:demo": "tsx src/infrastructure/database/prisma/seed-launch-demo.ts",
+    "quiz:assign-owner": "tsx src/infrastructure/database/prisma/assign-quiz-owner.ts",
     "test": "vitest",
     "test:run": "vitest --run",
     "test:watch": "vitest --watch",

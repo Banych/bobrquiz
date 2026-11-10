@@ -179,3 +179,33 @@ routes only. That relies on quiz ids being unguessable, and is accepted for this
 - Whether each use case gains an owner argument or a single "load owned quiz" step guards them.
 - Test layout, as long as it follows the repo's testing table.
 - How the e2e and load-test sessions are wired.
+
+## Rollout runbook
+
+Run per environment: dev during development, then dev and production right before the merge.
+Never run these by accident: `DATABASE_URL` and `DIRECT_URL` (from `.env`) decide which database
+each command hits. `prisma.config.ts` makes migrations use `DIRECT_URL`, falling back to
+`DATABASE_URL`; the backfill script and `db execute` need the same check. Point both at the
+target environment first, and confirm with `echo "$DIRECT_URL" | sed 's/:[^:@]*@/:***@/'`.
+
+0. Dev only: list the leftover "E2E fixture" quizzes, and delete them only after Vlad says yes
+   (they have no owner and would otherwise be handed to the real owner):
+   `SELECT id, title FROM "Quiz" WHERE title LIKE 'E2E fixture %';` in the Supabase SQL editor.
+1. Apply migration 1 alone (nullable column and index), then mark it applied:
+   ```bash
+   yarn prisma db execute --schema ./src/infrastructure/database/prisma/schema.prisma \
+     --file ./src/infrastructure/database/prisma/migrations/20261110100000_add_quiz_owner/migration.sql
+   yarn prisma migrate resolve --schema ./src/infrastructure/database/prisma/schema.prisma \
+     --applied 20261110100000_add_quiz_owner
+   ```
+2. Backfill: copy the owner's user id from the Supabase dashboard (Authentication > Users), then
+   ```bash
+   yarn quiz:assign-owner <owner-user-id>
+   ```
+   It prints how many quizzes it changed and how many still have no owner (must be 0). A value
+   that is not a uuid exits non-zero and changes nothing.
+3. Apply migration 2 (`SET NOT NULL`; it fails if any quiz still has no owner):
+   ```bash
+   yarn prisma migrate deploy --schema ./src/infrastructure/database/prisma/schema.prisma
+   ```
+4. Merge the PR.
