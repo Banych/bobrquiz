@@ -4,6 +4,7 @@ import {
   CreateQuestionDTO,
   QuestionListItemDTO,
 } from '@application/dtos/question-admin.dto';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 /**
  * GET /api/admin/quizzes/[quizId]/questions
@@ -14,10 +15,14 @@ export async function GET(
   context: { params: Promise<{ quizId: string }> }
 ) {
   try {
-    const params = await context.params;
-    const { quizId } = params;
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { questionService } = getServices();
+    const { quizId } = await context.params;
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     const questions = await questionService.listQuizQuestions(quizId);
 
     return NextResponse.json(questions);
@@ -42,14 +47,19 @@ export async function POST(
   context: { params: Promise<{ quizId: string }> }
 ) {
   try {
-    const params = await context.params;
-    const { quizId } = params;
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { quizId } = await context.params;
     const body = await request.json();
 
     // Validate and parse request body
     const dto = CreateQuestionDTO.parse({ ...body, quizId });
 
-    const { questionService } = getServices();
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     const question = await questionService.createQuestion(dto);
 
     // Return lightweight DTO

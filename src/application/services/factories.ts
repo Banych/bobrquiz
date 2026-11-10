@@ -36,6 +36,7 @@ import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import { CreateQuestionUseCase } from '@application/use-cases/create-question.use-case';
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
+import { GetQuizQuestionUseCase } from '@application/use-cases/get-quiz-question.use-case';
 import { ListQuizQuestionsUseCase } from '@application/use-cases/list-quiz-questions.use-case';
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
 import { ListAllQuestionsUseCase } from '@application/use-cases/list-all-questions.use-case';
@@ -52,13 +53,18 @@ type QuestionService = {
     dto: CreateQuestionDTO
   ) => ReturnType<CreateQuestionUseCase['execute']>;
   updateQuestion: (
-    id: string,
+    quizId: string,
+    questionId: string,
     dto: UpdateQuestionDTO
   ) => ReturnType<UpdateQuestionUseCase['execute']>;
-  deleteQuestion: (id: string) => ReturnType<DeleteQuestionUseCase['execute']>;
-  getQuestionById: (
-    id: string
-  ) => Promise<import('@domain/entities/question').Question | null>;
+  deleteQuestion: (
+    quizId: string,
+    questionId: string
+  ) => ReturnType<DeleteQuestionUseCase['execute']>;
+  getQuizQuestion: (
+    quizId: string,
+    questionId: string
+  ) => ReturnType<GetQuizQuestionUseCase['execute']>;
   listQuizQuestions: (
     quizId: string
   ) => ReturnType<ListQuizQuestionsUseCase['execute']>;
@@ -236,6 +242,7 @@ export const getServices = (): ServiceContainer => {
   );
   const updateQuestionUseCase = new UpdateQuestionUseCase(questionRepository);
   const deleteQuestionUseCase = new DeleteQuestionUseCase(questionRepository);
+  const getQuizQuestionUseCase = new GetQuizQuestionUseCase(questionRepository);
   const listQuizQuestionsUseCase = new ListQuizQuestionsUseCase(
     questionRepository
   );
@@ -256,9 +263,12 @@ export const getServices = (): ServiceContainer => {
 
   const questionService: QuestionService = {
     createQuestion: (dto) => createQuestionUseCase.execute(dto),
-    updateQuestion: (id, dto) => updateQuestionUseCase.execute(id, dto),
-    deleteQuestion: (id) => deleteQuestionUseCase.execute(id),
-    getQuestionById: (id) => questionRepository.findById(id),
+    updateQuestion: (quizId, questionId, dto) =>
+      updateQuestionUseCase.execute(quizId, questionId, dto),
+    deleteQuestion: (quizId, questionId) =>
+      deleteQuestionUseCase.execute(quizId, questionId),
+    getQuizQuestion: (quizId, questionId) =>
+      getQuizQuestionUseCase.execute(quizId, questionId),
     listQuizQuestions: (quizId) => listQuizQuestionsUseCase.execute(quizId),
     reorderQuestions: (dto, quizId) =>
       reorderQuestionsUseCase.execute(dto, quizId),
