@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-10: Quiz Owners, Part 2 ✅
+- **2026-11-10** — the admin question routes, the cross-quiz question list and the audit log answer only to the quiz's owner: 401 without a session, the same 404 as a missing quiz for someone else's, and a question from another quiz is "not found" like a missing one; the audit log no longer shows logs whose quiz was deleted. No migration. The live-game routes (issue 140) follow — [PR #143](https://github.com/Banych/bobrquiz/pull/143) — [PR #144](https://github.com/Banych/bobrquiz/pull/144) — [spec](plans/2026-11-10-quiz-owner-design.md)
+
 ### 2026-11-10: Quiz Owners, Part 1 ✅
 - **2026-11-10** — every quiz has one owner (`Quiz.ownerId`, the Supabase auth user id); the admin quiz routes answer 401 without a session and the same 404 as a missing quiz for someone else's quiz; rolled out on dev and production with two migrations and a backfill (ADR-027). Questions and audit (issue 139) and the live-game routes (issue 140) follow — [PR #141](https://github.com/Banych/bobrquiz/pull/141) — [spec](plans/2026-11-10-quiz-owner-design.md)
 
