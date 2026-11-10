@@ -182,14 +182,23 @@ routes only. That relies on quiz ids being unguessable, and is accepted for this
 
 ## Rollout runbook
 
-Run per environment: dev during development, then dev and production right before the merge.
-Never run these by accident: `DATABASE_URL` and `DIRECT_URL` (from `.env`) decide which database
-each command hits. `prisma.config.ts` makes migrations use `DIRECT_URL`, falling back to
-`DATABASE_URL`; the backfill script and `db execute` need the same check. Point both at the
-target environment first, and confirm with `echo "$DIRECT_URL" | sed 's/:[^:@]*@/:***@/'`.
+Which database a command hits is decided by `DATABASE_URL` (the backfill script and
+`db execute` through the client) and `DIRECT_URL` (migrations: `prisma.config.ts` uses
+`DIRECT_URL`, falling back to `DATABASE_URL`). Both `prisma.config.ts` and the script load only
+`.env`, which this repo does not have: `.env.local` holds the dev values and is not read by
+them. So export both variables for the target environment in the shell before every command
+(shell variables win over dotenv), from the Supabase dashboard of that project:
 
-0. Dev only: list the leftover "E2E fixture" quizzes, and delete them only after Vlad says yes
-   (they have no owner and would otherwise be handed to the real owner):
+```bash
+export DATABASE_URL='<target pooler url>' DIRECT_URL='<target direct url>'
+# Check both hosts (no password printed); they must be the same project before continuing:
+echo "$DATABASE_URL" | sed 's/.*@//'; echo "$DIRECT_URL" | sed 's/.*@//'
+```
+
+### During development (dev only)
+
+0. List the leftover "E2E fixture" quizzes, and delete them only after Vlad says yes (they have
+   no owner and would otherwise be handed to the real owner):
    `SELECT id, title FROM "Quiz" WHERE title LIKE 'E2E fixture %';` in the Supabase SQL editor.
 1. Apply migration 1 alone (nullable column and index), then mark it applied:
    ```bash
@@ -204,8 +213,17 @@ target environment first, and confirm with `echo "$DIRECT_URL" | sed 's/:[^:@]*@
    ```
    It prints how many quizzes it changed and how many still have no owner (must be 0). A value
    that is not a uuid exits non-zero and changes nothing.
-3. Apply migration 2 (`SET NOT NULL`; it fails if any quiz still has no owner):
+
+Do not run migration 2 on dev yet.
+
+### Right before merge
+
+Dev first, then production, each with its own exported URLs:
+
+3. Dev: apply migration 2 (`SET NOT NULL`; it fails if any quiz still has no owner):
    ```bash
    yarn prisma migrate deploy --schema ./src/infrastructure/database/prisma/schema.prisma
    ```
-4. Merge the PR.
+4. Production: step 1 (migration 1 and `migrate resolve`), step 2 (the backfill with the
+   production owner's user id), then step 3 (`migrate deploy`).
+5. Merge the PR.
