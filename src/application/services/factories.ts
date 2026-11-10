@@ -73,6 +73,7 @@ type QuestionService = {
     quizId: string
   ) => ReturnType<ReorderQuestionsUseCase['execute']>;
   listAllQuestions: (params: {
+    ownerId: string;
     quizId?: string;
     type?: string;
   }) => ReturnType<ListAllQuestionsUseCase['execute']>;
@@ -80,6 +81,7 @@ type QuestionService = {
 
 type AuditService = {
   listAuditLogs: (params: {
+    ownerId: string;
     quizId?: string;
     limit?: number;
   }) => ReturnType<ListAuditLogsUseCase['execute']>;

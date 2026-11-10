@@ -3,13 +3,14 @@ import { ListAuditLogsUseCase } from '@application/use-cases/audit/list-audit-lo
 import type { IAuditLogRepository } from '@domain/repositories/audit-log-repository';
 import { AuditLog, AuditEventType } from '@domain/entities/audit-log';
 
+const OWNER = 'owner-1';
+
 const makeLog = (id: string, eventType: AuditEventType, quizId?: string) =>
   new AuditLog(id, eventType, { quizId, createdAt: new Date('2026-01-01') });
 
 const mockAuditRepo: IAuditLogRepository = {
   save: vi.fn(),
-  findByQuizId: vi.fn(),
-  findRecent: vi.fn(),
+  findForOwner: vi.fn(),
 };
 
 describe('ListAuditLogsUseCase', () => {
@@ -20,40 +21,44 @@ describe('ListAuditLogsUseCase', () => {
     useCase = new ListAuditLogsUseCase(mockAuditRepo);
   });
 
-  it('returns recent logs when no quizId provided', async () => {
-    vi.mocked(mockAuditRepo.findRecent).mockResolvedValueOnce([
+  it("asks only for the owner's logs, with the default limit", async () => {
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([
       makeLog('l-1', AuditEventType.QuizCreated, 'q-1'),
       makeLog('l-2', AuditEventType.QuizStarted, 'q-1'),
     ]);
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
-    expect(mockAuditRepo.findRecent).toHaveBeenCalledWith(100);
-    expect(mockAuditRepo.findByQuizId).not.toHaveBeenCalled();
+    expect(mockAuditRepo.findForOwner).toHaveBeenCalledWith(OWNER, {
+      quizId: undefined,
+      limit: 100,
+    });
     expect(result).toHaveLength(2);
   });
 
-  it('uses findByQuizId when quizId is provided', async () => {
-    vi.mocked(mockAuditRepo.findByQuizId).mockResolvedValueOnce([
+  it('passes the quizId filter through, scoped to the owner', async () => {
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([
       makeLog('l-1', AuditEventType.QuizCreated, 'q-1'),
     ]);
 
-    const result = await useCase.execute({ quizId: 'q-1' });
+    const result = await useCase.execute({ ownerId: OWNER, quizId: 'q-1' });
 
-    expect(mockAuditRepo.findByQuizId).toHaveBeenCalledWith('q-1', 100);
-    expect(result).toHaveLength(1);
+    expect(mockAuditRepo.findForOwner).toHaveBeenCalledWith(OWNER, {
+      quizId: 'q-1',
+      limit: 100,
+    });
     expect(result[0].quizId).toBe('q-1');
   });
 
   it('maps event types to human-readable summaries', async () => {
-    vi.mocked(mockAuditRepo.findRecent).mockResolvedValueOnce([
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([
       makeLog('l-1', AuditEventType.QuizCreated),
       makeLog('l-2', AuditEventType.QuizStarted),
       makeLog('l-3', AuditEventType.QuestionAdvanced),
       makeLog('l-4', AuditEventType.QuestionLocked),
     ]);
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
     expect(result[0].summary).toBe('Quiz created');
     expect(result[1].summary).toBe('Quiz started');
@@ -62,24 +67,38 @@ describe('ListAuditLogsUseCase', () => {
   });
 
   it('respects custom limit', async () => {
-    vi.mocked(mockAuditRepo.findRecent).mockResolvedValueOnce([]);
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([]);
 
-    await useCase.execute({ limit: 25 });
+    await useCase.execute({ ownerId: OWNER, limit: 25 });
 
-    expect(mockAuditRepo.findRecent).toHaveBeenCalledWith(25);
+    expect(mockAuditRepo.findForOwner).toHaveBeenCalledWith(OWNER, {
+      quizId: undefined,
+      limit: 25,
+    });
+  });
+
+  it('caps the limit at 500', async () => {
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([]);
+
+    await useCase.execute({ ownerId: OWNER, limit: 2_147_483_648 });
+
+    expect(mockAuditRepo.findForOwner).toHaveBeenCalledWith(OWNER, {
+      quizId: undefined,
+      limit: 500,
+    });
   });
 
   it('returns empty array when no logs exist', async () => {
-    vi.mocked(mockAuditRepo.findRecent).mockResolvedValueOnce([]);
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([]);
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
     expect(result).toHaveLength(0);
   });
 
   it('maps DTOs with correct shape', async () => {
     const date = new Date('2026-01-01T00:00:00Z');
-    vi.mocked(mockAuditRepo.findRecent).mockResolvedValueOnce([
+    vi.mocked(mockAuditRepo.findForOwner).mockResolvedValueOnce([
       new AuditLog('l-1', AuditEventType.QuizCreated, {
         quizId: 'q-1',
         metadata: { title: 'My Quiz' },
@@ -87,7 +106,7 @@ describe('ListAuditLogsUseCase', () => {
       }),
     ]);
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
     expect(result[0]).toMatchObject({
       id: 'l-1',

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getServices } from '@application/services/factories';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 export async function GET(request: Request) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const quizId = searchParams.get('quizId') ?? undefined;
     const limitParam = searchParams.get('limit');
@@ -14,7 +20,11 @@ export async function GET(request: Request) {
         : undefined;
 
     const { auditService } = getServices();
-    const logs = await auditService.listAuditLogs({ quizId, limit });
+    const logs = await auditService.listAuditLogs({
+      ownerId: userId,
+      quizId,
+      limit,
+    });
 
     return NextResponse.json(logs);
   } catch (error) {
