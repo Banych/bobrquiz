@@ -33,6 +33,30 @@ const fetchPlayerConnectionStatus = async (
 };
 
 /**
+ * Remove a player as the host. Throws on any non-2xx answer (401 when the host's
+ * session is gone, 404 for a quiz they don't own or a missing player), so the
+ * mutations' onError runs instead of treating the refusal as success.
+ */
+export const deletePlayer = async (
+  quizId: string,
+  playerId: string,
+  reason: 'kicked' | 'timeout'
+): Promise<void> => {
+  const response = await fetch(`/api/quiz/${quizId}/player/${playerId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const { error } = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new Error(error ?? 'Unable to remove player.');
+  }
+};
+
+/**
  * Hook for hosts to fetch and poll player connection status
  *
  * Features:
@@ -87,12 +111,7 @@ export function useHostQuizPlayers(
     }: {
       playerId: string;
       reason: 'kicked' | 'timeout';
-    }) =>
-      fetch(`/api/quiz/${quizId}/player/${playerId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      }),
+    }) => deletePlayer(quizId, playerId, reason),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: playerConnectionStatusQueryKey(quizId),
@@ -101,12 +120,7 @@ export function useHostQuizPlayers(
   });
 
   const kickPlayerMutation = useMutation({
-    mutationFn: (playerId: string) =>
-      fetch(`/api/quiz/${quizId}/player/${playerId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: 'kicked' }),
-      }),
+    mutationFn: (playerId: string) => deletePlayer(quizId, playerId, 'kicked'),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: playerConnectionStatusQueryKey(quizId),

@@ -1,5 +1,8 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { playerConnectionStatusQueryKey } from '@hooks/use-host-quiz-players';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import {
+  deletePlayer,
+  playerConnectionStatusQueryKey,
+} from '@hooks/use-host-quiz-players';
 import type { PlayerConnectionStatusDTO } from '@application/dtos/player-connection-status.dto';
 
 describe('useHostQuizPlayers', () => {
@@ -83,5 +86,49 @@ describe('useHostQuizPlayers', () => {
       expect(statuses).toContain('away');
       expect(statuses).toContain('disconnected');
     });
+  });
+});
+
+describe('deletePlayer', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends the reason in a DELETE to the player route', async () => {
+    fetchMock.mockResolvedValue(Response.json({ success: true }));
+
+    await deletePlayer('quiz-1', 'player-1', 'timeout');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/quiz/quiz-1/player/player-1', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'timeout' }),
+    });
+  });
+
+  it.each([
+    [401, 'Unauthorized'],
+    [404, 'Quiz with ID quiz-1 not found'],
+  ])('rejects with the route error on %i', async (status, error) => {
+    fetchMock.mockResolvedValue(Response.json({ error }, { status }));
+
+    await expect(deletePlayer('quiz-1', 'player-1', 'kicked')).rejects.toThrow(
+      error
+    );
+  });
+
+  it('rejects with a fallback message when the error body is not JSON', async () => {
+    fetchMock.mockResolvedValue(new Response('oops', { status: 500 }));
+
+    await expect(deletePlayer('quiz-1', 'player-1', 'kicked')).rejects.toThrow(
+      'Unable to remove player.'
+    );
   });
 });
