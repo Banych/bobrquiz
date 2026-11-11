@@ -22,6 +22,10 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-11: Quiz Owners, Part 3 ✅
+- **2026-11-11** — `/host` and `/quiz/**` need a signed-in admin (proxy), `/host` lists only the user's quizzes, and the dashboard and live pages show not-found for someone else's quiz; a signed-out e2e spec covers the redirects and a player joining and answering with no session. Closes issue 140 and the quiz-owner design — [PR #151](https://github.com/Banych/bobrquiz/pull/151) — [spec](plans/2026-11-10-quiz-owner-design.md)
+- **2026-11-11** — the live-game host routes under `api/quiz/**` (start, advance, finish, lock, reset, timer reset, leaderboard snapshot, player lists, kick) answer 401 without a session and the same 404 as a missing quiz for someone else's; player routes stay anonymous; the k6 load tests send the owner's session from `HOST_COOKIE` — [PR #150](https://github.com/Banych/bobrquiz/pull/150) — [spec](plans/2026-11-10-quiz-owner-design.md)
+
 ### 2026-11-10: Quiz Owners, Part 2 ✅
 - **2026-11-10** — the admin question routes, the cross-quiz question list and the audit log answer only to the quiz's owner: 401 without a session, the same 404 as a missing quiz for someone else's, and a question from another quiz is "not found" like a missing one; the audit log no longer shows logs whose quiz was deleted. No migration. The live-game routes (issue 140) follow — [PR #143](https://github.com/Banych/bobrquiz/pull/143) — [PR #144](https://github.com/Banych/bobrquiz/pull/144) — [spec](plans/2026-11-10-quiz-owner-design.md)
 

@@ -1,6 +1,6 @@
 # Quiz owners: every quiz belongs to one host (issue 127)
 
-Status: Approved design (Vlad, 2026-11-10), in progress
+Status: ✅ Complete — PR #141, #143, #144, #150, #151
 
 ## Why
 
