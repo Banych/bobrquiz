@@ -29,7 +29,6 @@ import { LockQuestionUseCase } from '@application/use-cases/lock-question.use-ca
 import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
-import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
 import { ListQuizzesByOwnerUseCase } from '@application/use-cases/list-quizzes-by-owner.use-case';
 import { AssertQuizOwnerUseCase } from '@application/use-cases/assert-quiz-owner.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
@@ -201,7 +200,6 @@ export const getServices = (): ServiceContainer => {
   );
   const updateQuizUseCase = new UpdateQuizUseCase(quizRepository);
   const deleteQuizUseCase = new DeleteQuizUseCase(quizRepository);
-  const listAllQuizzesUseCase = new ListAllQuizzesUseCase(quizRepository);
   const resetQuizUseCase = new ResetQuizUseCase(quizRepository);
   const listQuizzesByOwnerUseCase = new ListQuizzesByOwnerUseCase(
     quizRepository
@@ -220,7 +218,6 @@ export const getServices = (): ServiceContainer => {
     createQuizUseCase,
     updateQuizUseCase,
     deleteQuizUseCase,
-    listAllQuizzesUseCase,
     resetQuizUseCase,
     listQuizzesByOwnerUseCase,
     assertQuizOwnerUseCase

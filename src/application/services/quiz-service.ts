@@ -24,7 +24,6 @@ import { LockQuestionUseCase } from '@application/use-cases/lock-question.use-ca
 import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
-import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
 import { ListQuizzesByOwnerUseCase } from '@application/use-cases/list-quizzes-by-owner.use-case';
 import { AssertQuizOwnerUseCase } from '@application/use-cases/assert-quiz-owner.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
@@ -43,7 +42,6 @@ export class QuizService {
     private readonly createQuizUseCase: CreateQuizUseCase,
     private readonly updateQuizUseCase: UpdateQuizUseCase,
     private readonly deleteQuizUseCase: DeleteQuizUseCase,
-    private readonly listAllQuizzesUseCase: ListAllQuizzesUseCase,
     private readonly resetQuizUseCase: ResetQuizUseCase,
     private readonly listQuizzesByOwnerUseCase: ListQuizzesByOwnerUseCase,
     private readonly assertQuizOwnerUseCase: AssertQuizOwnerUseCase
@@ -97,10 +95,6 @@ export class QuizService {
 
   async deleteQuiz(quizId: string): Promise<void> {
     return this.deleteQuizUseCase.execute(quizId);
-  }
-
-  async listAllQuizzes(): Promise<QuizListItemDTO[]> {
-    return this.listAllQuizzesUseCase.execute();
   }
 
   async listQuizzesByOwner(ownerId: string): Promise<QuizListItemDTO[]> {

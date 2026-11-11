@@ -1,5 +1,7 @@
 import { getServices } from '@application/services/factories';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,8 +22,15 @@ export const metadata: Metadata = {
 };
 
 export default async function HostPage() {
+  // The proxy already sends signed-out visitors to login; this covers a session that
+  // ends between the proxy and the page
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    redirect('/login?redirect=%2Fhost');
+  }
+
   const { quizService } = getServices();
-  const quizzes = await quizService.listAllQuizzes();
+  const quizzes = await quizService.listQuizzesByOwner(userId);
 
   return (
     <div className="container mx-auto px-4 py-8">
