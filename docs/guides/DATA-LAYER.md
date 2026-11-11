@@ -451,6 +451,8 @@ Run with:
 yarn prisma:seed
 ```
 
+Set `SEED_QUIZ_OWNER_ID` to the owner's Supabase auth user id (Authentication → Users) first; without it the seed exits before touching the database.
+
 ---
 
 ## Prisma Client Lifecycle

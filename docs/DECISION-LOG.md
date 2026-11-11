@@ -816,6 +816,78 @@ This reverses the "keep" rows of the 2026-10-11 Claude config and records spec.
 
 ---
 
+## ADR-026: A Daily Keepalive Keeps the Free-Plan Production Database Awake (2026-11-09)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-09
+
+### Decision
+Production stays on the Supabase Free plan. A Vercel cron (`vercel.json`, daily within the
+09:00 UTC hour) calls `GET /api/cron/keepalive`, which reads one quiz id through
+`PingDatabaseUseCase`, so `quiz-game-prod` sees database activity every day and is not paused for
+inactivity. The route takes no secret: it returns `{ ok: true }`, or a bare 500 when the ping
+fails, and no data; every public game route already runs more queries per call.
+
+### Rationale
+- Production was paused for inactivity before 2026-10-30 and no game could run on it
+  (`docs/progress/findings/2026-11-09-production-supabase-paused.md`).
+- Supabase's docs say a few user database requests a day prevent the pause; the keepalive costs
+  nothing, while Pro is a monthly fee before any revenue.
+
+### Rejected
+- **Supabase Pro**: never pauses and adds backups, but costs from day one. Revisit when a paying
+  user is close; the keepalive can then be removed.
+- **Doing nothing**: the next quiet week takes production down again.
+- **A `CRON_SECRET` bearer check**: a setup step whose omission silently stops the keepalive,
+  for an endpoint that exposes nothing. Revisit if the route ever returns data.
+
+### Consequences
+- Vercel runs crons only on production deployments: `Quiz-game-dev` can still pause and is
+  restored by hand.
+- `pingDatabaseUseCase` is on the service container, ready for the health check that the
+  error-reporting issue (#98) asks for.
+
+### Note (2026-11-09, after deploy)
+Vercel registered the cron (Settings → Cron Jobs: Active, 09:00 UTC) but labels Cron Jobs
+"Legacy": its docs say `vercel.json` `crons` "will be migrated to Schedules", with no end date
+given. The keepalive stays on `crons` until that is forced or Schedules are confirmed on this
+plan; the migration is a row in `docs/parking-lot.md`.
+
+---
+
+## ADR-027: Every Quiz Has Exactly One Owner (2026-11-10)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-10
+**Decided by**: Vlad (spec: `docs/progress/plans/2026-11-10-quiz-owner-design.md`)
+
+### Decision
+- Every quiz has exactly one owner: the Supabase auth user id in `Quiz.ownerId` (required, indexed).
+  There is no foreign key to `auth.users`: Prisma does not model the `auth` schema, and deleting
+  a user deleting their quizzes is a product decision for later.
+- Someone else's quiz answers 404, identical to a missing quiz, never 403, so a quiz id reveals
+  nothing about who owns it.
+- There is no operator view of other hosts' quizzes. Support goes through the Supabase dashboard
+  and logs when a host asks; a read-only operator view is parked in `docs/parking-lot.md`.
+- API routes and server-component pages may import the current-user helper
+  (`@infrastructure/auth/get-current-user`) to read the signed-in user id. This is the fourth
+  layer exception, like the broadcasters in ADR-024.
+- Rollout is two migrations with a backfill script between them: migration 1 adds `ownerId`
+  nullable, a one-off script (`yarn quiz:assign-owner`) gives every existing quiz to the main
+  account, and migration 2 sets NOT NULL (it fails loudly if any quiz still has no owner). The
+  owner's user id differs per Supabase project and is not committed.
+
+### Rationale
+- Hosts need their own quizzes before more than one person can use the product.
+- A 404 for both cases is the one answer that leaks nothing.
+
+### Consequences
+- Parts 2 and 3 move the remaining admin and live-game routes onto the same guard.
+- The owner guard loads the whole quiz to compare one column; part 3 should add a select-only
+  owner lookup before using it per host action.
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)
@@ -824,6 +896,7 @@ This reverses the "keep" rows of the 2026-10-11 Claude config and records spec.
 
 ### TBD: Multi-tenancy / Teams (Post-launch)
 - Support org-based quiz ownership
+  (ADR-027 settles one owner per quiz for now; orgs would build on top of it.)
 - RLS policies gate access per org
 
 ---

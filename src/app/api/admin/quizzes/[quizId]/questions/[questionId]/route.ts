@@ -5,28 +5,27 @@ import {
   QuestionListItemDTO,
   QuestionAdminDTO,
 } from '@application/dtos/question-admin.dto';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
+
+type RouteContext = {
+  params: Promise<{ quizId: string; questionId: string }>;
+};
 
 /**
  * GET /api/admin/quizzes/[quizId]/questions/[questionId]
  * Get full question details (including options and correctAnswers)
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ quizId: string; questionId: string }> }
-) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
-    const params = await context.params;
-    const { questionId } = params;
-
-    const { questionService } = getServices();
-    const question = await questionService.getQuestionById(questionId);
-
-    if (!question) {
-      return NextResponse.json(
-        { error: 'Question not found' },
-        { status: 404 }
-      );
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { quizId, questionId } = await context.params;
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
+    const question = await questionService.getQuizQuestion(quizId, questionId);
 
     // Return full admin DTO with sensitive fields
     const response: QuestionAdminDTO = {
@@ -52,6 +51,10 @@ export async function GET(
       message
     );
 
+    if (/not found/i.test(message)) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -60,20 +63,26 @@ export async function GET(
  * PATCH /api/admin/quizzes/[quizId]/questions/[questionId]
  * Update an existing question
  */
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ quizId: string; questionId: string }> }
-) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const params = await context.params;
-    const { questionId } = params;
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { quizId, questionId } = await context.params;
     const body = await request.json();
 
     // Validate and parse request body
     const dto = UpdateQuestionDTO.parse(body);
 
-    const { questionService } = getServices();
-    const question = await questionService.updateQuestion(questionId, dto);
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
+    const question = await questionService.updateQuestion(
+      quizId,
+      questionId,
+      dto
+    );
 
     // Return lightweight DTO
     const response: QuestionListItemDTO = {
@@ -106,16 +115,17 @@ export async function PATCH(
  * DELETE /api/admin/quizzes/[quizId]/questions/[questionId]
  * Delete a question
  */
-export async function DELETE(
-  _request: NextRequest,
-  context: { params: Promise<{ quizId: string; questionId: string }> }
-) {
+export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
-    const params = await context.params;
-    const { questionId } = params;
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { questionService } = getServices();
-    await questionService.deleteQuestion(questionId);
+    const { quizId, questionId } = await context.params;
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
+    await questionService.deleteQuestion(quizId, questionId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

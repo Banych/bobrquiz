@@ -4,6 +4,7 @@ import { PrismaQuizRepository } from '@infrastructure/repositories/prisma-quiz.r
 import { PrismaQuestionRepository } from '@infrastructure/repositories/prisma-question.repository';
 import { PrismaLeaderboardSnapshotRepository } from '@infrastructure/repositories/prisma-leaderboard-snapshot.repository';
 import { PrismaAuditLogRepository } from '@infrastructure/repositories/prisma-audit-log.repository';
+import { PrismaDatabaseHealthRepository } from '@infrastructure/repositories/prisma-database-health.repository';
 import { AddPlayerUseCase } from '@application/use-cases/add-player.use-case';
 import { FindPlayerByIdUseCase } from '@application/use-cases/find-player-by-id.use-case';
 import { ListQuizPlayersUseCase } from '@application/use-cases/list-quiz-players.use-case';
@@ -29,14 +30,18 @@ import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
+import { ListQuizzesByOwnerUseCase } from '@application/use-cases/list-quizzes-by-owner.use-case';
+import { AssertQuizOwnerUseCase } from '@application/use-cases/assert-quiz-owner.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import { CreateQuestionUseCase } from '@application/use-cases/create-question.use-case';
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
+import { GetQuizQuestionUseCase } from '@application/use-cases/get-quiz-question.use-case';
 import { ListQuizQuestionsUseCase } from '@application/use-cases/list-quiz-questions.use-case';
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
 import { ListAllQuestionsUseCase } from '@application/use-cases/list-all-questions.use-case';
 import { ListAuditLogsUseCase } from '@application/use-cases/audit/list-audit-logs.use-case';
+import { PingDatabaseUseCase } from '@application/use-cases/ping-database.use-case';
 import type {
   CreateQuestionDTO,
   UpdateQuestionDTO,
@@ -48,13 +53,18 @@ type QuestionService = {
     dto: CreateQuestionDTO
   ) => ReturnType<CreateQuestionUseCase['execute']>;
   updateQuestion: (
-    id: string,
+    quizId: string,
+    questionId: string,
     dto: UpdateQuestionDTO
   ) => ReturnType<UpdateQuestionUseCase['execute']>;
-  deleteQuestion: (id: string) => ReturnType<DeleteQuestionUseCase['execute']>;
-  getQuestionById: (
-    id: string
-  ) => Promise<import('@domain/entities/question').Question | null>;
+  deleteQuestion: (
+    quizId: string,
+    questionId: string
+  ) => ReturnType<DeleteQuestionUseCase['execute']>;
+  getQuizQuestion: (
+    quizId: string,
+    questionId: string
+  ) => ReturnType<GetQuizQuestionUseCase['execute']>;
   listQuizQuestions: (
     quizId: string
   ) => ReturnType<ListQuizQuestionsUseCase['execute']>;
@@ -63,6 +73,7 @@ type QuestionService = {
     quizId: string
   ) => ReturnType<ReorderQuestionsUseCase['execute']>;
   listAllQuestions: (params: {
+    ownerId: string;
     quizId?: string;
     type?: string;
   }) => ReturnType<ListAllQuestionsUseCase['execute']>;
@@ -70,6 +81,7 @@ type QuestionService = {
 
 type AuditService = {
   listAuditLogs: (params: {
+    ownerId: string;
     quizId?: string;
     limit?: number;
   }) => ReturnType<ListAuditLogsUseCase['execute']>;
@@ -84,6 +96,7 @@ type ServiceContainer = {
   joinSessionUseCase: JoinSessionUseCase;
   lockQuestionUseCase: LockQuestionUseCase;
   getPlayerConnectionStatusUseCase: GetPlayerConnectionStatusUseCase;
+  pingDatabaseUseCase: PingDatabaseUseCase;
 };
 
 let container: ServiceContainer | null = null;
@@ -95,6 +108,7 @@ const getRepositories = () => {
   const leaderboardSnapshotRepository =
     new PrismaLeaderboardSnapshotRepository();
   const auditLogRepository = new PrismaAuditLogRepository();
+  const databaseHealthRepository = new PrismaDatabaseHealthRepository();
 
   return {
     quizRepository,
@@ -102,6 +116,7 @@ const getRepositories = () => {
     questionRepository,
     leaderboardSnapshotRepository,
     auditLogRepository,
+    databaseHealthRepository,
   } as const;
 };
 
@@ -116,6 +131,7 @@ export const getServices = (): ServiceContainer => {
     questionRepository,
     leaderboardSnapshotRepository,
     auditLogRepository,
+    databaseHealthRepository,
   } = getRepositories();
 
   const addPlayerUseCase = new AddPlayerUseCase(
@@ -187,6 +203,10 @@ export const getServices = (): ServiceContainer => {
   const deleteQuizUseCase = new DeleteQuizUseCase(quizRepository);
   const listAllQuizzesUseCase = new ListAllQuizzesUseCase(quizRepository);
   const resetQuizUseCase = new ResetQuizUseCase(quizRepository);
+  const listQuizzesByOwnerUseCase = new ListQuizzesByOwnerUseCase(
+    quizRepository
+  );
+  const assertQuizOwnerUseCase = new AssertQuizOwnerUseCase(quizRepository);
 
   const quizService = new QuizService(
     startQuizUseCase,
@@ -201,7 +221,9 @@ export const getServices = (): ServiceContainer => {
     updateQuizUseCase,
     deleteQuizUseCase,
     listAllQuizzesUseCase,
-    resetQuizUseCase
+    resetQuizUseCase,
+    listQuizzesByOwnerUseCase,
+    assertQuizOwnerUseCase
   );
 
   const submitAnswerUseCase = new SubmitAnswerUseCase(
@@ -222,6 +244,7 @@ export const getServices = (): ServiceContainer => {
   );
   const updateQuestionUseCase = new UpdateQuestionUseCase(questionRepository);
   const deleteQuestionUseCase = new DeleteQuestionUseCase(questionRepository);
+  const getQuizQuestionUseCase = new GetQuizQuestionUseCase(questionRepository);
   const listQuizQuestionsUseCase = new ListQuizQuestionsUseCase(
     questionRepository
   );
@@ -242,9 +265,12 @@ export const getServices = (): ServiceContainer => {
 
   const questionService: QuestionService = {
     createQuestion: (dto) => createQuestionUseCase.execute(dto),
-    updateQuestion: (id, dto) => updateQuestionUseCase.execute(id, dto),
-    deleteQuestion: (id) => deleteQuestionUseCase.execute(id),
-    getQuestionById: (id) => questionRepository.findById(id),
+    updateQuestion: (quizId, questionId, dto) =>
+      updateQuestionUseCase.execute(quizId, questionId, dto),
+    deleteQuestion: (quizId, questionId) =>
+      deleteQuestionUseCase.execute(quizId, questionId),
+    getQuizQuestion: (quizId, questionId) =>
+      getQuizQuestionUseCase.execute(quizId, questionId),
     listQuizQuestions: (quizId) => listQuizQuestionsUseCase.execute(quizId),
     reorderQuestions: (dto, quizId) =>
       reorderQuestionsUseCase.execute(dto, quizId),
@@ -260,6 +286,7 @@ export const getServices = (): ServiceContainer => {
     joinSessionUseCase,
     lockQuestionUseCase,
     getPlayerConnectionStatusUseCase,
+    pingDatabaseUseCase: new PingDatabaseUseCase(databaseHealthRepository),
   };
 
   return container;

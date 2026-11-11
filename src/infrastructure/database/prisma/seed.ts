@@ -1,10 +1,12 @@
 import { prisma } from '@infrastructure/database/prisma/client';
 import {
+  requireSeedQuizOwnerId,
   resetDatabase,
   seedDemoQuiz,
 } from '@infrastructure/database/prisma/seed-helpers';
 
 const main = async () => {
+  requireSeedQuizOwnerId();
   console.info('Seeding Prisma database with demo data...');
   await resetDatabase();
   const { quiz, questions, players } = await seedDemoQuiz();

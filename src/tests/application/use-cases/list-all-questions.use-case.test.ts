@@ -37,6 +37,7 @@ const mockQuizRepo = {
   create: vi.fn(),
   update: vi.fn(),
   findAll: vi.fn(),
+  listByOwner: vi.fn(),
   findEntityById: vi.fn(),
 } as unknown as IQuizRepository;
 
@@ -50,6 +51,8 @@ const mockQuestionRepo = {
   delete: vi.fn(),
 } as unknown as IQuestionRepository;
 
+const OWNER = 'owner-1';
+
 describe('ListAllQuestionsUseCase', () => {
   let useCase: ListAllQuestionsUseCase;
 
@@ -58,10 +61,10 @@ describe('ListAllQuestionsUseCase', () => {
     useCase = new ListAllQuestionsUseCase(mockQuizRepo, mockQuestionRepo);
   });
 
-  it('returns all questions from all quizzes with quizId and quizTitle', async () => {
+  it("returns questions from all the owner's quizzes with quizId and quizTitle", async () => {
     const quiz1 = makeQuiz('quiz-1', 'Quiz One');
     const quiz2 = makeQuiz('quiz-2', 'Quiz Two');
-    vi.mocked(mockQuizRepo.findAll).mockResolvedValueOnce([quiz1, quiz2]);
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([quiz1, quiz2]);
     vi.mocked(mockQuestionRepo.listByQuizId).mockImplementation(async (id) => {
       if (id === 'quiz-1')
         return [makeQuestion('q-1', 'Q1'), makeQuestion('q-2', 'Q2')];
@@ -70,7 +73,7 @@ describe('ListAllQuestionsUseCase', () => {
       return [];
     });
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
     expect(result).toHaveLength(4);
     expect(result[0]).toMatchObject({
@@ -85,32 +88,38 @@ describe('ListAllQuestionsUseCase', () => {
     });
   });
 
-  it('filters by quizId when provided', async () => {
-    const quiz1 = makeQuiz('quiz-1', 'Quiz One');
-    vi.mocked(mockQuizRepo.findEntityById).mockResolvedValueOnce(quiz1);
+  it("filters by quizId inside the owner's quizzes", async () => {
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([
+      makeQuiz('quiz-1', 'Quiz One'),
+      makeQuiz('quiz-2', 'Quiz Two'),
+    ]);
     vi.mocked(mockQuestionRepo.listByQuizId).mockResolvedValueOnce([
       makeQuestion('q-1', 'Q1'),
       makeQuestion('q-2', 'Q2'),
     ]);
 
-    const result = await useCase.execute({ quizId: 'quiz-1' });
+    const result = await useCase.execute({ ownerId: OWNER, quizId: 'quiz-1' });
 
-    expect(mockQuizRepo.findEntityById).toHaveBeenCalledWith('quiz-1');
-    expect(mockQuizRepo.findAll).not.toHaveBeenCalled();
+    expect(mockQuizRepo.listByOwner).toHaveBeenCalledWith(OWNER);
+    expect(mockQuestionRepo.listByQuizId).toHaveBeenCalledTimes(1);
+    expect(mockQuestionRepo.listByQuizId).toHaveBeenCalledWith('quiz-1');
     expect(result).toHaveLength(2);
     expect(result.every((q) => q.quizId === 'quiz-1')).toBe(true);
   });
 
   it('filters by type when provided', async () => {
     const quiz1 = makeQuiz('quiz-1', 'Quiz One');
-    vi.mocked(mockQuizRepo.findAll).mockResolvedValueOnce([quiz1]);
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([quiz1]);
     vi.mocked(mockQuestionRepo.listByQuizId).mockResolvedValueOnce([
       makeQuestion('q-1', 'MC question', 'multiple-choice'),
       makeQuestion('q-2', 'TF question', 'true/false'),
       makeQuestion('q-3', 'Another MC', 'multiple-choice'),
     ]);
 
-    const result = await useCase.execute({ type: 'multiple-choice' });
+    const result = await useCase.execute({
+      ownerId: OWNER,
+      type: 'multiple-choice',
+    });
 
     expect(result).toHaveLength(2);
     expect(result.every((q) => q.type === 'multiple-choice')).toBe(true);
@@ -118,20 +127,37 @@ describe('ListAllQuestionsUseCase', () => {
 
   it('returns empty array when quiz has no questions', async () => {
     const quiz1 = makeQuiz('quiz-1', 'Empty Quiz');
-    vi.mocked(mockQuizRepo.findAll).mockResolvedValueOnce([quiz1]);
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([quiz1]);
     vi.mocked(mockQuestionRepo.listByQuizId).mockResolvedValueOnce([]);
 
-    const result = await useCase.execute({});
+    const result = await useCase.execute({ ownerId: OWNER });
 
     expect(result).toHaveLength(0);
   });
 
-  it('handles gracefully when findEntityById returns null (quiz not found)', async () => {
-    vi.mocked(mockQuizRepo.findEntityById).mockResolvedValueOnce(null);
+  it("returns nothing for another owner's quizId, without reading its questions", async () => {
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([
+      makeQuiz('quiz-1', 'Quiz One'),
+    ]);
 
-    const result = await useCase.execute({ quizId: 'nonexistent-quiz' });
+    const result = await useCase.execute({
+      ownerId: OWNER,
+      quizId: 'someone-elses-quiz',
+    });
 
     expect(result).toHaveLength(0);
+    expect(mockQuizRepo.findEntityById).not.toHaveBeenCalled();
+    expect(mockQuizRepo.findAll).not.toHaveBeenCalled();
+    expect(mockQuestionRepo.listByQuizId).not.toHaveBeenCalled();
+  });
+
+  it('never reads quizzes outside the owner list', async () => {
+    vi.mocked(mockQuizRepo.listByOwner).mockResolvedValueOnce([]);
+
+    const result = await useCase.execute({ ownerId: OWNER });
+
+    expect(result).toEqual([]);
+    expect(mockQuizRepo.findAll).not.toHaveBeenCalled();
     expect(mockQuestionRepo.listByQuizId).not.toHaveBeenCalled();
   });
 });

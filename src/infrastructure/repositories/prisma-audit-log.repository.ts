@@ -25,17 +25,15 @@ export class PrismaAuditLogRepository implements IAuditLogRepository {
     });
   }
 
-  async findByQuizId(quizId: string, limit = 100): Promise<AuditLog[]> {
+  async findForOwner(
+    ownerId: string,
+    { quizId, limit = 100 }: { quizId?: string; limit?: number } = {}
+  ): Promise<AuditLog[]> {
     const records = await prisma.auditLog.findMany({
-      where: { quizId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
-    return records.map(mapToDomain);
-  }
-
-  async findRecent(limit = 100): Promise<AuditLog[]> {
-    const records = await prisma.auditLog.findMany({
+      where: {
+        quiz: { is: { ownerId } },
+        ...(quizId ? { quizId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

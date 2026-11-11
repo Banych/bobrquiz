@@ -14,6 +14,8 @@ import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
+import { ListQuizzesByOwnerUseCase } from '@application/use-cases/list-quizzes-by-owner.use-case';
+import { AssertQuizOwnerUseCase } from '@application/use-cases/assert-quiz-owner.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
 import type { RoundSummaryDTO } from '@application/dtos/round-summary.dto';
 
@@ -40,6 +42,8 @@ describe('QuizService', () => {
   let updateQuizUseCase: Mocked<UpdateQuizUseCase>;
   let deleteQuizUseCase: Mocked<DeleteQuizUseCase>;
   let listAllQuizzesUseCase: Mocked<ListAllQuizzesUseCase>;
+  let listQuizzesByOwnerUseCase: Mocked<ListQuizzesByOwnerUseCase>;
+  let assertQuizOwnerUseCase: Mocked<AssertQuizOwnerUseCase>;
   let resetQuizUseCase: Mocked<ResetQuizUseCase>;
   let quizService: QuizService;
 
@@ -96,6 +100,14 @@ describe('QuizService', () => {
       execute: vi.fn(),
     } as unknown as Mocked<ResetQuizUseCase>;
 
+    listQuizzesByOwnerUseCase = {
+      execute: vi.fn(),
+    } as unknown as Mocked<ListQuizzesByOwnerUseCase>;
+
+    assertQuizOwnerUseCase = {
+      execute: vi.fn(),
+    } as unknown as Mocked<AssertQuizOwnerUseCase>;
+
     quizService = new QuizService(
       startQuizUseCase,
       endQuizUseCase,
@@ -109,7 +121,47 @@ describe('QuizService', () => {
       updateQuizUseCase,
       deleteQuizUseCase,
       listAllQuizzesUseCase,
-      resetQuizUseCase
+      resetQuizUseCase,
+      listQuizzesByOwnerUseCase,
+      assertQuizOwnerUseCase
+    );
+  });
+
+  it('passes the owner through when creating a quiz', async () => {
+    createQuizUseCase.execute.mockResolvedValue('new-quiz');
+    const dto = {
+      title: 'T',
+      timePerQuestion: 30,
+      allowSkipping: false,
+      scoringAlgorithm: 'EXPONENTIAL_DECAY' as const,
+    };
+
+    await expect(quizService.createQuiz(dto, 'owner-1')).resolves.toBe(
+      'new-quiz'
+    );
+    expect(createQuizUseCase.execute).toHaveBeenCalledWith(dto, 'owner-1');
+  });
+
+  it('lists quizzes by owner', async () => {
+    listQuizzesByOwnerUseCase.execute.mockResolvedValue([]);
+
+    await expect(quizService.listQuizzesByOwner('owner-1')).resolves.toEqual(
+      []
+    );
+    expect(listQuizzesByOwnerUseCase.execute).toHaveBeenCalledWith('owner-1');
+  });
+
+  it('delegates the owner guard and propagates its error', async () => {
+    assertQuizOwnerUseCase.execute.mockRejectedValue(
+      new Error('Quiz with ID q1 not found')
+    );
+
+    await expect(quizService.assertQuizOwner('q1', 'owner-1')).rejects.toThrow(
+      'Quiz with ID q1 not found'
+    );
+    expect(assertQuizOwnerUseCase.execute).toHaveBeenCalledWith(
+      'q1',
+      'owner-1'
     );
   });
 

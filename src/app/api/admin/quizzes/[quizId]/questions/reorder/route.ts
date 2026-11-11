@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServices } from '@application/services/factories';
 import { ReorderQuestionsDTO } from '@application/dtos/question-admin.dto';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 /**
  * POST /api/admin/quizzes/[quizId]/questions/reorder
@@ -11,13 +12,19 @@ export async function POST(
   context: { params: Promise<{ quizId: string }> }
 ) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { quizId } = await context.params;
     const body = await request.json();
 
     // Validate and parse request body
     const dto = ReorderQuestionsDTO.parse(body);
 
-    const { questionService } = getServices();
+    const { quizService, questionService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
     await questionService.reorderQuestions(dto, quizId);
 
     return NextResponse.json({ success: true });
@@ -28,8 +35,8 @@ export async function POST(
       message
     );
 
-    if (/not found/i.test(message) || /must belong/i.test(message)) {
-      return NextResponse.json({ error: message }, { status: 400 });
+    if (/not found/i.test(message)) {
+      return NextResponse.json({ error: message }, { status: 404 });
     }
 
     return NextResponse.json({ error: message }, { status: 500 });

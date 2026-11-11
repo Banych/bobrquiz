@@ -38,11 +38,13 @@ Infrastructure → imports from @domain/*, @application/* only
 Presentation   → imports from @application/dtos/* only (never entities, never Prisma)
 ```
 
-Three exceptions: `@application/services/factories` is the composition root. It imports
+Four exceptions: `@application/services/factories` is the composition root. It imports
 infrastructure to wire the services, and API routes and server-component pages call its
 `getServices()`. API routes also import the realtime broadcasters
-(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). `src/app/providers.tsx` is the
-browser's composition root and may import infrastructure.
+(`@infrastructure/realtime/broadcast-*`) directly (ADR-024). API routes and server-component
+pages may import the current-user helper (`@infrastructure/auth/get-current-user`) to read the
+signed-in user id. `src/app/providers.tsx` is the browser's composition root and may import
+infrastructure.
 
 Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
 presentation files that import infrastructure (realtime in `use-presence.tsx` and
@@ -117,24 +119,45 @@ the end of a session). Paths below are under `src/`.
 **Admin**
 - Quizzes: `app/(admin)/admin/quizzes/page.tsx` → `components/admin/quiz-list.tsx` and the
   `create-`, `edit-`, `delete-quiz-dialog.tsx` → `api/admin/quizzes/**` → quiz CRUD use cases.
+  Ownership: each route reads the user with `infrastructure/auth/get-current-user.ts` (401 when
+  none), lists through `list-quizzes-by-owner.use-case.ts` and runs
+  `assert-quiz-owner.use-case.ts` (404, same as missing) before acting; list items are built by
+  `application/mappers/quiz-list-item-mapper.ts`. Spec:
+  `docs/progress/plans/2026-11-10-quiz-owner-design.md`.
 - Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
   `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
-  `reorder`); across quizzes, `app/(admin)/admin/questions` → `all-questions-view.tsx` →
-  `api/admin/questions`.
+  `reorder`, which no UI calls yet) → the `create-`, `update-`, `delete-`, `reorder-` and
+  `list-quiz-questions` use cases. Each handler runs the quiz owner guard first; the question use
+  cases go through `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from
+  another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
+  `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
-  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`).
+  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
+  is no media API route: both talk to Supabase Storage from the browser.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
-  `application/use-cases/audit/`.
+  `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
+  filters through the quiz relation, so logs with no quiz never show.
 - Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
-  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`.
+  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`. The proxy
+  matches nothing else: `/host`, `/quiz/**` and the host actions under `api/quiz/**` have no
+  login check until the quiz-owner part 3 issue (140) lands.
 
 **Cross-cutting**
-- Composition root `application/services/factories.ts` (`getServices()`); env checks
+- Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
+  `auditService` are object literals there, with no service file of their own; env checks
   `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
-  `infrastructure/database/prisma/seed*.ts`.
+  `infrastructure/database/prisma/seed*.ts` (owner from `SEED_QUIZ_OWNER_ID`); migrations in
+  `infrastructure/database/prisma/migrations/`; one-off owner backfill
+  `assign-quiz-owner.ts` (`yarn quiz:assign-owner`).
+- Keepalive: the daily Vercel cron in `vercel.json` → `api/cron/keepalive` →
+  `ping-database.use-case.ts` → `prisma-database-health.repository.ts`. Production Supabase is on
+  the Free plan and pauses after a quiet week without it (ADR-026); `Quiz-game-dev` has no
+  keepalive and may need restoring before local work.
 - Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
-  (repo root, not `src/`).
+  (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
+  main admin account) and every spec reuses that session; quizzes come from
+  `e2e/support/quiz-fixtures.ts` and stale ones are removed by `e2e/stale-quizzes.cleanup.ts`.
 
 ## Prisma v7 setup (non-standard)
 
@@ -149,6 +172,15 @@ the end of a session). Paths below are under `src/`.
    const prisma = new PrismaClient({ adapter });
    ```
 4. Run `yarn prisma:generate` after every schema change.
+5. CLI commands that reach a database (`migrate status`, `migrate deploy`, `db execute`) get the
+   URL from `prisma.config.ts` (`DIRECT_URL`, else `DATABASE_URL`), which loads only `.env`.
+   This repo keeps its dev values in `.env.local`, so export both variables in the shell first.
+   `db execute` takes no `--schema` flag in Prisma 7 (it fails); `migrate` commands still need
+   it (seen 2026-11-10, Prisma 7.10.1).
+6. No `psql` or Docker here. For a read-only query, run a `.ts` script with
+   `node --env-file=.env.local node_modules/.bin/tsx <script>`; a script outside the repo must
+   import `@prisma/adapter-pg` and the generated client by absolute path, or they don't resolve
+   (seen 2026-11-10).
 
 ## Testing
 
@@ -169,8 +201,8 @@ Every feature needs:
 - Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
   `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
   (see `prisma-player-repository.test.ts`).
-- No `.skip` left behind. A task is done when `yarn test:run`, `yarn lint` and `yarn build`
-  pass (CI gates on all three); a UI or flow change also runs `yarn test:e2e`.
+- No `.skip` left behind. CI gates on `yarn lint`, the unit tests and `yarn build`; a UI or flow
+  change also runs `yarn test:e2e`.
 
 ## Key patterns
 
@@ -238,42 +270,18 @@ Long form: `docs/guides/PATTERNS.md`.
 
 Realtime subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats,
 the presence provider's channel reuse, the host's leaderboard subscription and the broadcast
-listener leak (#58, #59, #60, #63) touched at least one of them. In rigorous mode, route any task
-touching these to `implementer-capable` and `task-reviewer-capable`. In ship mode, implement them
-in the main session on Opus; the whole-branch review uses `task-reviewer-capable` as usual. This
-repo has no agents of its own; the user-level ones apply.
-
-- `src/infrastructure/realtime/**`
-- `src/hooks/use-presence.tsx`
-- `src/hooks/use-realtime-client.tsx`
-- `src/hooks/use-reconnection.ts`
-- `src/hooks/use-countdown-timer.ts`
-- `src/lib/presence-heartbeat-controller.ts`
-- `src/lib/debounce-broadcast.ts`
-- `src/app/providers.tsx`
-- `src/hooks/use-host-quiz-state.ts`
-- `src/hooks/use-player-session.ts`
+listener leak (#58, #59, #60, #63) touched at least one of them. The list is `capableTier` in
+`.claude/workflow.json`; the workflow says how those paths are routed. This repo has no agents
+of its own; the user-level ones apply.
 
 ## Records
 
-Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/`.
-
-| Artifact | Path | Written when |
-|---|---|---|
-| Spec | `docs/progress/plans/YYYY-MM-DD-<topic>-design.md` | end of brainstorming, approved before planning |
-| Plan | `docs/progress/plans/YYYY-MM-DD-<topic>-plan.md` | writing-plans, checked by plan-checker before task 1 |
-| Ledger | `.superpowers/sdd/<plan>/progress.md` and `*-report.md`, added with `git add -f` | during execution; diffs and briefs stay uncommitted |
-| Index line | `docs/progress/PROGRESS.md` → "Work index" | when the PR merges |
-| ADR | `docs/DECISION-LOG.md` | only for a decision that outlives the work |
-
-The table is for rigorous mode. In ship mode, write a spec only for the expensive-to-reverse
-changes the ship-mode workflow names (schema and migrations, API contracts, auth, payments and
-webhooks), with no plan file or ledger; anything outside the current issue goes to
-`docs/parking-lot.md`. The index line and ADR rows apply in both modes.
-
-Plan shape and status lines: `docs/progress/plans/README.md`. Process follows the workflow mode
-injected at session start (`# Workflow mode: …`), which `.claude/settings.json` selects through
-`enabledPlugins`; it is not repeated here. If no mode appears, say so before starting work.
+Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/` (`specs` and `plans` in
+`.claude/workflow.json`). The table of artifacts, plan shape and status lines are in
+`docs/progress/plans/README.md`. When a PR merges, add its line to the "Work index" in
+`docs/progress/PROGRESS.md`; add an ADR to `docs/DECISION-LOG.md` only for a decision that
+outlives the work. Process follows the profile in `.claude/workflow.json`, injected at session
+start (`# Workflow: …`); it is not repeated here.
 
 ## Common pitfalls
 
@@ -309,13 +317,8 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 
 ## Working rules
 
-- Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to
-  start it if it does not.
-- Verify UI changes in the browser with the Playwright plugin before calling them done.
-- Never commit to `master` (branch-protected). Branch with
-  `git switch -c <name> --no-track origin/master`; every change reaches `master` through a PR,
-  opened only after the user approves its text and merged on GitHub. This overrides the
-  user-level branching rule's local merges.
+- The default branch is `master`: branch with `git switch -c <name> --no-track origin/master`.
 - Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
-- Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
-  `.claude/settings.local.json`, which is git-ignored.
+- Shared Claude settings live in `.claude/settings.json` and the workflow profile and facts in
+  `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json` and
+  `.claude/workflow.local.json`, which are git-ignored.

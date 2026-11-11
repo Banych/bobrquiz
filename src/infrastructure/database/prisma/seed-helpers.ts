@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '@infrastructure/database/prisma/client';
+import { UUID_PATTERN } from '@infrastructure/database/prisma/assign-quiz-owner-core';
 import type {
   Player,
   Prisma,
@@ -7,6 +8,22 @@ import type {
   Quiz,
   QuestionType,
 } from '@infrastructure/database/prisma/generated-client';
+
+/**
+ * Owner for every seeded quiz, read from SEED_QUIZ_OWNER_ID (a Supabase user
+ * uuid). Throws before any database access when it is unset or not a uuid.
+ */
+export const requireSeedQuizOwnerId = (): string => {
+  const ownerId = process.env.SEED_QUIZ_OWNER_ID?.trim();
+
+  if (!ownerId || !UUID_PATTERN.test(ownerId)) {
+    throw new Error(
+      'SEED_QUIZ_OWNER_ID must be set to the uuid of the Supabase user who owns the seeded quizzes (see .env.example).'
+    );
+  }
+
+  return ownerId;
+};
 
 export type SeedQuizOptions = {
   title?: string;
@@ -79,6 +96,7 @@ export const resetDatabase = async () => {
 export const seedSampleQuiz = async (
   options: SeedQuizOptions = {}
 ): Promise<SeedQuizResult> => {
+  const ownerId = requireSeedQuizOwnerId();
   // Use fixed join code for E2E test compatibility (can be overridden via options)
   const joinCode =
     options.joinCode ?? process.env.TEST_JOIN_CODE ?? 'JOIN-KYTX';
@@ -90,6 +108,7 @@ export const seedSampleQuiz = async (
       timePerQuestion: 30,
       allowSkipping: true,
       joinCode,
+      ownerId,
     },
   });
 
@@ -231,6 +250,7 @@ const LAUNCH_DEMO_QUESTIONS: Array<{
  * only creates questions the first time.
  */
 export const seedLaunchDemoQuiz = async (): Promise<SeedQuizResult> => {
+  const ownerId = requireSeedQuizOwnerId();
   const quiz = await prisma.quiz.upsert({
     where: { joinCode: LAUNCH_DEMO_JOIN_CODE },
     update: {},
@@ -240,6 +260,7 @@ export const seedLaunchDemoQuiz = async (): Promise<SeedQuizResult> => {
       timePerQuestion: 20,
       allowSkipping: true,
       joinCode: LAUNCH_DEMO_JOIN_CODE,
+      ownerId,
     },
   });
 

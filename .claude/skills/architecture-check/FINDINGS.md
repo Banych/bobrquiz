@@ -14,6 +14,27 @@ Entry shape:
     **Why:** <the mechanism, or "unknown">
     **Change:** <what was edited in the body, or "none — recorded only">
 
+## 2026-11-10 — the new current-user helper imports showed up as violations
+
+**Ran:** architecture-check's Check 2 and the Quick Full Sweep's infrastructure section, run as
+written against bobrquiz on feat/quiz-owner (691e0b0), system grep (`command grep`), for the
+quiz-owner final-review fix wave
+**Kind:** gap
+**What the skill said:** the exceptions list and the two `grep -vE` filters skipped only
+`factories.ts` and `realtime/broadcast-*`; any other `@infrastructure/` import in `src/app/api/`
+printed as a violation
+**What happened:** the three admin quiz routes now import `getCurrentUserId` from
+`@infrastructure/auth/get-current-user` (`api/admin/quizzes/route.ts:4`,
+`api/admin/quizzes/[quizId]/route.ts:4`, `api/admin/quizzes/[quizId]/reset/route.ts:3`). With the
+old filters those three lines would print; CLAUDE.md already lists the helper as the fourth
+accepted exception. With the filter extended, both commands print nothing (exit 1, no match).
+The negative case (a planted non-exception infrastructure import still printing) was not run
+this time.
+**Why:** the exception was added to CLAUDE.md in part 1 of the quiz-owner work, and the skill was
+not updated with it
+**Change:** added the helper to the exceptions list and to the filters in Check 2 and the sweep.
+The filter matches the closing quote (`get-current-user'`) so other files under `auth/` still print.
+
 ## 2026-11-04 — every alias grep missed the `@/` spelling (silent: it reported clean)
 
 **Ran:** architecture-check's Quick Full Sweep, extracted from the body, against bobrquiz at

@@ -45,6 +45,10 @@ export class QuizSessionAggregate {
     return this.quiz.status;
   }
 
+  get ownerId(): string {
+    return this.quiz.ownerId;
+  }
+
   get joinCode(): string | undefined {
     return this.quiz.joinCode;
   }

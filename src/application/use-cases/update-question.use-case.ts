@@ -1,11 +1,12 @@
 import type { IQuestionRepository } from '@domain/repositories/question-repository';
 import type { UpdateQuestionDTO } from '@application/dtos/question-admin.dto';
 import type { Question } from '@domain/entities/question';
+import { loadQuizQuestion } from '@application/use-cases/get-quiz-question.use-case';
 
 /**
  * Use case: Update an existing question
  * Business rules:
- * - Question must exist
+ * - Question must exist and belong to the given quiz (otherwise not found)
  * - Type changes clear incompatible fields:
  *   - multiple-choice → text: Keep options, clear correctAnswers (admin must re-enter)
  *   - text → multiple-choice: Clear options (admin must add new), clear correctAnswers
@@ -15,12 +16,16 @@ import type { Question } from '@domain/entities/question';
 export class UpdateQuestionUseCase {
   constructor(private readonly questionRepository: IQuestionRepository) {}
 
-  async execute(questionId: string, dto: UpdateQuestionDTO): Promise<Question> {
-    // Fetch existing question
-    const question = await this.questionRepository.findById(questionId);
-    if (!question) {
-      throw new Error(`Question not found: ${questionId}`);
-    }
+  async execute(
+    quizId: string,
+    questionId: string,
+    dto: UpdateQuestionDTO
+  ): Promise<Question> {
+    const question = await loadQuizQuestion(
+      this.questionRepository,
+      quizId,
+      questionId
+    );
 
     const originalType = question.type;
     const newType = dto.type ?? originalType;

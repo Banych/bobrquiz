@@ -22,6 +22,15 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-10: Quiz Owners, Part 2 ✅
+- **2026-11-10** — the admin question routes, the cross-quiz question list and the audit log answer only to the quiz's owner: 401 without a session, the same 404 as a missing quiz for someone else's, and a question from another quiz is "not found" like a missing one; the audit log no longer shows logs whose quiz was deleted. No migration. The live-game routes (issue 140) follow — [PR #143](https://github.com/Banych/bobrquiz/pull/143) — [PR #144](https://github.com/Banych/bobrquiz/pull/144) — [spec](plans/2026-11-10-quiz-owner-design.md)
+
+### 2026-11-10: Quiz Owners, Part 1 ✅
+- **2026-11-10** — every quiz has one owner (`Quiz.ownerId`, the Supabase auth user id); the admin quiz routes answer 401 without a session and the same 404 as a missing quiz for someone else's quiz; rolled out on dev and production with two migrations and a backfill (ADR-027). Questions and audit (issue 139) and the live-game routes (issue 140) follow — [PR #141](https://github.com/Banych/bobrquiz/pull/141) — [spec](plans/2026-11-10-quiz-owner-design.md)
+
+### 2026-11-09: Restore Production, Daily Keepalive ✅
+- **2026-11-09** — production Supabase was paused for inactivity on the Free plan; restored with no pending migrations, a three-player game verified over realtime on bobrquiz.vercel.app, and a daily Vercel cron (`/api/cron/keepalive`) keeps the database awake (ADR-026) — [PR #135](https://github.com/Banych/bobrquiz/pull/135) — [findings](findings/2026-11-09-production-supabase-paused.md)
+
 ### 2026-10-18: E2E Isolated Quizzes ✅
 - **2026-10-18** — every E2E test builds and deletes its own quiz through the admin API, with a sweep for crashed runs; the shared seeded quiz is gone; the Prisma pool size and the join rate limit come from the environment (defaults unchanged, raised for local E2E); a pass on retry fails the run — [PR #110](https://github.com/Banych/bobrquiz/pull/110) — [spec](plans/2026-10-15-e2e-isolated-quizzes-design.md) — [plan](plans/2026-10-15-e2e-isolated-quizzes-plan.md) — [ledger](../../.superpowers/sdd/2026-10-15-e2e-isolated-quizzes-plan/progress.md) — [findings](findings/2026-10-18-e2e-db-pool-queueing.md)
 
