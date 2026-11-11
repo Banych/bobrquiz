@@ -157,11 +157,67 @@ describe('proxy', () => {
     expect(await response.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('keeps the matcher unchanged', () => {
+  describe('host pages', () => {
+    const hostPages = ['/host', '/quiz/quiz-1', '/quiz/quiz-1/live'];
+
+    it.each(hostPages)(
+      'redirects %s to login when there is no user',
+      async (pathname) => {
+        getUserMock.mockResolvedValue({ data: { user: null } });
+
+        const response = await proxy(makeRequest(pathname));
+
+        expect(response.status).toBe(307);
+        expect(response.headers.get('location')).toBe(
+          `http://localhost:3000/login?redirect=${encodeURIComponent(pathname)}`
+        );
+      }
+    );
+
+    it.each(hostPages)('lets an allowlisted user open %s', async (pathname) => {
+      getUserMock.mockResolvedValue({
+        data: { user: { email: 'admin@example.com' } },
+      });
+      isAdminUserMock.mockReturnValue(true);
+
+      const response = await proxy(makeRequest(pathname));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('x-middleware-next')).toBe('1');
+    });
+
+    it('returns 403 for a non-allowlisted user on a host page', async () => {
+      getUserMock.mockResolvedValue({
+        data: { user: { email: 'x@example.com' } },
+      });
+      isAdminUserMock.mockReturnValue(false);
+
+      const response = await proxy(makeRequest('/host'));
+
+      expect(response.status).toBe(403);
+    });
+
+    it.each([
+      '/join',
+      '/play/quiz-1/player-1',
+      '/api/quiz/quiz-1/state',
+      '/hosting',
+      '/quizzes',
+    ])('leaves %s to the route without a Supabase client', async (pathname) => {
+      const response = await proxy(makeRequest(pathname));
+
+      expect(response.headers.get('x-middleware-next')).toBe('1');
+      expect(createServerClientMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('matches the admin and host paths only', () => {
     expect(config.matcher).toEqual([
       '/admin',
       '/admin/:path*',
       '/api/admin/:path*',
+      '/host',
+      '/quiz/:path*',
     ]);
   });
 });
