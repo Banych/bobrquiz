@@ -39,6 +39,19 @@ export const config = {
   },
 };
 
+// Headers for host routes (start, advance), which need the quiz owner's session.
+// HOST_COOKIE holds the Cookie header of a signed-in request from the quiz owner's browser
+// (README: "Host session"). Throws only when a host route is about to be called without it.
+export function hostHeaders() {
+  const cookie = __ENV.HOST_COOKIE;
+  if (!cookie) {
+    throw new Error(
+      'HOST_COOKIE is not set: host routes need the quiz owner session (tests/load/README.md, "Host session")'
+    );
+  }
+  return { 'Content-Type': 'application/json', Cookie: cookie };
+}
+
 // Helper function to generate unique player names
 export function generatePlayerName(prefix) {
   // Use __ITER if available (during test execution), otherwise just use timestamp
