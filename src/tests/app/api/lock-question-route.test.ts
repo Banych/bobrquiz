@@ -8,8 +8,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@application/services/factories', () => ({
   getServices: () => ({
+    quizService: { assertQuizOwner: vi.fn().mockResolvedValue(undefined) },
     lockQuestionUseCase: { execute: mocks.execute },
   }),
+}));
+
+// Ownership is covered in host-quiz-routes.test.ts; these tests run as the owner
+vi.mock('@infrastructure/auth/get-current-user', () => ({
+  getCurrentUserId: vi.fn().mockResolvedValue('host-a'),
 }));
 
 vi.mock('@infrastructure/realtime/broadcast-round-summary', () => ({

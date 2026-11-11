@@ -6,12 +6,18 @@ vi.mock('@infrastructure/database/prisma/client', () => ({
   },
 }));
 
+// Ownership is covered in host-quiz-routes.test.ts; these tests run as the owner
+vi.mock('@infrastructure/auth/get-current-user', () => ({
+  getCurrentUserId: vi.fn().mockResolvedValue('host-a'),
+}));
+
 import { GET as getQuizState } from '@/app/api/quiz/[quizId]/state/route';
 import { GET as getQuizPlayers } from '@/app/api/quiz/[quizId]/players/route';
 import * as servicesModule from '@application/services/factories';
 
 type MockQuizService = {
   getQuizState: ReturnType<typeof vi.fn>;
+  assertQuizOwner: ReturnType<typeof vi.fn>;
 };
 
 type MockPlayerService = {
@@ -27,6 +33,7 @@ describe('Quiz API routes', () => {
   beforeEach(() => {
     quizService = {
       getQuizState: vi.fn(),
+      assertQuizOwner: vi.fn().mockResolvedValue(undefined),
     };
 
     playerService = {

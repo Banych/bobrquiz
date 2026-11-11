@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { config, generatePlayerName } from './config.js';
+import { config, generatePlayerName, hostHeaders } from './config.js';
 
 // Test options
 export const options = {
@@ -27,6 +27,11 @@ export function setup() {
 
   const quiz = JSON.parse(quizRes.body);
   console.log(`✓ Using quiz: ${quiz.title}`);
+
+  // Starting needs the host session: fail before joining any players
+  if (quiz.status !== 'Active') {
+    hostHeaders();
+  }
 
   // Pre-create players in batches (reduced to 25 for dev server capacity)
   const totalPlayers = 25;
@@ -79,12 +84,15 @@ export function setup() {
     const startRes = http.post(
       `${config.baseUrl}/api/quiz/start`,
       JSON.stringify({ quizId }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: hostHeaders() }
     );
 
-    if (startRes.status === 200) {
-      console.log('✓ Quiz started successfully');
+    if (startRes.status !== 200) {
+      throw new Error(
+        `Failed to start quiz: ${startRes.status} - ${startRes.body}`
+      );
     }
+    console.log('✓ Quiz started successfully');
   } else {
     console.log('✓ Quiz already Active');
   }

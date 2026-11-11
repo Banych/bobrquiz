@@ -4,6 +4,7 @@ import { getServices } from '@application/services/factories';
 import { broadcastQuizState } from '@infrastructure/realtime/broadcast-quiz-state';
 import { broadcastLeaderboard } from '@infrastructure/realtime/broadcast-leaderboard';
 import { getGlobalBroadcaster } from '@lib/debounce-broadcast';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 const ParamsSchema = z.object({
   quizId: z.string().min(1),
@@ -26,8 +27,17 @@ const leaderboardBroadcaster = getGlobalBroadcaster(async (quizId: string) => {
 
 export async function POST(_request: Request, { params }: RouteContext) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' } satisfies ErrorResponse,
+        { status: 401 }
+      );
+    }
+
     const { quizId } = ParamsSchema.parse(await params);
     const { quizService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
 
     // Flush any pending leaderboard broadcasts before advancing
     await leaderboardBroadcaster.flush();

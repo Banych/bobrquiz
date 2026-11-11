@@ -139,8 +139,10 @@ the end of a session). Paths below are under `src/`.
   filters through the quiz relation, so logs with no quiz never show.
 - Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
   `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`. The proxy
-  matches nothing else: `/host`, `/quiz/**` and the host actions under `api/quiz/**` have no
-  login check until the quiz-owner part 3 issue (140) lands.
+  matches nothing else. The host actions under `api/quiz/**` check the user and the quiz owner
+  inside each route (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE
+  does, the player GET on the same path doesn't. The `/host` and `/quiz/**` pages have no login
+  check until the second quiz-owner part 3 PR (issue 140) lands.
 
 **Cross-cutting**
 - Composition root `application/services/factories.ts` (`getServices()`); `questionService` and

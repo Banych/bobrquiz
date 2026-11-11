@@ -74,6 +74,28 @@ All tests share configuration from `config.js`:
 - `thresholds` - Performance targets for each operation
 - `stages` - Load ramp-up/down patterns
 
+### Host session
+
+Starting and advancing a quiz are host routes: they answer 401 without a session and 404
+when the signed-in account doesn't own the quiz. `answer-submission-storm.js` and
+`presence-heartbeat-load.js` call them when the quiz isn't already Active, so they need the
+owner's session in `HOST_COOKIE`:
+
+1. Sign in at `/login` as the account that owns `quizId`.
+2. In DevTools → Network, open any request to the app and copy the whole `Cookie` request
+   header (the Supabase session cookie may be split into `.0` and `.1` parts).
+3. Paste it at a hidden prompt, so it stays out of shell history and the process list (k6
+   reads exported variables into `__ENV`; don't pass it with `-e`):
+
+```bash
+read -rs HOST_COOKIE && export HOST_COOKIE && k6 run tests/load/answer-submission-storm.js
+```
+
+4. Sign out afterwards: the cookie carries a long-lived refresh token, and signing out revokes
+   it. Use a local or dev account, never a production session.
+
+Player routes (join, answer, presence) stay anonymous and send no cookie.
+
 ## Performance Targets
 
 | Operation     | Target P95 | Notes                                     |

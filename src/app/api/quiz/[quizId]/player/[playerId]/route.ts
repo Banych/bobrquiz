@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getServices } from '@application/services/factories';
 import { broadcastPlayerKicked } from '@infrastructure/realtime/broadcast-player-events';
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
+import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 
 const ParamsSchema = z.object({
   quizId: z.string().min(1),
@@ -43,9 +44,20 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
 }
 
+// Kicking a player is a host action; the GET above stays anonymous for players
 export async function DELETE(request: Request, { params }: RouteContext) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' } satisfies ErrorResponse,
+        { status: 401 }
+      );
+    }
+
     const { quizId, playerId } = ParamsSchema.parse(await params);
+    const { quizService, playerService } = getServices();
+    await quizService.assertQuizOwner(quizId, userId);
 
     let reason: 'kicked' | 'timeout' = 'kicked';
     const contentType = request.headers.get('content-type') ?? '';
@@ -57,7 +69,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       }
     }
 
-    const { playerService } = getServices();
     await playerService.removePlayer(playerId, quizId, reason);
     await broadcastPlayerKicked(quizId, playerId, reason);
 
