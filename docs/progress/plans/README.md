@@ -13,6 +13,10 @@ these records:
 
 No session files and no `dev-notes.md` lines; both are frozen history.
 
+The table is for the rigorous profile. In the ship profile, write a spec only for the
+expensive-to-reverse changes the profile names, with no plan file or ledger; the index line and
+ADR rows apply in both.
+
 ## Plan shape
 
 - A plan carries interfaces (the names and types neighbouring tasks rely on), the test code,
@@ -22,7 +26,7 @@ No session files and no `dev-notes.md` lines; both are frozen history.
 - Each task names its agent:
   - `implementer-transcribe`: haiku; the plan carries the complete code.
   - `implementer`: sonnet; integration or judgment.
-  - `implementer-capable`: opus; any capable-tier file listed in `CLAUDE.md`.
+  - `implementer-capable`: opus; any path in `capableTier` of `.claude/workflow.json`.
 - The test verdict command is `yarn test:run`. It is run by the main session, and its counts
   go in the ledger.
 

@@ -201,8 +201,8 @@ Every feature needs:
 - Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
   `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
   (see `prisma-player-repository.test.ts`).
-- No `.skip` left behind. A task is done when `yarn test:run`, `yarn lint` and `yarn build`
-  pass (CI gates on all three); a UI or flow change also runs `yarn test:e2e`.
+- No `.skip` left behind. CI gates on `yarn lint`, the unit tests and `yarn build`; a UI or flow
+  change also runs `yarn test:e2e`.
 
 ## Key patterns
 
@@ -270,42 +270,18 @@ Long form: `docs/guides/PATTERNS.md`.
 
 Realtime subscriptions, presence, timers and provider wiring. Every fix for presence heartbeats,
 the presence provider's channel reuse, the host's leaderboard subscription and the broadcast
-listener leak (#58, #59, #60, #63) touched at least one of them. In rigorous mode, route any task
-touching these to `implementer-capable` and `task-reviewer-capable`. In ship mode, implement them
-in the main session on Opus; the whole-branch review uses `task-reviewer-capable` as usual. This
-repo has no agents of its own; the user-level ones apply.
-
-- `src/infrastructure/realtime/**`
-- `src/hooks/use-presence.tsx`
-- `src/hooks/use-realtime-client.tsx`
-- `src/hooks/use-reconnection.ts`
-- `src/hooks/use-countdown-timer.ts`
-- `src/lib/presence-heartbeat-controller.ts`
-- `src/lib/debounce-broadcast.ts`
-- `src/app/providers.tsx`
-- `src/hooks/use-host-quiz-state.ts`
-- `src/hooks/use-player-session.ts`
+listener leak (#58, #59, #60, #63) touched at least one of them. The list is `capableTier` in
+`.claude/workflow.json`; the workflow says how those paths are routed. This repo has no agents
+of its own; the user-level ones apply.
 
 ## Records
 
-Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/`.
-
-| Artifact | Path | Written when |
-|---|---|---|
-| Spec | `docs/progress/plans/YYYY-MM-DD-<topic>-design.md` | end of brainstorming, approved before planning |
-| Plan | `docs/progress/plans/YYYY-MM-DD-<topic>-plan.md` | writing-plans, checked by plan-checker before task 1 |
-| Ledger | `.superpowers/sdd/<plan>/progress.md` and `*-report.md`, added with `git add -f` | during execution; diffs and briefs stay uncommitted |
-| Index line | `docs/progress/PROGRESS.md` → "Work index" | when the PR merges |
-| ADR | `docs/DECISION-LOG.md` | only for a decision that outlives the work |
-
-The table is for rigorous mode. In ship mode, write a spec only for the expensive-to-reverse
-changes the ship-mode workflow names (schema and migrations, API contracts, auth, payments and
-webhooks), with no plan file or ledger; anything outside the current issue goes to
-`docs/parking-lot.md`. The index line and ADR rows apply in both modes.
-
-Plan shape and status lines: `docs/progress/plans/README.md`. Process follows the workflow mode
-injected at session start (`# Workflow mode: …`), which `.claude/settings.json` selects through
-`enabledPlugins`; it is not repeated here. If no mode appears, say so before starting work.
+Specs and plans go to `docs/progress/plans/`, not `docs/superpowers/` (`specs` and `plans` in
+`.claude/workflow.json`). The table of artifacts, plan shape and status lines are in
+`docs/progress/plans/README.md`. When a PR merges, add its line to the "Work index" in
+`docs/progress/PROGRESS.md`; add an ADR to `docs/DECISION-LOG.md` only for a decision that
+outlives the work. Process follows the profile in `.claude/workflow.json`, injected at session
+start (`# Workflow: …`); it is not repeated here.
 
 ## Common pitfalls
 
@@ -317,12 +293,6 @@ injected at session start (`# Workflow mode: …`), which `.claude/settings.json
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
-4. A Claude desktop session in a git worktree reads `.claude/settings.json` from the main
-   checkout, not from the worktree. The main checkout's branch therefore decides the workflow
-   mode and `autoMemoryDirectory` for every worktree session. A branch without `master`'s
-   settings gives `# Workflow mode: rigorous` and the per-machine memory folder (seen
-   2026-11-09; user-level `claude-config-sync` findings). Keep the main checkout's branch up to
-   date with `master`'s `.claude/settings.json`.
 
 ## Debugging order
 
@@ -347,13 +317,8 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 
 ## Working rules
 
-- Assume the dev server runs at `http://localhost:3000` (3001 if 3000 is busy); ask the user to
-  start it if it does not.
-- Verify UI changes in the browser with the Playwright plugin before calling them done.
-- Never commit to `master` (branch-protected). Branch with
-  `git switch -c <name> --no-track origin/master`; every change reaches `master` through a PR,
-  opened only after the user approves its text and merged on GitHub. This overrides the
-  user-level branching rule's local merges.
+- The default branch is `master`: branch with `git switch -c <name> --no-track origin/master`.
 - Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
-- Shared Claude settings live in `.claude/settings.json`; per-machine overrides go in
-  `.claude/settings.local.json`, which is git-ignored.
+- Shared Claude settings live in `.claude/settings.json` and the workflow profile and facts in
+  `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json` and
+  `.claude/workflow.local.json`, which are git-ignored.
