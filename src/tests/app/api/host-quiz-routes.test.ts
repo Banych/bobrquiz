@@ -229,6 +229,29 @@ describe('Host quiz routes ownership', () => {
     }
   );
 
+  it('DELETE player passes the timeout reason the host browser sends', async () => {
+    const response = await kick(
+      new Request('http://localhost/api', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reason: 'timeout' }),
+      }),
+      { params: Promise.resolve({ quizId: A_QUIZ, playerId: 'player-1' }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.playerService.removePlayer).toHaveBeenCalledWith(
+      'player-1',
+      A_QUIZ,
+      'timeout'
+    );
+    expect(mocks.broadcastPlayerKicked).toHaveBeenCalledWith(
+      A_QUIZ,
+      'player-1',
+      'timeout'
+    );
+  });
+
   it('GET player session stays anonymous', async () => {
     vi.mocked(getCurrentUserId).mockResolvedValue(null);
     mocks.playerService.getPlayerSession.mockResolvedValue({ playerId: 'p1' });
