@@ -26,6 +26,7 @@ import { GetQuizQuestionUseCase } from '@application/use-cases/get-quiz-question
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
+import { FakeMediaStorage } from '@/tests/support/fake-media-storage';
 
 type ServiceContainer = ReturnType<typeof servicesModule.getServices>;
 
@@ -87,11 +88,10 @@ describe('Admin question routes ownership', () => {
       questionId: string,
       dto: Parameters<UpdateQuestionUseCase['execute']>[2]
     ) =>
-      new UpdateQuestionUseCase(questionRepository).execute(
-        quizId,
-        questionId,
-        dto
-      ),
+      new UpdateQuestionUseCase(
+        questionRepository,
+        new FakeMediaStorage()
+      ).execute(quizId, questionId, dto),
     deleteQuestion: (quizId: string, questionId: string) =>
       new DeleteQuestionUseCase(questionRepository).execute(quizId, questionId),
     reorderQuestions: (

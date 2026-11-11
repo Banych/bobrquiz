@@ -1,7 +1,9 @@
 import type { IQuestionRepository } from '@domain/repositories/question-repository';
+import type { IMediaStorage } from '@domain/repositories/media-storage';
 import type { UpdateQuestionDTO } from '@application/dtos/question-admin.dto';
 import type { Question } from '@domain/entities/question';
 import { loadQuizQuestion } from '@application/use-cases/get-quiz-question.use-case';
+import { assertQuizMediaUrl } from '@application/use-cases/quiz-media/assert-quiz-media-url';
 
 /**
  * Use case: Update an existing question
@@ -12,9 +14,14 @@ import { loadQuizQuestion } from '@application/use-cases/get-quiz-question.use-c
  *   - text → multiple-choice: Clear options (admin must add new), clear correctAnswers
  *   - any → true/false: Set options to ['True', 'False'], clear correctAnswers
  * - Partial updates: only provided fields are changed
+ * - A new image must be a file uploaded to this quiz's own media folder; an
+ *   unchanged image saved before that rule is kept
  */
 export class UpdateQuestionUseCase {
-  constructor(private readonly questionRepository: IQuestionRepository) {}
+  constructor(
+    private readonly questionRepository: IQuestionRepository,
+    private readonly mediaStorage: IMediaStorage
+  ) {}
 
   async execute(
     quizId: string,
@@ -26,6 +33,10 @@ export class UpdateQuestionUseCase {
       quizId,
       questionId
     );
+
+    if (dto.mediaUrl && dto.mediaUrl !== question.media) {
+      assertQuizMediaUrl(this.mediaStorage, quizId, dto.mediaUrl);
+    }
 
     const originalType = question.type;
     const newType = dto.type ?? originalType;

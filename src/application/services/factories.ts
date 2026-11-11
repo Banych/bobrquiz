@@ -5,6 +5,10 @@ import { PrismaQuestionRepository } from '@infrastructure/repositories/prisma-qu
 import { PrismaLeaderboardSnapshotRepository } from '@infrastructure/repositories/prisma-leaderboard-snapshot.repository';
 import { PrismaAuditLogRepository } from '@infrastructure/repositories/prisma-audit-log.repository';
 import { PrismaDatabaseHealthRepository } from '@infrastructure/repositories/prisma-database-health.repository';
+import { SupabaseMediaStorage } from '@infrastructure/storage/supabase-media-storage';
+import { UploadQuizMediaUseCase } from '@application/use-cases/quiz-media/upload-quiz-media.use-case';
+import { DeleteQuizMediaUseCase } from '@application/use-cases/quiz-media/delete-quiz-media.use-case';
+import { ListOwnerMediaUseCase } from '@application/use-cases/quiz-media/list-owner-media.use-case';
 import { AddPlayerUseCase } from '@application/use-cases/add-player.use-case';
 import { FindPlayerByIdUseCase } from '@application/use-cases/find-player-by-id.use-case';
 import { ListQuizPlayersUseCase } from '@application/use-cases/list-quiz-players.use-case';
@@ -86,12 +90,25 @@ type AuditService = {
   }) => ReturnType<ListAuditLogsUseCase['execute']>;
 };
 
+type MediaService = {
+  uploadQuizMedia: (
+    input: Parameters<UploadQuizMediaUseCase['execute']>[0]
+  ) => ReturnType<UploadQuizMediaUseCase['execute']>;
+  deleteQuizMedia: (
+    input: Parameters<DeleteQuizMediaUseCase['execute']>[0]
+  ) => ReturnType<DeleteQuizMediaUseCase['execute']>;
+  listOwnerMedia: (
+    ownerId: string
+  ) => ReturnType<ListOwnerMediaUseCase['execute']>;
+};
+
 type ServiceContainer = {
   playerService: PlayerService;
   quizService: QuizService;
   answerService: AnswerService;
   questionService: QuestionService;
   auditService: AuditService;
+  mediaService: MediaService;
   joinSessionUseCase: JoinSessionUseCase;
   lockQuestionUseCase: LockQuestionUseCase;
   getPlayerConnectionStatusUseCase: GetPlayerConnectionStatusUseCase;
@@ -235,11 +252,16 @@ export const getServices = (): ServiceContainer => {
   );
 
   // Question service
+  const mediaStorage = new SupabaseMediaStorage();
   const createQuestionUseCase = new CreateQuestionUseCase(
     questionRepository,
-    quizRepository
+    quizRepository,
+    mediaStorage
   );
-  const updateQuestionUseCase = new UpdateQuestionUseCase(questionRepository);
+  const updateQuestionUseCase = new UpdateQuestionUseCase(
+    questionRepository,
+    mediaStorage
+  );
   const deleteQuestionUseCase = new DeleteQuestionUseCase(questionRepository);
   const getQuizQuestionUseCase = new GetQuizQuestionUseCase(questionRepository);
   const listQuizQuestionsUseCase = new ListQuizQuestionsUseCase(
@@ -274,12 +296,34 @@ export const getServices = (): ServiceContainer => {
     listAllQuestions: (params) => listAllQuestionsUseCase.execute(params),
   };
 
+  // Media service: the only path that writes to the quiz-media bucket
+  const uploadQuizMediaUseCase = new UploadQuizMediaUseCase(
+    quizRepository,
+    mediaStorage,
+    assertQuizOwnerUseCase
+  );
+  const deleteQuizMediaUseCase = new DeleteQuizMediaUseCase(
+    mediaStorage,
+    assertQuizOwnerUseCase
+  );
+  const listOwnerMediaUseCase = new ListOwnerMediaUseCase(
+    quizRepository,
+    mediaStorage
+  );
+
+  const mediaService: MediaService = {
+    uploadQuizMedia: (input) => uploadQuizMediaUseCase.execute(input),
+    deleteQuizMedia: (input) => deleteQuizMediaUseCase.execute(input),
+    listOwnerMedia: (ownerId) => listOwnerMediaUseCase.execute(ownerId),
+  };
+
   container = {
     playerService,
     quizService,
     answerService,
     questionService,
     auditService,
+    mediaService,
     joinSessionUseCase,
     lockQuestionUseCase,
     getPlayerConnectionStatusUseCase,
