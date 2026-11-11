@@ -22,6 +22,10 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-11: Dependabot security alerts ✅
+- **2026-11-11** — zod 4.6.7 and a `.max()` on every admin question input array (50 options, 50 correct answers, 500 reordered questions); the create route parses the body before spreading it, and reorder answers a validation error with 400. Closes issue 152 (Dependabot's high-severity zod alert); the zod bump alone did not stop the memory growth — [PR #156](https://github.com/Banych/bobrquiz/pull/156) — [findings](findings/2026-11-11-zod-array-memory.md)
+- **2026-11-11** — the seven other open alerts (seroval, fast-uri, minimatch) can't be reached in production and are parked; player name and answer length went to issue 157 — [PR #153](https://github.com/Banych/bobrquiz/pull/153)
+
 ### 2026-11-11: CI skips docs-only changes ✅
 - **2026-11-11** — the CI workflow (lint, unit tests, build) no longer runs on a push or PR that changes only Markdown files or `docs/`; a change that also touches anything else runs all of it. The `master` ruleset requires no status checks, so a skipped run blocks nothing — [PR #154](https://github.com/Banych/bobrquiz/pull/154)
 
