@@ -17,7 +17,8 @@
     "src/lib/debounce-broadcast.ts",
     "src/app/providers.tsx",
     "src/hooks/use-host-quiz-state.ts",
-    "src/hooks/use-player-session.ts"
+    "src/hooks/use-player-session.ts",
+    "src/hooks/use-round-summary-listener.ts"
   ],
   "riskPaths": [
     "src/infrastructure/database/prisma/**",
@@ -28,7 +29,13 @@
     "src/infrastructure/storage/**",
     "src/application/use-cases/assert-quiz-owner.use-case.ts",
     "vercel.json",
-    ".github/workflows/**"
+    ".github/workflows/**",
+    ".github/dependabot.yml",
+    ".claude/settings.json",
+    ".mcp.json",
+    "src/lib/env-validation.ts",
+    ".env.example",
+    "prisma.config.ts"
   ],
   "realTarget": "the dev server (http://localhost:3000, 3001 if busy) in a browser through the Playwright plugin; the user starts the server",
   "docs": {
