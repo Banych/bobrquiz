@@ -54,7 +54,10 @@ two `(admin)` layout and login pages). Don't add more; the check doesn't catch t
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
 `src/application/mappers/` (e.g. `player.dto.ts`, `player-mapper.ts`), then every route and hook
-that carries it uses that type. Components import DTOs, never entities.
+that carries it uses that type. Components import DTOs, never entities. Every array in an input
+schema gets a `.max()`: without one, zod reports an issue per bad element and a 4.5 MB body
+allocates ~1 GB, even on the patched zod
+(`docs/progress/findings/2026-11-11-zod-array-memory.md`).
 
 Path aliases (`tsconfig.json`): `@domain/*`, `@application/*`, `@infrastructure/*`,
 `@components/*`, `@hooks/*`, `@lib/*` (`src/lib/*`),
@@ -195,7 +198,7 @@ Every feature needs:
 | Entity behavior, invariants | `src/tests/domain/{entities,value-objects,aggregates,events}/` |
 | Use case success, not-found and invalid-state paths | `src/tests/application/use-cases/` |
 | Repository CRUD and edge cases | `src/tests/infrastructure/repositories/` |
-| Services, mappers, hooks, lib, API routes, components | `src/tests/{application/services,application/mappers,hooks,lib,app/api,components}/` |
+| Services, mappers, DTO schemas, hooks, lib, API routes, components | `src/tests/{application/services,application/mappers,application/dtos,hooks,lib,app/api,components}/` |
 | Cross-layer flows | `src/tests/integration/` |
 | User flows (Playwright) | `e2e/` |
 
@@ -220,8 +223,10 @@ type RouteContext = { params: Promise<{ quizId: string }> };
 export async function POST(request: Request, { params }: RouteContext) {
   try {
     const { quizId } = await params;
-    const parsed = InputSchema.parse({ quizId, ...(await request.json()) });
-    return NextResponse.json(await getServices().quizService.doSomething(parsed));
+    // Parse the raw body, then add params; never spread the body first (a JSON string spreads
+    // into one key per character before zod runs)
+    const input = BodySchema.parse(await request.json());
+    return NextResponse.json(await getServices().quizService.doSomething({ ...input, quizId }));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = /not found/i.test(message) ? 404 : 400;

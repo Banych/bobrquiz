@@ -39,6 +39,10 @@ export async function POST(
       return NextResponse.json({ error: message }, { status: 404 });
     }
 
+    if (error instanceof Error && error.name === 'ZodError') {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

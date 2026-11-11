@@ -251,6 +251,38 @@ describe('Admin question routes ownership', () => {
     );
   });
 
+  describe('hostile request bodies (issue 152)', () => {
+    it('create rejects a string body as a whole, without spreading it', async () => {
+      const response = await createQuestion(
+        request('x'.repeat(1000)),
+        quizCtx(A_QUIZ)
+      );
+
+      expect(response.status).toBe(400);
+      // Spread first, the string would become 1000 keys and fail on the
+      // missing fields instead of on the body's type.
+      const { error } = (await response.json()) as { error: string };
+      expect(error).toMatch(/expected object, received string/);
+      expect(JSON.parse(error)).toHaveLength(1);
+      expect(questionService.createQuestion).not.toHaveBeenCalled();
+    });
+
+    it('reorder answers an oversized list with 400 and changes nothing', async () => {
+      const questions = Array.from({ length: 501 }, (_, i) => ({
+        id: `q${i}`,
+        orderIndex: i,
+      }));
+
+      const response = await reorderQuestions(
+        request({ questions }),
+        quizCtx(A_QUIZ)
+      );
+
+      expect(response.status).toBe(400);
+      expectNothingChanged();
+    });
+  });
+
   describe('without a session', () => {
     beforeEach(() => {
       vi.mocked(getCurrentUserId).mockResolvedValue(null);
