@@ -221,8 +221,10 @@ type RouteContext = { params: Promise<{ quizId: string }> };
 export async function POST(request: Request, { params }: RouteContext) {
   try {
     const { quizId } = await params;
-    const parsed = InputSchema.parse({ quizId, ...(await request.json()) });
-    return NextResponse.json(await getServices().quizService.doSomething(parsed));
+    // Parse the raw body, then add params; never spread the body first (a JSON string spreads
+    // into one key per character before zod runs)
+    const input = BodySchema.parse(await request.json());
+    return NextResponse.json(await getServices().quizService.doSomething({ ...input, quizId }));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = /not found/i.test(message) ? 404 : 400;
