@@ -205,8 +205,9 @@ Every feature needs:
 - Repository tests mock the Prisma client: `vi.hoisted(() => ({ … vi.fn() }))` plus
   `vi.mock('@infrastructure/database/prisma/client', …)`, mocks reset in `beforeEach`
   (see `prisma-player-repository.test.ts`).
-- No `.skip` left behind. CI gates on `yarn lint`, the unit tests and `yarn build`; a UI or flow
-  change also runs `yarn test:e2e`.
+- No `.skip` left behind. CI gates on `yarn lint`, the unit tests and `yarn build`, except on a
+  change that touches only Markdown files or `docs/`, where it doesn't run (`paths-ignore` in
+  `.github/workflows/ci.yml`); a UI or flow change also runs `yarn test:e2e`.
 
 ## Key patterns
 
