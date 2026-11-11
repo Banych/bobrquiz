@@ -98,6 +98,25 @@ describe('Admin quiz routes ownership', () => {
       expect(quizService.assertQuizOwner).toHaveBeenCalledTimes(4);
       expect(quizService.assertQuizOwner).toHaveBeenCalledWith(A_QUIZ, HOST_A);
     });
+
+    it('answers delete errors by what failed, not by the words "not found"', async () => {
+      const deleteWith = async (message: string) => {
+        quizService.deleteQuiz.mockRejectedValueOnce(new Error(message));
+        return (await deleteQuiz(jsonRequest({}), ctx(A_QUIZ))).status;
+      };
+
+      // Removing the quiz's media failed: a misconfiguration, not a missing quiz
+      expect(await deleteWith('Failed to delete media: Bucket not found')).toBe(
+        500
+      );
+      // Another delete of the same quiz removed the row first (Prisma P2025)
+      expect(
+        await deleteWith(
+          'An operation failed because it depends on one or more records that were required but not found. No record was found for a delete.'
+        )
+      ).toBe(404);
+      expect(await deleteWith(`Quiz with ID ${A_QUIZ} not found`)).toBe(404);
+    });
   });
 
   describe("as another host (not the quiz's owner)", () => {

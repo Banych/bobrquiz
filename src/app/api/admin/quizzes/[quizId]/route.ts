@@ -110,8 +110,12 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     if (error instanceof Error) {
       // Deleting also removes the quiz's media, so a storage error such as
-      // "Bucket not found" must stay a 500, not read as a missing quiz.
-      if (/^Quiz with ID .+ not found/.test(error.message)) {
+      // "Bucket not found" must stay a 500, not read as a missing quiz. The
+      // second message is Prisma's when another delete removed the row first.
+      if (
+        /^Quiz with ID .+ not found/.test(error.message) ||
+        /No record was found for a delete/.test(error.message)
+      ) {
         return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
       }
 

@@ -124,8 +124,13 @@ Upload rules, checked on the server (the browser's checks stay but aren't truste
     write either lands before the second sweep lists the folder, and is removed by it, or
     its own check runs after the row is gone, and it removes itself. Any error in the check
     after the write removes the file too.
-  - Left open: a function killed by its time limit between the write and the check keeps
-    its file. Closing that needs a per-host counter in the database or a sweep job.
+  - Left open, each logged where the code can see it: a function killed by its time limit
+    between the write and the check keeps its file; a failed removal of a refused upload
+    keeps its file; a failed second sweep after a quiz delete keeps any file written during
+    the delete. Each needs a storage failure or a timeout, not just a request; closing them
+    needs a per-host counter in the database or a sweep job. The time limit can be
+    reached on purpose by owning very many quizzes (each count lists one folder per quiz),
+    which the parked fan-out item covers.
 - `fileName` in the DELETE route must match the server-made shape (letters, digits, `-`, one
   `.` and an allowed extension); anything else is a 400 before storage is called.
 

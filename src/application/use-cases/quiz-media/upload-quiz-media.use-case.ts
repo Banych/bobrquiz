@@ -108,7 +108,7 @@ export class UploadQuizMediaUseCase {
       await this.storage.remove(path);
     } catch (error) {
       console.error(
-        `[media] could not remove ${path} after a refused upload; it is outside the cap until removed`,
+        `[media] could not remove ${path} after a refused upload; remove it by hand (if its quiz was deleted, the cap no longer counts it)`,
         error
       );
     }
