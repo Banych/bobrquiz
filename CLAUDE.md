@@ -81,8 +81,10 @@ the end of a session). Paths below are under `src/`.
   mutation per host action: `api/quiz/start`, then `api/quiz/[quizId]/` `advance`,
   `lock-question`, `timer/reset`, `leaderboard/snapshot`, `finish`, `reset`.
 - Players panel: `components/host/player-list-with-status.tsx` (in the dashboard) →
-  `hooks/use-host-quiz-players.ts` → `api/quiz/[quizId]/players/status`; kicking is DELETE
-  `api/quiz/[quizId]/player/[playerId]`. Question timer: `components/host/timer-countdown.tsx`.
+  `hooks/use-host-quiz-players.ts` → `api/quiz/[quizId]/players/status`; kicking and idle
+  removal go through its `deletePlayer` to DELETE `api/quiz/[quizId]/player/[playerId]` →
+  `remove-player.use-case.ts`, which refuses a player from another quiz. Question timer:
+  `components/host/timer-countdown.tsx`.
 - Server: `application/services/quiz-service.ts` → use cases `start-quiz`, `advance-question`,
   `reset-quiz-timer`, `snapshot-leaderboard`, `end-quiz`, `reset-quiz`, `get-quiz-state`; the
   lock route calls `lock-question.use-case.ts` directly through `getServices()`. The routes then
@@ -146,8 +148,10 @@ the end of a session). Paths below are under `src/`.
   actions under `api/quiz/**` check the user and the quiz owner inside each route
   (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
   GET on the same path doesn't. The host pages check again: `/host` lists `listQuizzesByOwner`,
-  and the dashboard and live pages call `notFound()` for someone else's quiz (tests in
-  `src/tests/app/host-pages.test.ts`, which call the page functions directly).
+  and the dashboard and live pages call `notFound()` for someone else's quiz. Tests:
+  `tests/app/api/host-quiz-routes.test.ts` (every host route: owner, other host, no session),
+  `tests/app/host-pages.test.ts` (calls the page functions directly), and `tests/proxy.test.ts`,
+  whose matcher cases ask Next's `unstable_doesMiddlewareMatch`.
 
 **Cross-cutting**
 - Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
@@ -163,8 +167,11 @@ the end of a session). Paths below are under `src/`.
 - Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
   (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
-  main admin account) and every spec reuses that session; quizzes come from
-  `e2e/support/quiz-fixtures.ts` and stale ones are removed by `e2e/stale-quizzes.cleanup.ts`.
+  main admin account) and every spec reuses that session, except `e2e/signed-out.spec.ts`
+  (host-page redirects, a player joining and answering with no session); quizzes come from
+  `e2e/support/quiz-fixtures.ts`, players join through `e2e/support/player-join.ts`, and stale
+  quizzes are removed by `e2e/stale-quizzes.cleanup.ts`. The k6 load tests start and advance
+  quizzes as the owner through `HOST_COOKIE` (`tests/load/config.js`, README "Host session").
 
 ## Prisma v7 setup (non-standard)
 
