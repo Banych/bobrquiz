@@ -317,7 +317,8 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 
 ## Working rules
 
+- The default branch is `master`: branch with `git switch -c <name> --no-track origin/master`.
 - Product questions: `docs/plan.md` (roadmap), `docs/ARCHITECTURE.md`, `docs/mockups/` (UX).
 - Shared Claude settings live in `.claude/settings.json` and the workflow profile and facts in
-  `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json`, which is
-  git-ignored.
+  `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json` and
+  `.claude/workflow.local.json`, which are git-ignored.

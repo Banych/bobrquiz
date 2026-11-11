@@ -13,6 +13,10 @@ these records:
 
 No session files and no `dev-notes.md` lines; both are frozen history.
 
+The table is for the rigorous profile. In the ship profile, write a spec only for the
+expensive-to-reverse changes the profile names, with no plan file or ledger; the index line and
+ADR rows apply in both.
+
 ## Plan shape
 
 - A plan carries interfaces (the names and types neighbouring tasks rely on), the test code,

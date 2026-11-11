@@ -54,8 +54,10 @@ next-env.d.ts
 # Supabase CLI local link state (machine-specific, not project config)
 supabase/.temp/
 
-# Per-machine Claude Code overrides (shared settings live in .claude/settings.json)
+# Per-machine Claude Code overrides (shared settings live in .claude/settings.json,
+# the workflow profile in .claude/workflow.json)
 .claude/settings.local.json
+.claude/workflow.local.json
 
 # Plan workspaces (ledger, briefs, review diffs); commit a ledger with git add -f
 /.superpowers/

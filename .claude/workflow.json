@@ -24,6 +24,9 @@
     "src/infrastructure/auth/**",
     "src/proxy.ts",
     "src/app/api/**",
+    "src/lib/rate-limit.ts",
+    "src/infrastructure/storage/**",
+    "src/application/use-cases/assert-quiz-owner.use-case.ts",
     "vercel.json",
     ".github/workflows/**"
   ],
