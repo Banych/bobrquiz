@@ -137,12 +137,14 @@ the end of a session). Paths below are under `src/`.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.
-- Auth: `proxy.ts` guards `/admin` and `/api/admin` (admin check `isAdminUser` in
-  `infrastructure/auth/supabase-auth-client.ts`); login in `app/(admin)/login/`. The proxy
-  matches nothing else. The host actions under `api/quiz/**` check the user and the quiz owner
-  inside each route (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE
-  does, the player GET on the same path doesn't. The `/host` and `/quiz/**` pages have no login
-  check until the second quiz-owner part 3 PR (issue 140) lands.
+- Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**` (admin check
+  `isAdminUser` in `infrastructure/auth/supabase-auth-client.ts`); login in
+  `app/(admin)/login/`. `/join`, `/play/**` and `/api/quiz/**` stay outside it. The host
+  actions under `api/quiz/**` check the user and the quiz owner inside each route
+  (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
+  GET on the same path doesn't. The host pages check again: `/host` lists `listQuizzesByOwner`,
+  and the dashboard and live pages call `notFound()` for someone else's quiz (tests in
+  `src/tests/app/host-pages.test.ts`, which call the page functions directly).
 
 **Cross-cutting**
 - Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
