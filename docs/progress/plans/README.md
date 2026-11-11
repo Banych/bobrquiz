@@ -22,7 +22,7 @@ No session files and no `dev-notes.md` lines; both are frozen history.
 - Each task names its agent:
   - `implementer-transcribe`: haiku; the plan carries the complete code.
   - `implementer`: sonnet; integration or judgment.
-  - `implementer-capable`: opus; any capable-tier file listed in `CLAUDE.md`.
+  - `implementer-capable`: opus; any path in `capableTier` of `.claude/workflow.json`.
 - The test verdict command is `yarn test:run`. It is run by the main session, and its counts
   go in the ledger.
 

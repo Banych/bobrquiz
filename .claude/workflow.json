@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Banych/claude-config/main/workflows/workflow/workflow.schema.json",
+  "profile": "ship",
+  "verify": [
+    "yarn lint",
+    "yarn test:run",
+    "yarn build"
+  ],
+  "merge": "pr",
+  "capableTier": [
+    "src/infrastructure/realtime/**",
+    "src/hooks/use-presence.tsx",
+    "src/hooks/use-realtime-client.tsx",
+    "src/hooks/use-reconnection.ts",
+    "src/hooks/use-countdown-timer.ts",
+    "src/lib/presence-heartbeat-controller.ts",
+    "src/lib/debounce-broadcast.ts",
+    "src/app/providers.tsx",
+    "src/hooks/use-host-quiz-state.ts",
+    "src/hooks/use-player-session.ts"
+  ],
+  "riskPaths": [
+    "src/infrastructure/database/prisma/**",
+    "src/infrastructure/auth/**",
+    "src/proxy.ts",
+    "src/app/api/**",
+    "vercel.json",
+    ".github/workflows/**"
+  ],
+  "realTarget": "the dev server (http://localhost:3000, 3001 if busy) in a browser through the Playwright plugin; the user starts the server",
+  "docs": {
+    "decisions": "docs/DECISION-LOG.md",
+    "findings": "docs/progress/findings",
+    "specs": "docs/progress/plans",
+    "plans": "docs/progress/plans",
+    "progress": "docs/progress/PROGRESS.md",
+    "parkingLot": "docs/parking-lot.md"
+  }
+}
