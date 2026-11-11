@@ -14,7 +14,9 @@ export async function proxy(request: NextRequest) {
   console.log('[MIDDLEWARE] Processing request for:', pathname);
 
   const isAdminPage = pathname.startsWith('/admin') && pathname !== '/login';
-  const isHostPage = pathname === '/host' || pathname.startsWith('/quiz/');
+  // Same paths as the matcher's '/host' and '/quiz/:path*' (trailing slash and bare /quiz
+  // included), but not /hosting or /quizzes
+  const isHostPage = /^\/(host|quiz)(\/|$)/.test(pathname);
   const isAdminApi = pathname.startsWith('/api/admin');
 
   if (!isAdminPage && !isHostPage && !isAdminApi) {

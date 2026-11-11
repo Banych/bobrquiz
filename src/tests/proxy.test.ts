@@ -17,6 +17,7 @@ vi.mock('@/infrastructure/auth/supabase-auth-client', () => ({
   isAdminUser: isAdminUserMock,
 }));
 
+import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server';
 import { config, proxy } from '@/proxy';
 
 const makeRequest = (pathname: string) =>
@@ -211,13 +212,43 @@ describe('proxy', () => {
     });
   });
 
-  it('matches the admin and host paths only', () => {
-    expect(config.matcher).toEqual([
+  describe('matcher', () => {
+    const matches = (pathname: string) =>
+      unstable_doesMiddlewareMatch({
+        config,
+        url: `http://localhost:3000${pathname}`,
+      });
+
+    // Everything Next sends to the proxy must get the login check: a path the matcher
+    // sends but the proxy waves through would be a gap between the two
+    it.each([
       '/admin',
-      '/admin/:path*',
-      '/api/admin/:path*',
+      '/admin/quizzes',
+      '/api/admin/quizzes',
       '/host',
-      '/quiz/:path*',
-    ]);
+      '/host/',
+      '/quiz',
+      '/quiz/quiz-1',
+      '/quiz/quiz-1/live',
+    ])('sends %s to the proxy, which checks the login', async (pathname) => {
+      getUserMock.mockResolvedValue({ data: { user: null } });
+
+      expect(matches(pathname)).toBe(true);
+      const response = await proxy(makeRequest(pathname));
+      expect(response.headers.get('x-middleware-next')).toBeNull();
+      expect([307, 401]).toContain(response.status);
+    });
+
+    it.each([
+      '/',
+      '/join',
+      '/play/quiz-1/player-1',
+      '/api/quiz/quiz-1/state',
+      '/api/player/answer',
+      '/hosting',
+      '/quizzes',
+    ])('keeps %s away from the proxy', (pathname) => {
+      expect(matches(pathname)).toBe(false);
+    });
   });
 });
