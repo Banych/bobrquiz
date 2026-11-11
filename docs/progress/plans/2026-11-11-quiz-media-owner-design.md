@@ -118,6 +118,14 @@ Upload rules, checked on the server (the browser's checks stay but aren't truste
     only quizzes that exist: otherwise create, fill, delete, repeat escapes it. If removing
     the files fails, the quiz stays and the host can retry (amended 2026-11-11, security
     review).
+  - An upload racing its own quiz's deletion (amended 2026-11-11, second review round): the
+    check after the write also requires the quiz to still be the host's, and the delete
+    sweeps the folder again after removing the row (logged, not thrown, if that fails). A
+    write either lands before the second sweep lists the folder, and is removed by it, or
+    its own check runs after the row is gone, and it removes itself. Any error in the check
+    after the write removes the file too.
+  - Left open: a function killed by its time limit between the write and the check keeps
+    its file. Closing that needs a per-host counter in the database or a sweep job.
 - `fileName` in the DELETE route must match the server-made shape (letters, digits, `-`, one
   `.` and an allowed extension); anything else is a 400 before storage is called.
 

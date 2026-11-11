@@ -56,6 +56,7 @@ describe('Quiz media use cases', () => {
   let remove: DeleteQuizMediaUseCase;
   let list: ListOwnerMediaUseCase;
   let randomCalls = 0;
+  const deleted = new Set<string>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -73,13 +74,19 @@ describe('Quiz media use cases', () => {
     remove = new DeleteQuizMediaUseCase(storage, assertOwner);
     list = new ListOwnerMediaUseCase(quizRepository, storage);
 
+    deleted.clear();
     vi.mocked(quizRepository.findEntityById).mockImplementation(
-      async (id: string) => quizzes[id] ?? null
+      async (id: string) => (deleted.has(id) ? null : (quizzes[id] ?? null))
     );
     vi.mocked(quizRepository.listByOwner).mockImplementation(
       async (ownerId: string) =>
-        Object.values(quizzes).filter((quiz) => quiz.ownerId === ownerId)
+        Object.values(quizzes).filter(
+          (quiz) => quiz.ownerId === ownerId && !deleted.has(quiz.id)
+        )
     );
+    vi.mocked(quizRepository.delete).mockImplementation(async (id: string) => {
+      deleted.add(id);
+    });
   });
 
   describe('UploadQuizMediaUseCase', () => {
@@ -157,6 +164,54 @@ describe('Quiz media use cases', () => {
       expect(storage.objects.size).toBe(1);
     });
 
+    it('allows an upload that lands exactly at 50 MB', async () => {
+      storage.seed(
+        `questions/${A_QUIZ}/1-big.jpg`,
+        50 * 1024 * 1024 - PNG.length
+      );
+
+      await expect(
+        upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG })
+      ).resolves.toBeDefined();
+      expect(storage.objects.size).toBe(2);
+    });
+
+    it.each([
+      ['lands before the delete', 'write-then-delete'],
+      ['lands after the delete', 'delete-then-write'],
+    ] as const)(
+      'leaves nothing behind when its quiz is deleted while the write %s',
+      async (_name, order) => {
+        const deleteQuiz = new DeleteQuizUseCase(quizRepository, storage);
+        const write = storage.upload.bind(storage);
+        vi.spyOn(storage, 'upload').mockImplementation(async (...args) => {
+          if (order === 'delete-then-write') await deleteQuiz.execute(A_QUIZ);
+          await write(...args);
+          if (order === 'write-then-delete') await deleteQuiz.execute(A_QUIZ);
+        });
+
+        await expect(
+          upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG })
+        ).rejects.toThrow(NOT_FOUND(A_QUIZ));
+        expect(storage.objects.size).toBe(0);
+      }
+    );
+
+    it('removes its file when the count after the write fails', async () => {
+      const list = storage.list.bind(storage);
+      let calls = 0;
+      vi.spyOn(storage, 'list').mockImplementation(async (folder) => {
+        // The first count lists two folders; fail from the second count on
+        if (++calls > 2) throw new Error('Failed to list media: rate limited');
+        return list(folder);
+      });
+
+      await expect(
+        upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG })
+      ).rejects.toThrow('rate limited');
+      expect(storage.objects.size).toBe(0);
+    });
+
     it('keeps the cap when uploads run at the same moment', async () => {
       for (let i = 0; i < 199; i++) {
         storage.seed(`questions/${A_QUIZ}/1-a${i}.jpg`);
@@ -197,6 +252,37 @@ describe('Quiz media use cases', () => {
         `questions/${A_OTHER_QUIZ}/1-c.jpg`,
       ]);
       expect(quizRepository.delete).toHaveBeenCalledWith(A_QUIZ);
+    });
+
+    it('sweeps again after the row delete, for an upload that finished in between', async () => {
+      vi.mocked(quizRepository.delete).mockImplementation(
+        async (id: string) => {
+          // An upload runs start to finish after the first sweep, while the quiz
+          // still exists, so its own check passes
+          await upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG });
+          deleted.add(id);
+        }
+      );
+
+      await deleteQuiz();
+
+      expect([...storage.objects.keys()]).toEqual([
+        `questions/${A_OTHER_QUIZ}/1-c.jpg`,
+      ]);
+    });
+
+    it('still reports the quiz deleted when the sweep after the row delete fails', async () => {
+      const removeFolder = storage.removeFolder.bind(storage);
+      let calls = 0;
+      vi.spyOn(storage, 'removeFolder').mockImplementation(async (folder) => {
+        if (++calls === 2) throw new Error('Failed to delete media: boom');
+        return removeFolder(folder);
+      });
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      await expect(deleteQuiz()).resolves.toBeUndefined();
+      expect(quizRepository.delete).toHaveBeenCalledWith(A_QUIZ);
+      expect(console.error).toHaveBeenCalled();
     });
 
     it('keeps the quiz when its files cannot be removed', async () => {

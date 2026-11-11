@@ -19,10 +19,22 @@ export class DeleteQuizUseCase {
       throw new Error('Cannot delete an active quiz');
     }
 
-    // Files first: the per-host media cap counts only quizzes that exist, so
-    // files left behind by a deleted quiz would escape it. If this fails the
-    // quiz stays and the host can retry.
-    await this.mediaStorage.removeFolder(quizMediaFolder(quizId));
+    // The per-host media cap counts only quizzes that exist, so files left
+    // behind by a deleted quiz would escape it.
+    // - Files first: if that fails, the quiz stays and the host can retry.
+    // - Again after the row is gone: an upload whose write landed in between
+    //   is removed here; one that lands later finds the quiz gone and removes
+    //   its own file (UploadQuizMediaUseCase).
+    const folder = quizMediaFolder(quizId);
+    await this.mediaStorage.removeFolder(folder);
     await this.quizRepository.delete(quizId);
+    try {
+      await this.mediaStorage.removeFolder(folder);
+    } catch (error) {
+      console.error(
+        `[media] quiz ${quizId} deleted, but files written during the delete could not be removed from ${folder}`,
+        error
+      );
+    }
   }
 }

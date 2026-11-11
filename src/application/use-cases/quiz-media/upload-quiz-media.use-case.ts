@@ -58,13 +58,25 @@ export class UploadQuizMediaUseCase {
     const path = quizMediaPath(quizId, name);
     await this.storage.upload(path, bytes, type.contentType);
 
-    // Uploads running at the same moment all pass the first check. Counting
-    // again after the write, with this file included, catches them: each one
-    // over the cap removes its own file, so the cap holds once they finish.
-    const after = await this.usage(ownerId);
-    if (overCap(after.files, after.bytes)) {
-      await this.storage.remove(path);
-      throw limitReached();
+    // Checked again after the write, with this file included; any failure here
+    // removes the file, so nothing is left that the cap does not count.
+    // - Uploads running at the same moment all pass the first check; each one
+    //   that finds the host over the cap now backs itself out, so the cap holds
+    //   once they finish.
+    // - If the quiz was deleted meanwhile, its folder no longer counts: back
+    //   out too. (DeleteQuizUseCase sweeps the folder again after removing the
+    //   row, which catches a write that landed before this check ran.)
+    try {
+      const after = await this.usage(ownerId);
+      if (!after.quizIds.includes(quizId)) {
+        throw new Error(`Quiz with ID ${quizId} not found`);
+      }
+      if (overCap(after.files, after.bytes)) {
+        throw limitReached();
+      }
+    } catch (error) {
+      await this.discard(path);
+      throw error;
     }
 
     return {
@@ -78,7 +90,7 @@ export class UploadQuizMediaUseCase {
   /** Files and bytes across the folders of every quiz the host owns. */
   private async usage(
     ownerId: string
-  ): Promise<{ files: number; bytes: number }> {
+  ): Promise<{ files: number; bytes: number; quizIds: string[] }> {
     const quizzes = await this.quizRepository.listByOwner(ownerId);
     const folders = await Promise.all(
       quizzes.map((quiz) => this.storage.list(quizMediaFolder(quiz.id)))
@@ -87,7 +99,19 @@ export class UploadQuizMediaUseCase {
     return {
       files: all.length,
       bytes: all.reduce((sum, file) => sum + file.size, 0),
+      quizIds: quizzes.map((quiz) => quiz.id),
     };
+  }
+
+  private async discard(path: string): Promise<void> {
+    try {
+      await this.storage.remove(path);
+    } catch (error) {
+      console.error(
+        `[media] could not remove ${path} after a refused upload; it is outside the cap until removed`,
+        error
+      );
+    }
   }
 }
 

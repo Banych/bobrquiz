@@ -150,6 +150,23 @@ describe('SupabaseMediaStorage', () => {
     ).rejects.toThrow('did not empty');
   });
 
+  it('does not fail when another delete emptied the folder first', async () => {
+    const file = {
+      name: '1-a.png',
+      id: 'x',
+      created_at: 't',
+      metadata: { size: 1 },
+    };
+    bucket.list
+      .mockResolvedValueOnce({ data: [file], error: null })
+      .mockResolvedValue({ data: [], error: null });
+    bucket.remove.mockResolvedValue({ data: [], error: null });
+
+    await expect(
+      new SupabaseMediaStorage().removeFolder('questions/q/')
+    ).resolves.toBeUndefined();
+  });
+
   it('turns a storage error into a thrown error', async () => {
     bucket.list.mockResolvedValue({ data: null, error: { message: 'boom' } });
 

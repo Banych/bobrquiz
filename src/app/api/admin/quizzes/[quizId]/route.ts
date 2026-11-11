@@ -109,7 +109,9 @@ export async function DELETE(request: Request, context: RouteContext) {
     console.error('[API] Delete quiz error:', error);
 
     if (error instanceof Error) {
-      if (/not found/i.test(error.message)) {
+      // Deleting also removes the quiz's media, so a storage error such as
+      // "Bucket not found" must stay a 500, not read as a missing quiz.
+      if (/^Quiz with ID .+ not found/.test(error.message)) {
         return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
       }
 

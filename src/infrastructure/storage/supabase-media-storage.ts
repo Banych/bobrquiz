@@ -100,7 +100,15 @@ export class SupabaseMediaStorage implements IMediaStorage {
         throw new Error(`Failed to delete media: ${error.message}`);
       }
       if (data.length === 0) {
-        throw new Error(`Failed to delete media: ${folder} did not empty`);
+        // Another delete may have emptied it meanwhile; only a folder that
+        // still lists the same files is stuck.
+        const left = await this.list(folder);
+        const stuck = left.some((file) =>
+          files.some((tried) => tried.name === file.name)
+        );
+        if (stuck) {
+          throw new Error(`Failed to delete media: ${folder} did not empty`);
+        }
       }
     }
   }
