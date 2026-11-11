@@ -207,7 +207,8 @@ Every feature needs:
   (see `prisma-player-repository.test.ts`).
 - No `.skip` left behind. CI gates on `yarn lint`, the unit tests and `yarn build`, except on a
   change that touches only Markdown files or `docs/`, where it doesn't run (`paths-ignore` in
-  `.github/workflows/ci.yml`); a UI or flow change also runs `yarn test:e2e`.
+  `.github/workflows/ci.yml`). CI doesn't run e2e: for a UI or flow change, run `yarn test:e2e`
+  locally.
 
 ## Key patterns
 
