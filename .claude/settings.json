@@ -80,8 +80,6 @@
     "typescript-lsp@claude-plugins-official": true,
     "prisma@claude-plugins-official": false,
     "swiftui-expert@swiftui-expert-skill": false,
-    "chrisbanes-skills@chrisbanes-skills": false,
-    "ship-mode@claude-workflows": true,
-    "rigorous-mode@claude-workflows": false
+    "chrisbanes-skills@chrisbanes-skills": false
   }
 }
