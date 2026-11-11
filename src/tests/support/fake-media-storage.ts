@@ -58,6 +58,12 @@ export class FakeMediaStorage implements IMediaStorage {
       }));
   }
 
+  async removeFolder(folder: string) {
+    for (const file of await this.list(folder)) {
+      this.objects.delete(`${folder}${file.name}`);
+    }
+  }
+
   getPublicUrl(path: string) {
     return `${FAKE_MEDIA_BASE}${path}`;
   }

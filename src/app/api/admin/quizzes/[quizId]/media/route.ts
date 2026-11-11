@@ -51,7 +51,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[POST /api/admin/quizzes/[quizId]/media]', message);
 
-    if (/not found/i.test(message)) {
+    // Only the use cases' own not-found errors; a storage error such as
+    // "Bucket not found" is a misconfiguration and stays a 500.
+    if (/^(Quiz with ID .+ not found|Media file not found)/.test(message)) {
       return NextResponse.json({ error: message }, { status: 404 });
     }
     if (/^(Invalid media|Media limit reached)/.test(message)) {

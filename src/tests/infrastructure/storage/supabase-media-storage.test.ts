@@ -34,6 +34,9 @@ describe('SupabaseMediaStorage', () => {
     await expect(storage.remove('questions/q/1-a.png')).rejects.toThrow(
       'Media storage is not configured'
     );
+    await expect(storage.list('questions/q/')).rejects.toThrow(
+      'Media storage is not configured'
+    );
     expect(createClient).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalled();
   });
@@ -107,6 +110,44 @@ describe('SupabaseMediaStorage', () => {
       { name: '1-a.png', size: 42, createdAt: '2026-11-11T00:00:00Z' },
     ]);
     expect(bucket.list).toHaveBeenCalledWith('questions/q', expect.any(Object));
+  });
+
+  it('empties a folder in as many rounds as it takes', async () => {
+    const file = (name: string) => ({
+      name,
+      id: name,
+      created_at: '2026-11-11T00:00:00Z',
+      metadata: { size: 1 },
+    });
+    bucket.list
+      .mockResolvedValueOnce({
+        data: [file('1-a.png'), file('1-b.png')],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: [file('1-c.png')], error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+    bucket.remove.mockResolvedValue({ data: [{}], error: null });
+
+    await new SupabaseMediaStorage().removeFolder('questions/q/');
+
+    expect(bucket.remove.mock.calls).toEqual([
+      [['questions/q/1-a.png', 'questions/q/1-b.png']],
+      [['questions/q/1-c.png']],
+    ]);
+  });
+
+  it('stops with an error instead of looping when a folder will not empty', async () => {
+    bucket.list.mockResolvedValue({
+      data: [
+        { name: '1-a.png', id: 'x', created_at: 't', metadata: { size: 1 } },
+      ],
+      error: null,
+    });
+    bucket.remove.mockResolvedValue({ data: [], error: null });
+
+    await expect(
+      new SupabaseMediaStorage().removeFolder('questions/q/')
+    ).rejects.toThrow('did not empty');
   });
 
   it('turns a storage error into a thrown error', async () => {

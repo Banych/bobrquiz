@@ -10,6 +10,7 @@ import { DeleteQuizMediaUseCase } from '@application/use-cases/quiz-media/delete
 import { ListOwnerMediaUseCase } from '@application/use-cases/quiz-media/list-owner-media.use-case';
 import { CreateQuestionUseCase } from '@application/use-cases/create-question.use-case';
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
+import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
 import {
   FAKE_MEDIA_BASE,
   FakeMediaStorage,
@@ -48,14 +49,17 @@ describe('Quiz media use cases', () => {
     findEntityById: vi.fn(),
     listByOwner: vi.fn(),
     findById: vi.fn(),
+    delete: vi.fn(),
   } as unknown as IQuizRepository;
   let storage: FakeMediaStorage;
   let upload: UploadQuizMediaUseCase;
   let remove: DeleteQuizMediaUseCase;
   let list: ListOwnerMediaUseCase;
+  let randomCalls = 0;
 
   beforeEach(() => {
     vi.resetAllMocks();
+    randomCalls = 0;
     storage = new FakeMediaStorage();
     const assertOwner = new AssertQuizOwnerUseCase(quizRepository);
     upload = new UploadQuizMediaUseCase(
@@ -63,7 +67,8 @@ describe('Quiz media use cases', () => {
       storage,
       assertOwner,
       () => 1731300000000,
-      () => 'abc123'
+      // abc123 first, then a fresh name for every further upload
+      () => (randomCalls++ === 0 ? 'abc123' : `r${randomCalls}`)
     );
     remove = new DeleteQuizMediaUseCase(storage, assertOwner);
     list = new ListOwnerMediaUseCase(quizRepository, storage);
@@ -142,6 +147,66 @@ describe('Quiz media use cases', () => {
         upload.execute({ quizId: A_OTHER_QUIZ, ownerId: HOST_A, bytes: PNG })
       ).rejects.toThrow(/^Media limit reached/);
     });
+
+    it('refuses an upload that would take the host past 50 MB', async () => {
+      storage.seed(`questions/${A_QUIZ}/1-big.jpg`, 50 * 1024 * 1024 - 5);
+
+      await expect(
+        upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG })
+      ).rejects.toThrow(/^Media limit reached/);
+      expect(storage.objects.size).toBe(1);
+    });
+
+    it('keeps the cap when uploads run at the same moment', async () => {
+      for (let i = 0; i < 199; i++) {
+        storage.seed(`questions/${A_QUIZ}/1-a${i}.jpg`);
+      }
+
+      const results = await Promise.allSettled(
+        Array.from({ length: 20 }, () =>
+          upload.execute({ quizId: A_QUIZ, ownerId: HOST_A, bytes: PNG })
+        )
+      );
+
+      // All twenty pass the first count; each one over the cap removes its own file
+      expect(storage.objects.size).toBeLessThanOrEqual(200);
+      const kept = results.filter((result) => result.status === 'fulfilled');
+      expect(storage.objects.size).toBe(199 + kept.length);
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          expect(String(result.reason)).toMatch(/Media limit reached/);
+        }
+      }
+    });
+  });
+
+  describe('DeleteQuizUseCase', () => {
+    const deleteQuiz = () =>
+      new DeleteQuizUseCase(quizRepository, storage).execute(A_QUIZ);
+
+    beforeEach(() => {
+      storage.seed(`questions/${A_QUIZ}/1-a.jpg`);
+      storage.seed(`questions/${A_QUIZ}/1-b.jpg`);
+      storage.seed(`questions/${A_OTHER_QUIZ}/1-c.jpg`);
+    });
+
+    it("removes the quiz's files with the quiz, so none are left outside the cap", async () => {
+      await deleteQuiz();
+
+      expect([...storage.objects.keys()]).toEqual([
+        `questions/${A_OTHER_QUIZ}/1-c.jpg`,
+      ]);
+      expect(quizRepository.delete).toHaveBeenCalledWith(A_QUIZ);
+    });
+
+    it('keeps the quiz when its files cannot be removed', async () => {
+      vi.spyOn(storage, 'removeFolder').mockRejectedValue(
+        new Error('Failed to delete media: boom')
+      );
+
+      await expect(deleteQuiz()).rejects.toThrow('Failed to delete media');
+      expect(quizRepository.delete).not.toHaveBeenCalled();
+    });
   });
 
   describe('DeleteQuizMediaUseCase', () => {
@@ -157,10 +222,17 @@ describe('Quiz media use cases', () => {
       expect(storage.objects.has(PATH)).toBe(false);
     });
 
-    it('refuses another host with the not-found error and keeps the file', async () => {
+    it('refuses another host and a missing quiz with the not-found error and keeps the file', async () => {
       await expect(
         remove.execute({ quizId: A_QUIZ, ownerId: HOST_B, fileName: FILE })
       ).rejects.toThrow(NOT_FOUND(A_QUIZ));
+      await expect(
+        remove.execute({
+          quizId: 'quiz-missing',
+          ownerId: HOST_A,
+          fileName: FILE,
+        })
+      ).rejects.toThrow(NOT_FOUND('quiz-missing'));
       expect(storage.objects.has(PATH)).toBe(true);
     });
 

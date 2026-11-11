@@ -180,7 +180,8 @@ describe('Admin media routes', () => {
     });
 
     it('answers 500 when storage is not configured', async () => {
-      vi.spyOn(storage, 'upload').mockRejectedValue(
+      // With no key the first storage call (the cap count) already throws
+      vi.spyOn(storage, 'list').mockRejectedValue(
         new Error(
           'Media storage is not configured (SUPABASE_SERVICE_ROLE_KEY missing)'
         )
@@ -191,6 +192,36 @@ describe('Admin media routes', () => {
         quizCtx(A_QUIZ)
       );
       expect(response.status).toBe(500);
+    });
+
+    it('answers 500, not 404, to a storage error that says "not found"', async () => {
+      vi.spyOn(storage, 'upload').mockRejectedValue(
+        new Error('Failed to upload media: Bucket not found')
+      );
+      vi.spyOn(storage, 'remove').mockRejectedValue(
+        new Error('Failed to delete media: Bucket not found')
+      );
+
+      const upload = await uploadMedia(
+        uploadRequest(pngFile()),
+        quizCtx(A_QUIZ)
+      );
+      const remove = await deleteMedia(emptyRequest(), fileCtx(A_QUIZ, FILE));
+
+      expect([upload.status, remove.status]).toEqual([500, 500]);
+    });
+
+    it('gets 404 on a quiz that does not exist', async () => {
+      const upload = await uploadMedia(
+        uploadRequest(pngFile()),
+        quizCtx('quiz-missing')
+      );
+      const remove = await deleteMedia(
+        emptyRequest(),
+        fileCtx('quiz-missing', FILE)
+      );
+
+      expect([upload.status, remove.status]).toEqual([404, 404]);
     });
   });
 

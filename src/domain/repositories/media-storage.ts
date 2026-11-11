@@ -16,6 +16,8 @@ export interface IMediaStorage {
   remove(path: string): Promise<boolean>;
   /** Files directly inside a folder (folder ends with `/`); sub-folders are skipped. */
   list(folder: string): Promise<StoredMediaFile[]>;
+  /** Removes every file directly inside a folder (folder ends with `/`). */
+  removeFolder(folder: string): Promise<void>;
   /** The public URL players load the file from. Needs no credentials. */
   getPublicUrl(path: string): string;
 }

@@ -36,10 +36,15 @@ API routes. This spec does that (option 1 in issue 128, chosen by the user on 20
 ## Non-goals
 
 - Moving or renaming existing files, or rewriting any question's `mediaUrl`.
-- Deleting a file when its question or quiz is deleted, or warning that a file is still used by
-  a question (today's behaviour stays: deleting a used file breaks that question's image).
-- Cleaning up files left behind by deleted quizzes. They stay in the bucket, owned by nobody,
-  shown to nobody.
+- Deleting a file when its question is deleted, or warning that a file is still used by a
+  question (today's behaviour stays: deleting a used file breaks that question's image).
+  Deleting a quiz does delete its files (see the cap), which the first draft listed here.
+- Cleaning up files left behind by quizzes deleted before this change. They stay in the
+  bucket, owned by nobody, shown to nobody.
+- Rate-limiting uploads or capping quizzes per host. Each upload lists one folder per quiz the
+  host owns, so a host with very many quizzes makes each upload slow; parked.
+- Refusing an upload with no `Content-Length`. Vercel refuses bodies over 4.5 MB before the
+  route runs; this only matters if the app is ever self-hosted.
 - The public SELECT policy. It lets anyone with the anon key list file names in the bucket; the
   files themselves are public by URL anyway. Parked, not changed here.
 - Changing the client-side resize, the accepted image types or the upload UI.
@@ -97,11 +102,22 @@ Upload rules, checked on the server (the browser's checks stay but aren't truste
   1920×1080 at 85% JPEG before upload, so a real photo lands well under this.
 - The file name is made on the server (same `<timestamp>-<random>.<ext>` shape, extension
   taken from the allowed type, not from the uploaded name).
-- Per-host cap: before uploading, the use case counts the files in the folders of every quiz
-  the host owns and refuses the upload with a 400 ("media limit reached") at 200 files. Nothing
-  new is stored; the count comes from listing storage. Two uploads at the same moment can pass
-  the cap by one; acceptable (spec author's call, as are the number 200 and the 400 status).
-  The cap is a constant in the use case, not an environment variable.
+- Per-host cap: 200 files and 50 MB across the folders of every quiz the host owns; past
+  either, the upload is a 400 ("Media limit reached"). Nothing new is stored; the count comes
+  from listing storage. Both numbers are constants in `media-file.ts`, not environment
+  variables (spec author's calls, as is the 400 status).
+  - The use case counts before the upload, and again after it with the new file included; an
+    upload that finds itself over the cap then removes its own file. Uploads running at the
+    same moment all pass the first count, so without the second one the cap could be passed
+    by any number. With it the cap holds once they finish; near the cap, racing uploads may
+    all be refused (amended 2026-11-11 after the security review found the race).
+  - 50 MB (amended 2026-11-11, branch review): 200 files of up to 4 MB each would be 800 MB,
+    close to what the reviewer recalled, unverified, as the Free plan's 1 GB storage. A
+    browser-resized image is about 300 KB, so 200 of them fit.
+  - Deleting a quiz deletes its folder first (`DeleteQuizUseCase`), because the cap counts
+    only quizzes that exist: otherwise create, fill, delete, repeat escapes it. If removing
+    the files fails, the quiz stays and the host can retry (amended 2026-11-11, security
+    review).
 - `fileName` in the DELETE route must match the server-made shape (letters, digits, `-`, one
   `.` and an allowed extension); anything else is a 400 before storage is called.
 
@@ -176,7 +192,8 @@ with the `pg_policies` query from the finding.
   tests).
 - [ ] The owner's question-image upload works in the admin UI, and the media library lists and
   deletes that file (Playwright, new spec; the library had no working baseline).
-- [ ] The 201st upload by one host is refused (use case test with a mocked storage listing).
+- [ ] The 201st upload by one host, an upload past 50 MB, and uploads racing past the cap are
+  refused; deleting a quiz removes its files (use case tests with an in-memory bucket).
 - [ ] Creating or updating a question with an outside `mediaUrl`, or one from another quiz's
   folder, is a 400; an unchanged legacy value still saves (use case tests).
 - [ ] The policies are checked in both Supabase projects.

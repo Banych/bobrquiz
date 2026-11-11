@@ -3,6 +3,7 @@ import type { IQuizRepository } from '@domain/repositories/quiz-repository';
 import type { IMediaStorage } from '@domain/repositories/media-storage';
 import {
   MAX_MEDIA_BYTES,
+  MAX_MEDIA_BYTES_PER_OWNER,
   MAX_MEDIA_FILES_PER_OWNER,
   detectImageType,
   makeMediaFileName,
@@ -48,11 +49,23 @@ export class UploadQuizMediaUseCase {
       throw new Error('Invalid media: not a JPEG, PNG, GIF or WebP image');
     }
 
-    await this.assertUnderCap(ownerId);
+    const before = await this.usage(ownerId);
+    if (overCap(before.files + 1, before.bytes + bytes.length)) {
+      throw limitReached();
+    }
 
     const name = makeMediaFileName(type.extension, this.now(), this.random());
     const path = quizMediaPath(quizId, name);
     await this.storage.upload(path, bytes, type.contentType);
+
+    // Uploads running at the same moment all pass the first check. Counting
+    // again after the write, with this file included, catches them: each one
+    // over the cap removes its own file, so the cap holds once they finish.
+    const after = await this.usage(ownerId);
+    if (overCap(after.files, after.bytes)) {
+      await this.storage.remove(path);
+      throw limitReached();
+    }
 
     return {
       url: this.storage.getPublicUrl(path),
@@ -62,17 +75,28 @@ export class UploadQuizMediaUseCase {
     };
   }
 
-  /** Two uploads at the same moment can pass the cap by one; accepted in the spec. */
-  private async assertUnderCap(ownerId: string): Promise<void> {
+  /** Files and bytes across the folders of every quiz the host owns. */
+  private async usage(
+    ownerId: string
+  ): Promise<{ files: number; bytes: number }> {
     const quizzes = await this.quizRepository.listByOwner(ownerId);
     const folders = await Promise.all(
       quizzes.map((quiz) => this.storage.list(quizMediaFolder(quiz.id)))
     );
-    const total = folders.reduce((sum, files) => sum + files.length, 0);
-    if (total >= MAX_MEDIA_FILES_PER_OWNER) {
-      throw new Error(
-        `Media limit reached: a host can keep at most ${MAX_MEDIA_FILES_PER_OWNER} files`
-      );
-    }
+    const all = folders.flat();
+    return {
+      files: all.length,
+      bytes: all.reduce((sum, file) => sum + file.size, 0),
+    };
   }
 }
+
+const overCap = (files: number, bytes: number) =>
+  files > MAX_MEDIA_FILES_PER_OWNER || bytes > MAX_MEDIA_BYTES_PER_OWNER;
+
+const limitReached = () =>
+  new Error(
+    `Media limit reached: a host can keep at most ${MAX_MEDIA_FILES_PER_OWNER} files and ${
+      MAX_MEDIA_BYTES_PER_OWNER / (1024 * 1024)
+    } MB`
+  );

@@ -32,7 +32,9 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       message
     );
 
-    if (/not found/i.test(message)) {
+    // Only the use cases' own not-found errors; a storage error such as
+    // "Bucket not found" is a misconfiguration and stays a 500.
+    if (/^(Quiz with ID .+ not found|Media file not found)/.test(message)) {
       return NextResponse.json({ error: message }, { status: 404 });
     }
     if (/^Invalid media/.test(message)) {

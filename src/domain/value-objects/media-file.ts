@@ -12,6 +12,12 @@ export const MAX_MEDIA_BYTES = 4 * 1024 * 1024;
 /** Most files one host may keep across all of their quizzes. */
 export const MAX_MEDIA_FILES_PER_OWNER = 200;
 
+/**
+ * Most bytes one host may keep across all of their quizzes. A browser upload
+ * is resized to about 300 KB, so 200 of them fit; 200 raw 4 MB files do not.
+ */
+export const MAX_MEDIA_BYTES_PER_OWNER = 50 * 1024 * 1024;
+
 export type ImageType = {
   contentType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
   extension: 'jpg' | 'png' | 'gif' | 'webp';

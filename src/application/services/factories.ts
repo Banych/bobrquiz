@@ -149,6 +149,8 @@ export const getServices = (): ServiceContainer => {
     auditLogRepository,
     databaseHealthRepository,
   } = getRepositories();
+  // The only client that writes to the quiz-media bucket (service role)
+  const mediaStorage = new SupabaseMediaStorage();
 
   const addPlayerUseCase = new AddPlayerUseCase(
     quizRepository,
@@ -216,7 +218,7 @@ export const getServices = (): ServiceContainer => {
     auditLogRepository
   );
   const updateQuizUseCase = new UpdateQuizUseCase(quizRepository);
-  const deleteQuizUseCase = new DeleteQuizUseCase(quizRepository);
+  const deleteQuizUseCase = new DeleteQuizUseCase(quizRepository, mediaStorage);
   const resetQuizUseCase = new ResetQuizUseCase(quizRepository);
   const listQuizzesByOwnerUseCase = new ListQuizzesByOwnerUseCase(
     quizRepository
@@ -252,7 +254,6 @@ export const getServices = (): ServiceContainer => {
   );
 
   // Question service
-  const mediaStorage = new SupabaseMediaStorage();
   const createQuestionUseCase = new CreateQuestionUseCase(
     questionRepository,
     quizRepository,

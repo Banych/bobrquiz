@@ -34,7 +34,7 @@ const ENV_VARS: EnvVarConfig[] = [
     key: 'SUPABASE_SERVICE_ROLE_KEY',
     required: false,
     description:
-      'Supabase service role key (for server-side realtime broadcasts)',
+      'Supabase service role key (server-side realtime broadcasts; media uploads and deletes fail with 500 without it)',
   },
   {
     key: 'ADMIN_EMAILS',

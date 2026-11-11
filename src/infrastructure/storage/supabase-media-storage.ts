@@ -87,6 +87,24 @@ export class SupabaseMediaStorage implements IMediaStorage {
       }));
   }
 
+  async removeFolder(folder: string): Promise<void> {
+    // One list page holds far more than a host's cap; loop in case it doesn't.
+    for (;;) {
+      const files = await this.list(folder);
+      if (files.length === 0) return;
+
+      const { data, error } = await this.bucket().remove(
+        files.map((file) => `${folder}${file.name}`)
+      );
+      if (error) {
+        throw new Error(`Failed to delete media: ${error.message}`);
+      }
+      if (data.length === 0) {
+        throw new Error(`Failed to delete media: ${folder} did not empty`);
+      }
+    }
+  }
+
   getPublicUrl(path: string): string {
     return `${this.projectUrl()}/storage/v1/object/public/${BUCKET}/${path}`;
   }
