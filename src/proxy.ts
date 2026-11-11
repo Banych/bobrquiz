@@ -3,8 +3,10 @@ import { createServerClient } from '@supabase/ssr';
 import { isAdminUser } from '@/infrastructure/auth/supabase-auth-client';
 
 /**
- * Proxy (Next 16's name for middleware) to protect admin routes with Supabase Auth.
- * Checks for valid session and verifies user is in admin allowlist.
+ * Proxy (Next 16's name for middleware) to protect the admin area and the host pages
+ * (`/host`, `/quiz/**`) with Supabase Auth. Checks for a valid session and verifies the
+ * user is in the admin allowlist. The host API routes under `/api/quiz/**` check the
+ * user and the quiz owner themselves, so player routes on the same paths stay anonymous.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,9 +14,12 @@ export async function proxy(request: NextRequest) {
   console.log('[MIDDLEWARE] Processing request for:', pathname);
 
   const isAdminPage = pathname.startsWith('/admin') && pathname !== '/login';
+  // Same paths as the matcher's '/host' and '/quiz/:path*' (trailing slash and bare /quiz
+  // included), but not /hosting or /quizzes
+  const isHostPage = /^\/(host|quiz)(\/|$)/.test(pathname);
   const isAdminApi = pathname.startsWith('/api/admin');
 
-  if (!isAdminPage && !isAdminApi) {
+  if (!isAdminPage && !isHostPage && !isAdminApi) {
     return NextResponse.next();
   }
 
@@ -83,10 +88,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all admin routes including /admin itself, and /api/admin routes
+     * Match all admin routes including /admin itself, /api/admin routes, and the host
+     * pages: the quiz picker and every /quiz/<id> page
      */
     '/admin',
     '/admin/:path*',
     '/api/admin/:path*',
+    '/host',
+    '/quiz/:path*',
   ],
 };

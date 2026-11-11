@@ -13,7 +13,6 @@ import { LockQuestionUseCase } from '@application/use-cases/lock-question.use-ca
 import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { UpdateQuizUseCase } from '@application/use-cases/update-quiz.use-case';
 import { DeleteQuizUseCase } from '@application/use-cases/delete-quiz.use-case';
-import { ListAllQuizzesUseCase } from '@application/use-cases/list-all-quizzes.use-case';
 import { ListQuizzesByOwnerUseCase } from '@application/use-cases/list-quizzes-by-owner.use-case';
 import { AssertQuizOwnerUseCase } from '@application/use-cases/assert-quiz-owner.use-case';
 import { ResetQuizUseCase } from '@application/use-cases/reset-quiz.use-case';
@@ -41,7 +40,6 @@ describe('QuizService', () => {
   let createQuizUseCase: Mocked<CreateQuizUseCase>;
   let updateQuizUseCase: Mocked<UpdateQuizUseCase>;
   let deleteQuizUseCase: Mocked<DeleteQuizUseCase>;
-  let listAllQuizzesUseCase: Mocked<ListAllQuizzesUseCase>;
   let listQuizzesByOwnerUseCase: Mocked<ListQuizzesByOwnerUseCase>;
   let assertQuizOwnerUseCase: Mocked<AssertQuizOwnerUseCase>;
   let resetQuizUseCase: Mocked<ResetQuizUseCase>;
@@ -92,10 +90,6 @@ describe('QuizService', () => {
       execute: vi.fn(),
     } as unknown as Mocked<DeleteQuizUseCase>;
 
-    listAllQuizzesUseCase = {
-      execute: vi.fn(),
-    } as unknown as Mocked<ListAllQuizzesUseCase>;
-
     resetQuizUseCase = {
       execute: vi.fn(),
     } as unknown as Mocked<ResetQuizUseCase>;
@@ -120,7 +114,6 @@ describe('QuizService', () => {
       createQuizUseCase,
       updateQuizUseCase,
       deleteQuizUseCase,
-      listAllQuizzesUseCase,
       resetQuizUseCase,
       listQuizzesByOwnerUseCase,
       assertQuizOwnerUseCase
