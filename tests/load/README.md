@@ -84,11 +84,15 @@ owner's session in `HOST_COOKIE`:
 1. Sign in at `/login` as the account that owns `quizId`.
 2. In DevTools → Network, open any request to the app and copy the whole `Cookie` request
    header (the Supabase session cookie may be split into `.0` and `.1` parts).
-3. Pass it to k6:
+3. Paste it at a hidden prompt, so it stays out of shell history and the process list (k6
+   reads exported variables into `__ENV`; don't pass it with `-e`):
 
 ```bash
-k6 run -e HOST_COOKIE='<copied Cookie header>' tests/load/answer-submission-storm.js
+read -rs HOST_COOKIE && export HOST_COOKIE && k6 run tests/load/answer-submission-storm.js
 ```
+
+4. Sign out afterwards: the cookie carries a long-lived refresh token, and signing out revokes
+   it. Use a local or dev account, never a production session.
 
 Player routes (join, answer, presence) stay anonymous and send no cookie.
 

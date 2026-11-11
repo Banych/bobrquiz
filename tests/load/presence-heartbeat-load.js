@@ -28,6 +28,11 @@ export function setup() {
   const quiz = JSON.parse(quizRes.body);
   console.log(`✓ Using quiz: ${quiz.title}`);
 
+  // Starting needs the host session: fail before joining any players
+  if (quiz.status !== 'Active') {
+    hostHeaders();
+  }
+
   // Pre-create players in batches (reduced to 25 for dev server capacity)
   const totalPlayers = 25;
   const batchSize = 5;
