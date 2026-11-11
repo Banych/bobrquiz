@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServices } from '@application/services/factories';
 import {
-  CreateQuestionDTO,
+  CreateQuestionBodyDTO,
+  type CreateQuestionDTO,
   QuestionListItemDTO,
 } from '@application/dtos/question-admin.dto';
 import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
@@ -53,10 +54,13 @@ export async function POST(
     }
 
     const { quizId } = await context.params;
-    const body = await request.json();
+    const body: unknown = await request.json();
 
-    // Validate and parse request body
-    const dto = CreateQuestionDTO.parse({ ...body, quizId });
+    // Validate the raw body before building anything from it
+    const dto: CreateQuestionDTO = {
+      ...CreateQuestionBodyDTO.parse(body),
+      quizId,
+    };
 
     const { quizService, questionService } = getServices();
     await quizService.assertQuizOwner(quizId, userId);

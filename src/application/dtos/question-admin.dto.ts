@@ -31,6 +31,13 @@ export const CreateQuestionDTO = z.object({
 export type CreateQuestionDTO = z.infer<typeof CreateQuestionDTO>;
 
 /**
+ * The create request's body: the quiz id comes from the route. Parse the raw
+ * body with this, never spread it into an object first: spreading a JSON
+ * string body makes one key per character before zod sees it.
+ */
+export const CreateQuestionBodyDTO = CreateQuestionDTO.omit({ quizId: true });
+
+/**
  * DTO for updating an existing question (admin)
  */
 export const UpdateQuestionDTO = z.object({
