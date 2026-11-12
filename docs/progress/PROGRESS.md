@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-12: Quiz Media Owner, Part 1 ✅
+- **2026-11-12** — owner-checked server routes to upload, delete and list question images, writing with the service-role key; the server reads the image type from the file's bytes, caps a file at 4 MB and each host at 200 files and 50 MB, a question's image must be a file in its own quiz's folder, and deleting a quiz deletes its media. Nothing calls the routes yet: the admin screens switch in part 2, and the storage write policies are dropped in part 3, which closes issue 128. The media cap fan-out across a host's quizzes is parked — [PR #160](https://github.com/Banych/bobrquiz/pull/160) — [spec](plans/2026-11-11-quiz-media-owner-design.md)
+
 ### 2026-11-11: Dependabot security alerts ✅
 - **2026-11-11** — zod 4.6.7 and a `.max()` on every admin question input array (50 options, 50 correct answers, 500 reordered questions); the create route parses the body before spreading it, and reorder answers a validation error with 400. Closes issue 152 (Dependabot's high-severity zod alert); the zod bump alone did not stop the memory growth — [PR #156](https://github.com/Banych/bobrquiz/pull/156) — [findings](findings/2026-11-11-zod-array-memory.md)
 - **2026-11-11** — the seven other open alerts (seroval, fast-uri, minimatch) can't be reached in production and are parked; player name and answer length went to issue 157 — [PR #153](https://github.com/Banych/bobrquiz/pull/153)
