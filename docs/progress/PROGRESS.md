@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-12: Quiz Media Owner, Part 3 ✅
+- **2026-11-12** — the `quiz-media` bucket's `authenticated` INSERT and DELETE policies are dropped in both Supabase projects, so only the owner-checked server routes can write; the bucket keeps public read. Production held 0 media files and no outside image links before the drop, and a production upload and delete went through the UI after it. `yarn media:check-non-owner` (dev) tries an upload, overwrite, move and delete as a non-owner: FAIL before the drop, PASS after. The media guide is rewritten to the real flow (closes issue 80), ADR-028 records server-only storage writes, and the storage-policies finding is marked fixed. Closes issue 128 and the quiz media spec; sign-ups (issue 129) stay off for now — [PR #164](https://github.com/Banych/bobrquiz/pull/164) — [spec](plans/2026-11-11-quiz-media-owner-design.md) — [findings](findings/2026-10-15-storage-policies-any-user.md)
+
 ### 2026-11-12: Quiz Media Owner, Part 2 ✅
 - **2026-11-12** — the question dialogs upload, and the media library lists (with each file's quiz) and deletes, through the owner-checked media routes; a refused image shows the server's message. The browser storage service is deleted, so no admin screen writes to storage directly and no admin component imports infrastructure. The storage write policies are still in place until part 3, which closes issue 128. Parked: images left behind by a dialog count toward the media cap; a one-off e2e teardown connection reset — [PR #162](https://github.com/Banych/bobrquiz/pull/162) — [spec](plans/2026-11-11-quiz-media-owner-design.md)
 
