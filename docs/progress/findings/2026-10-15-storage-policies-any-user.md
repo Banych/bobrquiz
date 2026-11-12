@@ -72,6 +72,15 @@ with the anon key and tries to write into a quiz folder the main admin owns:
 - `yarn test:e2e` afterwards: 48 passed, including the owner's upload, list and delete
   (`e2e/admin-media.spec.ts`).
 
-**Production** (`noyj…`): pending, run by the user.
+**Production** (`noyj…`), 2026-11-12, run by the user in its SQL editor after part 2 was
+deployed (`ab18e5e`):
+
+- Before the drop: `quiz-media` held 0 objects; no object outside `questions/<quizId>/<file>`,
+  none in a folder whose quiz is gone, and no question whose `mediaUrl` is outside its own
+  quiz's folder ("Success. No rows returned" for each).
+- Dropped the same two policies; `pg_policies` on `storage.objects` then listed only
+  `Public read access for quiz media` (SELECT, `{public}`, `bucket_id = 'quiz-media'`).
+- Not run on production: the non-owner script (it needs a second admin there) and an upload
+  through the UI.
 
 Signups stay off until issue 129 ships; they no longer have to for storage's sake.
