@@ -14,6 +14,7 @@
     "prisma:seed": "prisma db seed --schema ./src/infrastructure/database/prisma/schema.prisma",
     "seed:demo": "tsx src/infrastructure/database/prisma/seed-launch-demo.ts",
     "quiz:assign-owner": "tsx src/infrastructure/database/prisma/assign-quiz-owner.ts",
+    "media:check-non-owner": "node --env-file=.env.local node_modules/.bin/tsx tests/security/media-non-owner-check.ts",
     "test": "vitest",
     "test:run": "vitest --run",
     "test:watch": "vitest --watch",

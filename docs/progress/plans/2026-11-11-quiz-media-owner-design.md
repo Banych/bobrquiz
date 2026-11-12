@@ -1,7 +1,9 @@
 # Quiz media: only the quiz's owner can upload and delete (issue 128)
 
 Status: In progress — part 1 merged in PR #160 and part 2 in PR #162 (both 2026-11-12); part 3
-to do
+built on `feat/quiz-media-policy-drop`, with the storage write policies dropped on dev and
+production and a production upload and delete checked through the UI (2026-11-12); done when
+its PR merges
 
 Size: this is near the ship profile's split line (about 8 steps, more than 10 files). If the plan
 passes it, split into part 1 (routes, components, cap, URL check, tests) and part 2 (the policy
@@ -191,8 +193,8 @@ with the `pg_policies` query from the finding.
 
 ## Acceptance (from the issue)
 
-- [ ] This spec picks one option (option 1).
-- [ ] On dev, a signed-in session that doesn't own the quiz, using the anon key, cannot upload
+- [x] This spec picks one option (option 1).
+- [x] On dev, a signed-in session that doesn't own the quiz, using the anon key, cannot upload
   to or delete from `quiz-media`. A rerunnable `tsx` script run with `.env.local`:
   1. plants a file in one of the main admin's quiz folders with the service-role key;
   2. signs in as the second test admin (`TEST_AUTH_ADMIN_*`) with the anon key and tries to
@@ -204,16 +206,16 @@ with the `pg_policies` query from the finding.
   an empty result, not an error, so "no error" proves nothing. A script rather than a
   Playwright spec, because `e2e/admin-auth.spec.ts` logs that account out of all its sessions
   and would race a parallel spec. (Spec author's call.)
-- [ ] The second test admin also gets 404 from the new routes on the main admin's quiz (route
+- [x] The second test admin also gets 404 from the new routes on the main admin's quiz (route
   tests).
-- [ ] The owner's question-image upload works in the admin UI, and the media library lists and
+- [x] The owner's question-image upload works in the admin UI, and the media library lists and
   deletes that file (Playwright, new spec; the library had no working baseline).
-- [ ] The 201st upload by one host, an upload past 50 MB, and uploads racing past the cap are
+- [x] The 201st upload by one host, an upload past 50 MB, and uploads racing past the cap are
   refused; deleting a quiz removes its files (use case tests with an in-memory bucket).
-- [ ] Creating or updating a question with an outside `mediaUrl`, or one from another quiz's
+- [x] Creating or updating a question with an outside `mediaUrl`, or one from another quiz's
   folder, is a 400; an unchanged legacy value still saves (use case tests).
-- [ ] The policies are checked in both Supabase projects.
-- [ ] The finding gets a "Fixed" section; Common pitfalls item 2 in `CLAUDE.md` is updated.
+- [x] The policies are checked in both Supabase projects.
+- [x] The finding gets a "Fixed" section; Common pitfalls item 2 in `CLAUDE.md` is updated.
 
 Also in this change: route and use case tests for owner, non-owner and no-session paths;
 `docs/guides/MEDIA-UPLOADS.md` rewritten to the real flow (closes issue 80); the `CLAUDE.md`

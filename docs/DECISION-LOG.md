@@ -400,7 +400,8 @@ Use Next.js 15 App Router with Server Components (default) and Client Components
 
 ## ADR-012: Supabase Storage for Media (Images)
 
-**Status**: ✅ **ACTIVE** (R4+)
+**Status**: ✅ **ACTIVE** (R4+); amended by ADR-028 (2026-11-12): the bucket stays, but writes
+go only through server routes, not through RLS policies on user sessions
 **Date**: 2025-12-20
 **Supersedes**: N/A (first-class media support)
 
@@ -885,6 +886,40 @@ plan; the migration is a row in `docs/parking-lot.md`.
 - Parts 2 and 3 move the remaining admin and live-game routes onto the same guard.
 - The owner guard loads the whole quiz to compare one column; part 3 should add a select-only
   owner lookup before using it per host action.
+
+---
+
+## ADR-028: Storage Writes Go Only Through the Server (2026-11-12)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-12
+**Decided by**: Vlad (option 1 of issue 128, 2026-11-11; spec:
+`docs/progress/plans/2026-11-11-quiz-media-owner-design.md`)
+**Amends**: ADR-012 (who may write to `quiz-media`)
+
+### Decision
+- Uploads and deletes in the `quiz-media` bucket happen only in server routes, after the quiz
+  owner check, with the service-role key. The browser never writes to storage.
+- The bucket keeps one policy, public read (SELECT for `public`). The `authenticated` INSERT and
+  DELETE policies are dropped in both Supabase projects, and no write policy is added back.
+- A file's owner is the owner of the quiz whose folder it sits in (`questions/<quizId>/`); there
+  is no per-file owner record.
+- The server, not the browser, decides a file's type (from its bytes), name, size limit and the
+  per-host cap (200 files, 50 MB).
+
+### Rationale
+- Storage policies saw only "is this an authenticated session": once host sign-ups open
+  (issue 129), any account could write into any quiz's folder with the public anon key
+  (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
+- Owner-scoped policies on `auth.uid()` (option 2) would need a per-owner folder layout and still
+  couldn't enforce the type, size or cap rules; the server already has the quiz owner guard.
+
+### Consequences
+- A missing `SUPABASE_SERVICE_ROLE_KEY` breaks every upload, delete and media library load, and
+  quiz deletion too, since it removes the quiz's media folder first (loud 500 by design).
+- Every upload costs a function invocation and goes through Vercel's 4.5 MB body limit.
+- Files outside `questions/<quizId>/` can't be managed from the app any more.
+- `yarn media:check-non-owner` checks on dev that a non-owner session can't write.
 
 ---
 
