@@ -5,7 +5,9 @@ to do
 
 Size: this is near the ship profile's split line (about 8 steps, more than 10 files). If the plan
 passes it, split into part 1 (routes, components, cap, URL check, tests) and part 2 (the policy
-drop, the non-owner script and the docs), with `Closes` only on part 2.
+drop, the non-owner script and the docs), with `Closes` only on part 2. As built (2026-11-12) it
+took three parts: part 1 the routes, cap and URL check; part 2 the admin components; part 3 the
+policy drop, the non-owner script and the docs, with `Closes` only on part 3.
 
 ## Why
 
