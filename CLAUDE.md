@@ -48,8 +48,7 @@ infrastructure.
 
 Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
 presentation files that import infrastructure (realtime in `use-presence.tsx` and
-`use-realtime-client.tsx`, storage in the three admin question/media components, auth in the
-two `(admin)` layout and login pages). Don't add more; the check doesn't catch them yet.
+`use-realtime-client.tsx`, auth in the two `(admin)` layout and login pages). Don't add more; the check doesn't catch them yet.
 `@/infrastructure/…` is the same import as `@infrastructure/…`.
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in
@@ -136,10 +135,9 @@ the end of a session). Paths below are under `src/`.
   cases go through `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from
   another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
   `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
-- Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
-  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`), straight
-  from the browser. Owner-checked server routes exist but nothing calls them yet (issue 128,
-  spec `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`): `api/admin/quizzes/[quizId]/media`
+- Media: `app/(admin)/admin/media` → `media-library.tsx` and the question dialogs (through
+  `image-upload.tsx`) → `hooks/use-quiz-media.ts` → owner-checked routes (issue 128, spec
+  `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`): `api/admin/quizzes/[quizId]/media`
   (upload), `…/media/[fileName]` (delete) and `api/admin/media` (list) → use cases in
   `application/use-cases/quiz-media/` → `infrastructure/storage/supabase-media-storage.ts`
   (service role). Rules (image bytes, file names, per-host cap) are in
