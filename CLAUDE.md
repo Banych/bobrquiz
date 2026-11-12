@@ -136,9 +136,12 @@ the end of a session). Paths below are under `src/`.
   cases go through `loadQuizQuestion` (`get-quiz-question.use-case.ts`), so a question from
   another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
   `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
-- Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
-  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`), straight
-  from the browser. Owner-checked server routes exist but nothing calls them yet (issue 128,
+- Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs' picker
+  `components/admin/image-upload.tsx` (type and size checks, resize in `lib/image-utils.ts`)
+  uploads through `infrastructure/storage/supabase-storage.ts` (guide:
+  `docs/guides/MEDIA-UPLOADS.md`), straight from the browser. The bucket's storage policies were
+  made in the Supabase dashboard, not by a migration here. Owner-checked server routes exist but
+  nothing calls them yet (issue 128,
   spec `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`): `api/admin/quizzes/[quizId]/media`
   (upload), `…/media/[fileName]` (delete) and `api/admin/media` (list) → use cases in
   `application/use-cases/quiz-media/` → `infrastructure/storage/supabase-media-storage.ts`
@@ -159,9 +162,11 @@ the end of a session). Paths below are under `src/`.
   whose matcher cases ask Next's `unstable_doesMiddlewareMatch`.
 
 **Cross-cutting**
-- Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
-  `auditService` are object literals there, with no service file of their own; env checks
-  `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
+- Composition root `application/services/factories.ts` (`getServices()`); `questionService`,
+  `auditService` and `mediaService` are object literals there, with no service file of their
+  own; env checks `lib/env-validation.ts`; server-side Supabase clients with the service-role key:
+  `infrastructure/realtime/supabase-server-client.ts` (returns null without the key, so
+  broadcasts stop quietly) and `infrastructure/storage/supabase-media-storage.ts` (throws); Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
   `infrastructure/database/prisma/seed*.ts` (owner from `SEED_QUIZ_OWNER_ID`); migrations in
   `infrastructure/database/prisma/migrations/`; one-off owner backfill
   `assign-quiz-owner.ts` (`yarn quiz:assign-owner`).
@@ -169,7 +174,10 @@ the end of a session). Paths below are under `src/`.
   `ping-database.use-case.ts` → `prisma-database-health.repository.ts`. Production Supabase is on
   the Free plan and pauses after a quiet week without it (ADR-026); `Quiz-game-dev` has no
   keepalive and may need restoring before local work.
-- Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
+- Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root; shared fakes in
+  `src/tests/support/`, e.g. the in-memory bucket `fake-media-storage.ts`; admin route tests
+  `src/tests/app/api/admin-*-routes.test.ts` stub `getServices` and cover owner, other host and
+  no session); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
   (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
   main admin account) and every spec reuses that session, except `e2e/signed-out.spec.ts`
@@ -316,6 +324,9 @@ start (`# Workflow: …`); it is not repeated here.
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
+   That copy lags the lockfile when a dependency bump lands later: run
+   `yarn install --frozen-lockfile` in the worktree before trusting a test result (seen
+   2026-11-11: zod 4.4.3 installed against a 4.6.7 lockfile failed five DTO tests).
 
 ## Debugging order
 
