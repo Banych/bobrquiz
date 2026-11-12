@@ -24,7 +24,7 @@ import {
 import { Alert, AlertDescription } from '@ui/alert';
 import { X, AlertTriangle } from 'lucide-react';
 import { ImageUpload } from '@components/admin/image-upload';
-import { createStorageService } from '@infrastructure/storage/supabase-storage';
+import { useUploadQuizMedia } from '@hooks/use-quiz-media';
 import type {
   UpdateQuestionDTO,
   QuestionListItemDTO,
@@ -54,7 +54,7 @@ export function EditQuestionDialog({
   const [typeChanged, setTypeChanged] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 
-  const storageService = createStorageService();
+  const uploadMedia = useUploadQuizMedia(quizId);
 
   // Fetch full question details when dialog opens
   useEffect(() => {
@@ -319,11 +319,7 @@ export function EditQuestionDialog({
             <ImageUpload
               value={mediaUrl}
               onUpload={async (file) => {
-                const result = await storageService.upload({
-                  file,
-                  bucket: 'quiz-media',
-                  path: `questions/${quizId}/`,
-                });
+                const result = await uploadMedia.mutateAsync(file);
                 setMediaUrl(result.url);
                 return result.url;
               }}

@@ -24,7 +24,7 @@ import {
 } from '@ui/select';
 import { Plus, X } from 'lucide-react';
 import { ImageUpload } from '@components/admin/image-upload';
-import { createStorageService } from '@infrastructure/storage/supabase-storage';
+import { useUploadQuizMedia } from '@hooks/use-quiz-media';
 import type { CreateQuestionDTO } from '@application/dtos/question-admin.dto';
 
 interface CreateQuestionDialogProps {
@@ -43,7 +43,7 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
   const [points, setPoints] = useState(10);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 
-  const storageService = createStorageService();
+  const uploadMedia = useUploadQuizMedia(quizId);
 
   const createMutation = useMutation({
     mutationFn: async (dto: CreateQuestionDTO) => {
@@ -292,11 +292,7 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
             <ImageUpload
               value={mediaUrl}
               onUpload={async (file) => {
-                const result = await storageService.upload({
-                  file,
-                  bucket: 'quiz-media',
-                  path: `questions/${quizId}/`,
-                });
+                const result = await uploadMedia.mutateAsync(file);
                 setMediaUrl(result.url);
                 return result.url;
               }}
