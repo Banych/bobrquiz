@@ -1,6 +1,6 @@
 # Quiz media: only the quiz's owner can upload and delete (issue 128)
 
-Status: Approved 2026-11-11 — not started
+Status: In progress — part 1 merged in PR #160 (2026-11-12); parts 2 and 3 to do
 
 Size: this is near the ship profile's split line (about 8 steps, more than 10 files). If the plan
 passes it, split into part 1 (routes, components, cap, URL check, tests) and part 2 (the policy
