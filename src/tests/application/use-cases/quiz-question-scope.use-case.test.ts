@@ -5,6 +5,7 @@ import { GetQuizQuestionUseCase } from '@application/use-cases/get-quiz-question
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
 import { ReorderQuestionsUseCase } from '@application/use-cases/reorder-questions.use-case';
+import { FakeMediaStorage } from '@/tests/support/fake-media-storage';
 
 const OWN_QUIZ = 'quiz-own';
 const OTHER_QUIZ = 'quiz-other';
@@ -54,7 +55,10 @@ describe('Question use cases scoped to their quiz', () => {
   });
 
   describe('UpdateQuestionUseCase', () => {
-    const useCase = new UpdateQuestionUseCase(questionRepository);
+    const useCase = new UpdateQuestionUseCase(
+      questionRepository,
+      new FakeMediaStorage()
+    );
 
     it('updates a question of the given quiz', async () => {
       const updated = await useCase.execute(OWN_QUIZ, 'q-own', {

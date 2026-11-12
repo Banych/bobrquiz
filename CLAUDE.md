@@ -137,8 +137,13 @@ the end of a session). Paths below are under `src/`.
   another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
   `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
 - Media: `app/(admin)/admin/media` → `media-library.tsx`; the question dialogs upload through
-  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`). There
-  is no media API route: both talk to Supabase Storage from the browser.
+  `infrastructure/storage/supabase-storage.ts` (guide: `docs/guides/MEDIA-UPLOADS.md`), straight
+  from the browser. Owner-checked server routes exist but nothing calls them yet (issue 128,
+  spec `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`): `api/admin/quizzes/[quizId]/media`
+  (upload), `…/media/[fileName]` (delete) and `api/admin/media` (list) → use cases in
+  `application/use-cases/quiz-media/` → `infrastructure/storage/supabase-media-storage.ts`
+  (service role). Rules (image bytes, file names, per-host cap) are in
+  `domain/value-objects/media-file.ts`; deleting a quiz also deletes its media folder.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.

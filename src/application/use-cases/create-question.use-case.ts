@@ -1,7 +1,9 @@
 import type { IQuestionRepository } from '@domain/repositories/question-repository';
 import type { IQuizRepository } from '@domain/repositories/quiz-repository';
+import type { IMediaStorage } from '@domain/repositories/media-storage';
 import { Question } from '@domain/entities/question';
 import type { CreateQuestionDTO } from '@application/dtos/question-admin.dto';
+import { assertQuizMediaUrl } from '@application/use-cases/quiz-media/assert-quiz-media-url';
 import { randomUUID } from 'crypto';
 
 /**
@@ -12,11 +14,13 @@ import { randomUUID } from 'crypto';
  * - For multiple-choice: options array required, correctAnswers must reference option values
  * - For true/false: options auto-set to ['True', 'False']
  * - For text: options empty, correctAnswers are text variants (case-insensitive matching)
+ * - An image must be a file uploaded to this quiz's own media folder
  */
 export class CreateQuestionUseCase {
   constructor(
     private readonly questionRepository: IQuestionRepository,
-    private readonly quizRepository: IQuizRepository
+    private readonly quizRepository: IQuizRepository,
+    private readonly mediaStorage: IMediaStorage
   ) {}
 
   async execute(dto: CreateQuestionDTO): Promise<Question> {
@@ -24,6 +28,10 @@ export class CreateQuestionUseCase {
     const quiz = await this.quizRepository.findById(dto.quizId);
     if (!quiz) {
       throw new Error(`Quiz not found: ${dto.quizId}`);
+    }
+
+    if (dto.mediaUrl) {
+      assertQuizMediaUrl(this.mediaStorage, dto.quizId, dto.mediaUrl);
     }
 
     // Get existing questions to calculate orderIndex
