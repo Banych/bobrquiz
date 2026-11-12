@@ -71,8 +71,7 @@ server repeats what matters and trusts none of it.
 ## Storage policies
 
 Expected state in both Supabase projects: exactly one policy in the whole `storage` schema (on
-`objects`; `buckets` has none). Checked 2026-11-12 on dev for the whole schema, and on production
-for `storage.objects`.
+`objects`; `buckets` has none). Checked 2026-11-12 in both projects.
 
 ```sql
 SELECT tablename, policyname, cmd, roles, qual, with_check

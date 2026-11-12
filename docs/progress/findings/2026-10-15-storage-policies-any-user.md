@@ -80,7 +80,10 @@ deployed (`ab18e5e`):
   quiz's folder ("Success. No rows returned" for each).
 - Dropped the same two policies; `pg_policies` on `storage.objects` then listed only
   `Public read access for quiz media` (SELECT, `{public}`, `bucket_id = 'quiz-media'`).
-- Not run on production: the non-owner script (it needs a second admin there) and an upload
-  through the UI.
+- Afterwards the user uploaded a question image through the production UI, saw it listed in the
+  media library and deleted it, and ran `pg_policies` for the whole `storage` schema; they
+  reported both as fine (output not pasted). `vercel env ls production` lists
+  `SUPABASE_SERVICE_ROLE_KEY` as set.
+- Not run on production: the non-owner script (it needs a second admin there).
 
 Signups stay off until issue 129 ships; they no longer have to for storage's sake.

@@ -2,7 +2,8 @@
 
 Status: In progress — part 1 merged in PR #160 and part 2 in PR #162 (both 2026-11-12); part 3
 built on `feat/quiz-media-policy-drop`, with the storage write policies dropped on dev and
-production (2026-11-12); a production upload and delete through the UI still to check
+production and a production upload and delete checked through the UI (2026-11-12); done when
+its PR merges
 
 Size: this is near the ship profile's split line (about 8 steps, more than 10 files). If the plan
 passes it, split into part 1 (routes, components, cap, URL check, tests) and part 2 (the policy
