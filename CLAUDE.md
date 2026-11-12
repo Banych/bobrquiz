@@ -142,7 +142,8 @@ the end of a session). Paths below are under `src/`.
   (upload), `…/media/[fileName]` (delete) and `api/admin/media` (list) → use cases in
   `application/use-cases/quiz-media/` → `infrastructure/storage/supabase-media-storage.ts`
   (service role). Rules (image bytes, file names, per-host cap) are in
-  `domain/value-objects/media-file.ts`; deleting a quiz also deletes its media folder.
+  `domain/value-objects/media-file.ts`; deleting a quiz also deletes its media folder. Guide:
+  `docs/guides/MEDIA-UPLOADS.md`; non-owner check on dev: `tests/security/media-non-owner-check.ts`.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.
@@ -308,9 +309,11 @@ start (`# Workflow: …`); it is not repeated here.
 ## Common pitfalls
 
 1. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
-2. Supabase signups must stay disabled in both projects. The `quiz-media` storage policies let
-   any authenticated user upload and delete, and only admin accounts exist
-   (`docs/progress/findings/2026-10-15-storage-policies-any-user.md`).
+2. Storage writes go only through the owner-checked media routes (ADR-028): `quiz-media` keeps
+   just its public read policy. Never add an INSERT, UPDATE or DELETE policy for `authenticated`;
+   with sign-ups open, any account could write into any quiz's folder. `yarn
+   media:check-non-owner` checks it on dev (`docs/guides/MEDIA-UPLOADS.md`). Supabase signups stay
+   disabled in both projects until issue 129 ships.
 3. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev

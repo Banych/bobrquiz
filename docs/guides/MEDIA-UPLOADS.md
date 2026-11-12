@@ -1,606 +1,114 @@
-# Guide: Media Uploads (Images to Supabase Storage)
+# Guide: Question Images (Media Uploads)
 
-This guide covers how to upload quiz question images, store them in Supabase Storage, and display thumbnails in the admin interface.
+How a host attaches an image to a question, where it is stored, and who may change it. Rewritten
+2026-11-12 for issue 128 (spec: `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`,
+decision ADR-028); the earlier version described a flow that never existed (issue 80).
 
-## Overview
+## The rule
 
-Media uploads allow admins to attach images to quiz questions. The flow:
+Only the server writes to storage. The browser never calls the Supabase Storage API to upload or
+delete: it sends the file to an API route, the route checks that the signed-in host owns the
+quiz, and the server writes with the service-role key. The `quiz-media` bucket has one policy
+left, public read, so a user session with the anon key can read images but cannot write any.
 
-1. **Client**: Select/drag image → Client-side resize (max 1920x1080, 85% quality)
-2. **Upload**: POST to Supabase Storage `quiz-media` bucket
-3. **Store**: Save public URL in Question `mediaUrl` field
-4. **Display**: Thumbnail in question list, full image in edit dialog
+## Where files live
 
----
+- Bucket `quiz-media` (public), one folder per quiz: `questions/<quizId>/<file>`.
+- A file belongs to the quiz whose folder it sits in, so its owner is that quiz's owner. Nothing
+  else records ownership.
+- File names are made on the server: `<timestamp>-<random>.<ext>`, with the extension taken from
+  the detected image type, never from the uploaded name.
+- Deleting a quiz deletes its folder first (`DeleteQuizUseCase`), then sweeps it again after the
+  row is gone.
 
-## Supabase Storage Setup
-
-### 1. Create Storage Bucket
-
-Navigate to **Supabase Dashboard → Storage → Create Bucket**:
+## The flow
 
 ```
-Bucket Name:       quiz-media
-Public:            Yes (images need public access)
-File Size Limit:   10 MB
-Allowed MIME Types:
-  - image/jpeg
-  - image/png
-  - image/webp
-  - image/gif
+image-upload.tsx (resize in the browser)
+  → hooks/use-quiz-media.ts
+  → POST /api/admin/quizzes/[quizId]/media           (multipart field `file`)
+  → upload-quiz-media.use-case.ts                    (owner, type, size, per-host cap)
+  → infrastructure/storage/supabase-media-storage.ts (service role)
 ```
 
-### 2. Configure RLS Policies
+| Route | Does | Errors |
+|---|---|---|
+| `POST /api/admin/quizzes/[quizId]/media` | uploads one image to the quiz's folder; returns `{ url, path, name, size }` | 400 bad, wrong-type or too-large file, or host at the cap; 401; 404 |
+| `DELETE /api/admin/quizzes/[quizId]/media/[fileName]` | deletes one file from the quiz's folder | 400 name isn't a media file name; 401; 404 quiz not owned or file missing |
+| `GET /api/admin/media` | lists the files of every quiz the host owns, with `quizId` and `quizTitle` | 401 |
 
-Add these Row Level Security policies via **Storage → quiz-media → Policies**:
+Each route reads the user with `getCurrentUserId()` (401 when none) and, for a quiz route, runs
+the quiz owner guard: someone else's quiz is the same 404 as a missing one. The use cases are in
+`src/application/use-cases/quiz-media/`; the rules in `src/domain/value-objects/media-file.ts`.
 
-**Policy 1: Public Read Access**
+Screens:
+
+- The create and edit question dialogs upload through `useUploadQuizMedia(quizId)` and save the
+  returned `url` as the question's `mediaUrl`. Removing the image in a dialog only clears the
+  field; the file stays until it's deleted in the library (parked: it counts toward the cap).
+- The media library (`/admin/media`, `media-library.tsx`) lists through `useOwnerMedia()` and
+  deletes through `useDeleteQuizMedia()`.
+
+## Server-side checks
+
+The browser's own checks (accepted types, a 10 MB pick limit, resizing) are conveniences; the
+server repeats what matters and trusts none of it.
+
+- **Type:** read from the file's first bytes: JPEG, PNG, GIF or WebP. Anything else is a 400. The
+  object is stored with the detected content type, so a file labelled `image/png` that isn't one
+  never lands on the project's storage domain.
+- **Size:** at most 4 MB per file (`MAX_MEDIA_BYTES`); Vercel refuses bodies over 4.5 MB. The
+  browser resizes to at most 1920×1080 as an 85% JPEG first (`src/lib/image-utils.ts`), so a
+  real photo lands at a few hundred KB.
+- **Per-host cap:** 200 files and 50 MB across all of a host's quizzes (`MAX_MEDIA_FILES_PER_OWNER`,
+  `MAX_MEDIA_BYTES_PER_OWNER`). The upload counts before writing and again after; an upload that
+  finds itself over the cap, or its quiz gone, removes its own file. The cases this leaves open
+  are listed in the spec under "Per-host cap".
+- **A question's image URL:** creating or changing a question's `mediaUrl` must point at a file
+  in that quiz's own folder (`assert-quiz-media-url.ts`); an outside URL or another quiz's file
+  is a 400. An unchanged older value still saves.
+
+## Storage policies
+
+Expected state in both Supabase projects (checked 2026-11-12):
+
 ```sql
-CREATE POLICY "Public read access for quiz media"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'quiz-media');
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'storage' AND tablename = 'objects';
+-- Public read access for quiz media | SELECT | {public} | (bucket_id = 'quiz-media'::text)
 ```
 
-**Policy 2: Authenticated Upload** (further gated by middleware)
-```sql
-CREATE POLICY "Authenticated users can upload quiz media"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'quiz-media');
-```
-
-**Policy 3: Authenticated Delete** (further gated by middleware)
-```sql
-CREATE POLICY "Authenticated users can delete quiz media"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'quiz-media');
-```
-
-**Warning**: These allow any authenticated user to upload or delete, through the Storage API
-directly. The admin check only guards the app's own pages and routes. They are safe only while
-signups stay disabled in the Supabase project and every account is an admin. See
-[the 2026-10-15 findings](../progress/findings/2026-10-15-storage-policies-any-user.md).
-
-### 3. Verify Bucket Configuration
-
-Test bucket is public:
-```bash
-curl https://<PROJECT_REF>.supabase.co/storage/v1/object/public/quiz-media/test.txt
-# Should return 404 (not 403) if bucket is public
-```
-
----
-
-## Architecture
-
-### Components
-
-- **Storage Service** (`src/infrastructure/storage/`) – Upload/delete abstraction
-- **Image Utils** (`src/lib/image-utils.ts`) – Client-side resizing
-- **Upload Component** (`src/components/admin/image-upload.tsx`) – Drag-and-drop UI
-- **Question Dialogs** – Integration in create/edit flows
-
-### Data Flow
-
-```
-User selects image
-  ↓
-Client validates (type, size)
-  ↓
-Client resizes (1920x1080, 85% quality)
-  ↓
-POST multipart to API route
-  ↓
-Server calls StorageService.upload()
-  ↓
-Supabase Storage stores file
-  ↓
-Return public URL
-  ↓
-Save URL in Question entity mediaUrl field
-  ↓
-Display thumbnail in list
-```
-
----
-
-## Implementation
-
-### 1. Storage Service Interface
-
-```typescript
-// src/infrastructure/storage/storage-service.ts
-
-export interface IStorageService {
-  upload(bucket: string, path: string, file: Buffer): Promise<string>;
-  delete(bucket: string, path: string): Promise<void>;
-  getPublicUrl(bucket: string, path: string): string;
-}
-```
-
-### 2. Supabase Implementation
-
-```typescript
-// src/infrastructure/storage/supabase-storage.service.ts
-
-import { createClient } from '@supabase/supabase-js';
-
-export class SupabaseStorageService implements IStorageService {
-  private supabase;
-
-  constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role for server-side uploads
-    );
-  }
-
-  async upload(bucket: string, path: string, file: Buffer): Promise<string> {
-    const { data, error } = await this.supabase.storage
-      .from(bucket)
-      .upload(path, file, { upsert: true });
-
-    if (error) throw new Error(`Upload failed: ${error.message}`);
-
-    return this.getPublicUrl(bucket, data.path);
-  }
-
-  async delete(bucket: string, path: string): Promise<void> {
-    const { error } = await this.supabase.storage
-      .from(bucket)
-      .remove([path]);
-
-    if (error) throw new Error(`Delete failed: ${error.message}`);
-  }
-
-  getPublicUrl(bucket: string, path: string): string {
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
-  }
-}
-```
-
-### 3. Image Resizing (Client-Side)
-
-```typescript
-// src/lib/image-utils.ts
-
-export async function resizeImage(
-  file: File,
-  maxWidth: number = 1920,
-  maxHeight: number = 1080,
-  quality: number = 0.85
-): Promise<{ blob: Blob; sizeKb: number }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        // Calculate dimensions (preserve aspect ratio)
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to blob with compression
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Failed to convert canvas to blob'));
-              return;
-            }
-            const sizeKb = Math.round(blob.size / 1024);
-            resolve({ blob, sizeKb });
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = event.target?.result as string;
-    };
-
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-}
-
-export function validateImage(file: File): { valid: boolean; error?: string } {
-  const maxSizeMb = 10;
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-  if (!allowedTypes.includes(file.type)) {
-    return { valid: false, error: 'Only JPEG, PNG, WebP, and GIF images allowed' };
-  }
-
-  if (file.size > maxSizeMb * 1024 * 1024) {
-    return { valid: false, error: `Image must be smaller than ${maxSizeMb}MB` };
-  }
-
-  return { valid: true };
-}
-```
-
-### 4. Upload Component
-
-```typescript
-// src/components/admin/image-upload.tsx
-
-'use client';
-
-import { useState } from 'react';
-import { resizeImage, validateImage } from '@lib/image-utils';
-import { Button } from '@ui/button';
-import { X, Upload } from 'lucide-react';
-
-interface ImageUploadProps {
-  value?: string; // Current image URL
-  onChange: (url: string | undefined) => void;
-}
-
-export function ImageUpload({ value, onChange }: ImageUploadProps) {
-  const [preview, setPreview] = useState<string | undefined>(value);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleFileSelect = async (file: File) => {
-    // 1. Validate
-    const validation = validateImage(file);
-    if (!validation.valid) {
-      setError(validation.error ?? 'Invalid image');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // 2. Resize client-side
-      const originalSize = Math.round(file.size / 1024);
-      const { blob, sizeKb } = await resizeImage(file);
-      console.log(`📸 Image resized: ${originalSize}KB → ${sizeKb}KB (${Math.round((1 - sizeKb / originalSize) * 100)}% reduction)`);
-
-      // 3. Create preview
-      const previewUrl = URL.createObjectURL(blob);
-      setPreview(previewUrl);
-
-      // 4. Upload to server
-      const formData = new FormData();
-      formData.append('file', blob);
-
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const { url } = await res.json();
-      onChange(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
-      setPreview(undefined);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      {/* Drag-and-drop zone */}
-      <div
-        onDrop={(e) => {
-          e.preventDefault();
-          const file = e.dataTransfer.files[0];
-          if (file) handleFileSelect(file);
-        }}
-        onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed rounded-lg p-4 text-center"
-      >
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFileSelect(file);
-          }}
-          disabled={loading}
-          hidden
-          id="image-input"
-        />
-        <label htmlFor="image-input" className="cursor-pointer">
-          <Upload className="mx-auto mb-2 h-6 w-6" />
-          <p>Drag image or click to upload</p>
-          <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF • Max 10MB</p>
-        </label>
-      </div>
-
-      {/* Preview */}
-      {preview && (
-        <div className="relative w-full max-w-xs">
-          <img src={preview} alt="Preview" className="rounded-lg" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setPreview(undefined);
-              onChange(undefined);
-            }}
-            className="absolute top-1 right-1"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && <p className="text-sm text-red-500">{error}</p>}
-
-      {/* Loading state */}
-      {loading && <p className="text-sm text-blue-500">Uploading...</p>}
-    </div>
-  );
-}
-```
-
-### 5. API Upload Endpoint
-
-```typescript
-// src/app/api/admin/upload/route.ts
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServices } from '@application/services/factories';
-
-export async function POST(req: NextRequest) {
-  try {
-    // Get file from FormData
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    // Convert to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Upload via storage service
-    const services = getServices();
-    const url = await services.storageService.upload(
-      'quiz-media',
-      `${Date.now()}-${file.name}`,
-      buffer
-    );
-
-    return NextResponse.json({ url });
-  } catch (err) {
-    console.error('Upload error:', err);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-  }
-}
-```
-
-### 6. Integration in Create/Edit Dialogs
-
-```typescript
-// src/components/admin/create-question-dialog.tsx
-
-import { ImageUpload } from './image-upload';
-import { useForm } from 'react-hook-form';
-
-export function CreateQuestionDialog() {
-  const form = useForm({
-    defaultValues: {
-      mediaUrl: undefined,
-    },
-  });
-
-  return (
-    <Dialog>
-      <DialogContent>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          {/* Other fields... */}
-          <ImageUpload
-            value={form.watch('mediaUrl')}
-            onChange={(url) => form.setValue('mediaUrl', url)}
-          />
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-```
-
-### 7. Display in Question List
-
-```typescript
-// src/components/admin/question-list.tsx
-
-export function QuestionList({ questions }: { questions: QuestionDTO[] }) {
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Question</th>
-          <th>Type</th>
-          <th>Media</th>
-        </tr>
-      </thead>
-      <tbody>
-        {questions.map((q) => (
-          <tr key={q.id}>
-            <td>{q.prompt}</td>
-            <td>{q.type}</td>
-            <td>
-              {q.mediaUrl ? (
-                <img src={q.mediaUrl} alt="Media" className="w-10 h-10 rounded" />
-              ) : (
-                <span className="text-gray-400">No media</span>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-```
-
----
-
-## Database Schema
-
-The Question model tracks media:
-
-```prisma
-model Question {
-  id        String   @id @default(cuid())
-  // ... other fields ...
-  mediaUrl  String?
-  mediaType String?  // "image" | "video" | etc.
-  // ... more fields ...
-}
-```
-
-Update via DTOs:
-
-```typescript
-// src/application/dtos/question.dto.ts
-
-export const CreateQuestionDTO = z.object({
-  // ... other fields ...
-  mediaUrl: z.string().url().optional(),
-  mediaType: z.enum(['image', 'video']).optional(),
-});
-```
-
----
-
-## Testing Media Upload
-
-### Manual Testing via Playwright MCP
-
-1. **Activate browser tools**:
-   ```
-   activate_browser_navigation_tools()
-   activate_page_capture_tools()
-   ```
-
-2. **Navigate to admin**:
-   ```
-   mcp_microsoft_pla_browser_navigate('http://localhost:3000/admin/quizzes')
-   ```
-
-3. **Create question with image**:
-   - Click "Create Question"
-   - Fill in question details
-   - Drag image into upload area
-   - Observe client-side resize (console logs size reduction)
-   - Click Save
-   - Verify thumbnail appears in list
-
-4. **Edit question**:
-   - Click edit on a question
-   - Verify existing image loads in upload area
-   - Upload new image
-   - Verify list updates
-
-5. **Verify Supabase Storage**:
-   - Supabase Dashboard → Storage → quiz-media
-   - Confirm files are uploaded
-
-### End-to-End Tests
-
-```typescript
-// e2e/admin-media-upload.spec.ts
-
-import { test, expect } from '@playwright/test';
-
-test('should upload image to question', async ({ page }) => {
-  await page.goto('http://localhost:3000/admin/quizzes');
-  // ... create quiz ...
-  // ... open create question dialog ...
-
-  // Upload image
-  const fileInput = page.locator('input[type="file"]');
-  await fileInput.setInputFiles('test-image.png');
-
-  // Wait for preview
-  await expect(page.locator('img[alt="Preview"]')).toBeVisible();
-
-  // Save
-  await page.getByRole('button', { name: 'Save' }).click();
-
-  // Verify thumbnail in list
-  await expect(page.locator('img[alt="Media"]')).toBeVisible();
-});
-```
-
----
-
-## File Size Optimization
-
-The client-side resize dramatically reduces upload size:
-
-| Original | Resized | Reduction |
-| -------- | ------- | --------- |
-| 26.6 KB  | 13.7 KB | 48%       |
-| 95.2 KB  | 42.1 KB | 56%       |
-| 150 KB   | 68 KB   | 55%       |
-
-This saves bandwidth and Supabase storage costs.
-
----
+The service role bypasses RLS, so the routes need no write policy. Don't add an INSERT, UPDATE or
+DELETE policy for `authenticated`: with host sign-ups open, any account could then write into any
+quiz's folder from the browser.
+
+To confirm a non-owner can't write on dev, run `yarn media:check-non-owner` (needs `.env.local`
+with the service-role key and both test admins). It plants a file in a quiz folder the main admin
+owns, tries an upload and a delete as `TEST_AUTH_ADMIN_*` with the anon key, and checks the files
+afterwards with the service-role key. Exit 0 means both were refused. Checking the files is the
+point: a delete the policies refuse still returns no error with 0 objects removed.
+
+## Displaying images
+
+Questions show `mediaUrl` through `next/image`; `next.config.ts` allows
+`https://*.supabase.co/storage/v1/object/public/**`.
+
+## Tests
+
+- Use cases: `src/tests/application/use-cases/quiz-media.use-case.test.ts` (cap and race cases
+  with an in-memory bucket); routes: `src/tests/app/api/admin-media-routes.test.ts` (owner, other
+  host, no session).
+- Hook: `src/tests/hooks/use-quiz-media.test.ts`.
+- E2E: `e2e/admin-media.spec.ts` uploads a question image as the owner, finds it in the library
+  under its quiz, and deletes it.
 
 ## Troubleshooting
 
-**"Access Denied when uploading"**
-- Check RLS policies are set (see Setup section)
-- Verify admin user email in `ADMIN_EMAILS`
-
-**"Image doesn't display in list"**
-- Check `mediaUrl` is saved in database (use Prisma Studio)
-- Verify Supabase bucket is public
-- Check CORS: Next.js should auto-handle, but check `next.config.ts` for `remotePatterns`
-
-**"Upload times out"**
-- Image might be too large; client resize should help
-- Check network in dev tools (Network tab)
-- Verify Supabase project is responsive (check status page)
-
----
-
-## Related Documentation
-
-- [guides/SETUP.md](SETUP.md) – Project setup and Next.js config
-- [guides/PRESENTATION-LAYER.md](PRESENTATION-LAYER.md) – Form handling and components
-- [guides/DATA-LAYER.md](DATA-LAYER.md) – Database schema for media
-- [DECISION-LOG.md](../DECISION-LOG.md) – ADR-012 on Supabase Storage
+- **Every upload or delete is a 500 "Media storage is not configured":** `SUPABASE_SERVICE_ROLE_KEY`
+  is missing in that environment. It fails loudly by design.
+- **"Media limit reached":** the host is at 200 files or 50 MB; delete files in the media library.
+- **"Invalid media: the image must be a file uploaded to this quiz":** the question's image URL
+  points outside the quiz's folder; upload the image again through the dialog.
+- **Image doesn't display:** check `mediaUrl` in the database and the `remotePatterns` entry in
+  `next.config.ts`.
