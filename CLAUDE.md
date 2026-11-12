@@ -137,13 +137,16 @@ the end of a session). Paths below are under `src/`.
   another quiz is "not found" like a missing one. Across quizzes, `app/(admin)/admin/questions` →
   `all-questions-view.tsx` → `api/admin/questions` (only the user's quizzes, from `listByOwner`).
 - Media: `app/(admin)/admin/media` → `media-library.tsx` and the question dialogs (through
-  `image-upload.tsx`) → `hooks/use-quiz-media.ts` → owner-checked routes (issue 128, spec
+  `image-upload.tsx`, which resizes with `lib/image-utils.ts`) → `hooks/use-quiz-media.ts` →
+  owner-checked routes (issue 128, spec
   `docs/progress/plans/2026-11-11-quiz-media-owner-design.md`): `api/admin/quizzes/[quizId]/media`
   (upload), `…/media/[fileName]` (delete) and `api/admin/media` (list) → use cases in
   `application/use-cases/quiz-media/` → `infrastructure/storage/supabase-media-storage.ts`
   (service role). Rules (image bytes, file names, per-host cap) are in
   `domain/value-objects/media-file.ts`; deleting a quiz also deletes its media folder. Guide:
   `docs/guides/MEDIA-UPLOADS.md`; non-owner check on dev: `tests/security/media-non-owner-check.ts`.
+  Tests: the four media use cases share one file, `tests/application/use-cases/quiz-media.use-case.test.ts`;
+  routes `tests/app/api/admin-media-routes.test.ts`; e2e `e2e/admin-media.spec.ts` (repo root).
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.
@@ -171,7 +174,7 @@ the end of a session). Paths below are under `src/`.
   keepalive and may need restoring before local work.
 - Unit tests mirror `src/` under `src/tests/` (`proxy.test.ts` at its root); Playwright specs in
   `e2e/`, page objects in `e2e/pages/`, helpers in `e2e/support/`; load tests in `tests/load/`
-  (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
+  and the dev-only storage check in `tests/security/` (repo root, not `src/`). e2e signs in once in `e2e/auth.setup.ts` as `TEST_ADMIN_EMAIL` (the
   main admin account) and every spec reuses that session, except `e2e/signed-out.spec.ts`
   (host-page redirects, a player joining and answering with no session); quizzes come from
   `e2e/support/quiz-fixtures.ts`, players join through `e2e/support/player-join.ts`, and stale
@@ -199,7 +202,10 @@ the end of a session). Paths below are under `src/`.
 6. No `psql` or Docker here. For a read-only query, run a `.ts` script with
    `node --env-file=.env.local node_modules/.bin/tsx <script>`; a script outside the repo must
    import `@prisma/adapter-pg` and the generated client by absolute path, or they don't resolve
-   (seen 2026-11-10).
+   (seen 2026-11-10). For a raw query, including the `storage` schema (`pg_policies`,
+   `storage.objects`), a `.mts` script that imports `<repo>/node_modules/pg/lib/index.js` by
+   absolute path, wraps the query in `BEGIN READ ONLY`, and runs with
+   `node --env-file=.env.local <script>` works without Prisma (seen 2026-11-12, dev).
 
 ## Testing
 
@@ -348,3 +354,5 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 - Shared Claude settings live in `.claude/settings.json` and the workflow profile and facts in
   `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json` and
   `.claude/workflow.local.json`, which are git-ignored.
+- The Vercel CLI link (`.vercel/`, git-ignored) exists only in the main checkout, so run `vercel`
+  commands such as `vercel env ls production` from there, not from a worktree (seen 2026-11-12).
