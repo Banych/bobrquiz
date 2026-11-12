@@ -26,7 +26,7 @@ export function MediaLibrary() {
   if (error) {
     return (
       <div className="text-center py-8 text-sm text-destructive">
-        Failed to load media. Please try again.
+        Failed to load media: {error.message}
       </div>
     );
   }

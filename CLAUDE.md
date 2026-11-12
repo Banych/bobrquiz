@@ -48,7 +48,8 @@ infrastructure.
 
 Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
 presentation files that import infrastructure (realtime in `use-presence.tsx` and
-`use-realtime-client.tsx`, auth in the two `(admin)` layout and login pages). Don't add more; the check doesn't catch them yet.
+`use-realtime-client.tsx`, auth in the two `(admin)` layout and login pages). Don't add more;
+the check doesn't catch them yet.
 `@/infrastructure/…` is the same import as `@infrastructure/…`.
 
 DTO-first: a new payload starts as a zod schema in `src/application/dtos/` and a mapper in

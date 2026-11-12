@@ -90,7 +90,9 @@ export function useDeleteQuizMedia() {
   return useMutation({
     mutationFn: ({ quizId, fileName }: { quizId: string; fileName: string }) =>
       deleteQuizMedia(quizId, fileName),
-    onSuccess: () => {
+    // Settled, not success: a 404 for a file already deleted elsewhere must
+    // still drop its card from the list.
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ownerMediaQueryKey() });
     },
   });
