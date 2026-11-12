@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-12: Quiz Media Owner, Part 2 ✅
+- **2026-11-12** — the question dialogs upload, and the media library lists (with each file's quiz) and deletes, through the owner-checked media routes; a refused image shows the server's message. The browser storage service is deleted, so no admin screen writes to storage directly and no admin component imports infrastructure. The storage write policies are still in place until part 3, which closes issue 128. Parked: images left behind by a dialog count toward the media cap; a one-off e2e teardown connection reset — [PR #162](https://github.com/Banych/bobrquiz/pull/162) — [spec](plans/2026-11-11-quiz-media-owner-design.md)
+
 ### 2026-11-12: Quiz Media Owner, Part 1 ✅
 - **2026-11-12** — owner-checked server routes to upload, delete and list question images, writing with the service-role key; the server reads the image type from the file's bytes, caps a file at 4 MB and each host at 200 files and 50 MB, a question's image must be a file in its own quiz's folder, and deleting a quiz deletes its media. Nothing calls the routes yet: the admin screens switch in part 2, and the storage write policies are dropped in part 3, which closes issue 128. The media cap fan-out across a host's quizzes is parked — [PR #160](https://github.com/Banych/bobrquiz/pull/160) — [spec](plans/2026-11-11-quiz-media-owner-design.md)
 
