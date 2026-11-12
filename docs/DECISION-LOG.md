@@ -915,7 +915,8 @@ plan; the migration is a row in `docs/parking-lot.md`.
   couldn't enforce the type, size or cap rules; the server already has the quiz owner guard.
 
 ### Consequences
-- A missing `SUPABASE_SERVICE_ROLE_KEY` breaks every upload and delete (loud 500 by design).
+- A missing `SUPABASE_SERVICE_ROLE_KEY` breaks every upload, delete and media library load, and
+  quiz deletion too, since it removes the quiz's media folder first (loud 500 by design).
 - Every upload costs a function invocation and goes through Vercel's 4.5 MB body limit.
 - Files outside `questions/<quizId>/` can't be managed from the app any more.
 - `yarn media:check-non-owner` checks on dev that a non-owner session can't write.

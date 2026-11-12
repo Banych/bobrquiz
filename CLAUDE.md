@@ -311,9 +311,10 @@ start (`# Workflow: …`); it is not repeated here.
 1. Crossing layer boundaries (entities or Prisma types in components): run `/architecture-check`.
 2. Storage writes go only through the owner-checked media routes (ADR-028): `quiz-media` keeps
    just its public read policy. Never add an INSERT, UPDATE or DELETE policy for `authenticated`;
-   with sign-ups open, any account could write into any quiz's folder. `yarn
-   media:check-non-owner` checks it on dev (`docs/guides/MEDIA-UPLOADS.md`). Supabase signups stay
-   disabled in both projects until issue 129 ships.
+   with sign-ups open, any account could write into any quiz's folder. The `pg_policies` query in
+   `docs/guides/MEDIA-UPLOADS.md` is the full check; `yarn media:check-non-owner` probes upload,
+   overwrite, move and delete as a non-owner on dev. Supabase signups stay disabled in both
+   projects until issue 129 ships.
 3. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev

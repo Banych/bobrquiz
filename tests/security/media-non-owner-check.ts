@@ -6,15 +6,19 @@
  *
  * 1. Plants a file in a quiz folder owned by the main admin (TEST_ADMIN_EMAIL),
  *    with the service-role key.
- * 2. Signs in as the second test admin (TEST_AUTH_ADMIN_*) with the anon key and
- *    tries to upload next to the planted file and to remove it.
- * 3. Checks with the service-role key that the planted file is still there and
- *    the attempted upload is not, then removes both.
+ * 2. Signs in as the second test admin (TEST_AUTH_ADMIN_*) with the anon key,
+ *    confirms the session is that user, and tries to upload next to the
+ *    planted file, overwrite it, move it and remove it.
+ * 3. Checks with the service-role key that the planted file is still there with
+ *    its original bytes and that neither the upload nor the moved copy landed,
+ *    then removes everything it wrote.
  *
  * Step 3 is the verdict: when a policy denies a delete, `remove()` returns
- * success with an empty list, so "no error" proves nothing.
+ * success with an empty list, so "no error" proves nothing. The probes cover
+ * INSERT, UPDATE and DELETE on objects; `pg_policies` is the full check
+ * (docs/guides/MEDIA-UPLOADS.md).
  *
- * Exit 0 when both writes were refused, 1 when either got through, 2 when the
+ * Exit 0 when every write was refused, 1 when any got through, 2 when the
  * check could not run. Prints no email addresses.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -107,9 +111,12 @@ async function main(): Promise<number> {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const plantedName = `${stamp}-planted.png`;
   const attemptName = `${stamp}-attempt.png`;
+  const movedName = `${stamp}-moved.png`;
   const plantedPath = `${folder}/${plantedName}`;
   const attemptPath = `${folder}/${attemptName}`;
+  const movedPath = `${folder}/${movedName}`;
 
+  console.log(`project: ${new URL(url).hostname.slice(0, 4)}…`);
   console.log(`quiz folder: ${folder} (owned by the main admin)`);
 
   const planted = await admin.storage
@@ -119,48 +126,87 @@ async function main(): Promise<number> {
     throw new Error(`planting failed: ${planted.error.message}`);
   }
 
+  const report = (action: string, error: { message: string } | null) =>
+    console.log(
+      `other user's ${action}: ${error ? `error "${error.message}"` : 'no error'}`
+    );
+
   try {
-    const signIn = await other.auth.signInWithPassword({
-      email: otherEmail,
-      password: otherPassword,
-    });
-    if (signIn.error) {
-      throw new Error(`second admin sign-in failed: ${signIn.error.message}`);
+    try {
+      const signIn = await other.auth.signInWithPassword({
+        email: otherEmail,
+        password: otherPassword,
+      });
+      if (signIn.error) {
+        throw new Error(`second admin sign-in failed: ${signIn.error.message}`);
+      }
+      // A PASS must come from a live session of the other user, not from a
+      // token Storage rejects for another reason.
+      const me = await other.auth.getUser();
+      if (me.error || me.data.user?.id !== otherId) {
+        throw new Error('the signed-in session is not the second admin');
+      }
+
+      // One probe per write a policy could allow: INSERT, UPDATE (overwrite
+      // and move) and DELETE.
+      const upload = await other.storage
+        .from(BUCKET)
+        .upload(attemptPath, PNG_1X1, { contentType: 'image/png' });
+      report('upload', upload.error);
+
+      const overwrite = await other.storage
+        .from(BUCKET)
+        .update(plantedPath, Buffer.from('overwritten'), {
+          contentType: 'image/png',
+        });
+      report('overwrite', overwrite.error);
+
+      const move = await other.storage
+        .from(BUCKET)
+        .move(plantedPath, movedPath);
+      report('move', move.error);
+
+      const remove = await other.storage.from(BUCKET).remove([plantedPath]);
+      console.log(
+        `other user's delete: ${remove.error ? `error "${remove.error.message}"` : `no error, ${remove.data?.length ?? 0} object(s) reported removed`}`
+      );
+    } finally {
+      await other.auth.signOut({ scope: 'local' });
     }
 
-    const upload = await other.storage
-      .from(BUCKET)
-      .upload(attemptPath, PNG_1X1, { contentType: 'image/png' });
-    console.log(
-      `other user's upload: ${upload.error ? `error "${upload.error.message}"` : 'no error'}`
-    );
-
-    const remove = await other.storage.from(BUCKET).remove([plantedPath]);
-    console.log(
-      `other user's delete: ${remove.error ? `error "${remove.error.message}"` : `no error, ${remove.data?.length ?? 0} object(s) reported removed`}`
-    );
-
-    await other.auth.signOut({ scope: 'local' });
-
+    // The verdict reads what is actually stored: a refused delete or update
+    // can still return no error.
     const plantedStillThere = await fileExists(admin, folder, plantedName);
+    const download = plantedStillThere
+      ? await admin.storage.from(BUCKET).download(plantedPath)
+      : null;
+    if (download?.error) {
+      throw new Error(`download failed: ${download.error.message}`);
+    }
+    const plantedUnchanged =
+      download?.data != null &&
+      Buffer.from(await download.data.arrayBuffer()).equals(PNG_1X1);
     const attemptLanded = await fileExists(admin, folder, attemptName);
+    const moveLanded = await fileExists(admin, folder, movedName);
     console.log(`planted file still there: ${plantedStillThere}`);
+    console.log(`planted file unchanged: ${plantedUnchanged}`);
     console.log(`attempted upload landed: ${attemptLanded}`);
+    console.log(`moved copy landed: ${moveLanded}`);
 
-    const refused = plantedStillThere && !attemptLanded;
+    const refused =
+      plantedStillThere && plantedUnchanged && !attemptLanded && !moveLanded;
     console.log(
       refused
-        ? 'PASS: the non-owner could neither upload nor delete'
+        ? 'PASS: the non-owner could not upload, overwrite, move or delete'
         : 'FAIL: a non-owner session can write to another owner’s media'
     );
     return refused ? 0 : 1;
   } finally {
-    const cleanup = await admin.storage
-      .from(BUCKET)
-      .remove([plantedPath, attemptPath]);
+    const leftovers = [plantedPath, attemptPath, movedPath];
+    const cleanup = await admin.storage.from(BUCKET).remove(leftovers);
     if (cleanup.error) {
       console.error(
-        `cleanup failed, remove by hand: ${plantedPath}, ${attemptPath} (${cleanup.error.message})`
+        `cleanup failed, remove by hand: ${leftovers.join(', ')} (${cleanup.error.message})`
       );
     }
   }

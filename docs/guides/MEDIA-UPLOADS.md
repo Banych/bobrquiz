@@ -70,13 +70,15 @@ server repeats what matters and trusts none of it.
 
 ## Storage policies
 
-Expected state in both Supabase projects (checked 2026-11-12):
+Expected state in both Supabase projects: exactly one policy in the whole `storage` schema (on
+`objects`; `buckets` has none). Checked 2026-11-12 on dev for the whole schema, and on production
+for `storage.objects`.
 
 ```sql
-SELECT policyname, cmd, roles, qual, with_check
+SELECT tablename, policyname, cmd, roles, qual, with_check
 FROM pg_policies
-WHERE schemaname = 'storage' AND tablename = 'objects';
--- Public read access for quiz media | SELECT | {public} | (bucket_id = 'quiz-media'::text)
+WHERE schemaname = 'storage';
+-- objects | Public read access for quiz media | SELECT | {public} | (bucket_id = 'quiz-media'::text)
 ```
 
 The service role bypasses RLS, so the routes need no write policy. Don't add an INSERT, UPDATE or
@@ -84,10 +86,13 @@ DELETE policy for `authenticated`: with host sign-ups open, any account could th
 quiz's folder from the browser.
 
 To confirm a non-owner can't write on dev, run `yarn media:check-non-owner` (needs `.env.local`
-with the service-role key and both test admins). It plants a file in a quiz folder the main admin
-owns, tries an upload and a delete as `TEST_AUTH_ADMIN_*` with the anon key, and checks the files
-afterwards with the service-role key. Exit 0 means both were refused. Checking the files is the
-point: a delete the policies refuse still returns no error with 0 objects removed.
+with the service-role key and both test admins; it prints the first characters of the project
+host it ran against). It plants a file in a quiz folder the main admin owns, signs in as
+`TEST_AUTH_ADMIN_*` with the anon key, tries an upload, an overwrite, a move and a delete, and
+checks the files afterwards with the service-role key. Exit 0 means every write was refused.
+Checking the files is the point: a delete the policies refuse still returns no error with 0
+objects removed. The script probes the writes the app could be exposed to; the `pg_policies`
+query above is the full check.
 
 ## Displaying images
 
@@ -105,8 +110,9 @@ Questions show `mediaUrl` through `next/image`; `next.config.ts` allows
 
 ## Troubleshooting
 
-- **Every upload or delete is a 500 "Media storage is not configured":** `SUPABASE_SERVICE_ROLE_KEY`
-  is missing in that environment. It fails loudly by design.
+- **Uploads, deletes, the media library and quiz deletion all answer 500 "Media storage is not
+  configured":** `SUPABASE_SERVICE_ROLE_KEY` is missing in that environment (deleting a quiz
+  removes its media folder first). It fails loudly by design.
 - **"Media limit reached":** the host is at 200 files or 50 MB; delete files in the media library.
 - **"Invalid media: the image must be a file uploaded to this quiz":** the question's image URL
   points outside the quiz's folder; upload the image again through the dialog.
