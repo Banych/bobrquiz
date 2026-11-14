@@ -158,13 +158,16 @@ the end of a session). Paths below are under `src/`.
 - Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**`: any user with a
   confirmed email may host, in a session signed in by the emailed code or link (`getHostUser` in
   `infrastructure/auth/confirmed-user.ts`, also used by `getCurrentUserId`, so an unconfirmed
-  user or a password session is signed out everywhere); no allowlist since issue 129. Sign-in is email only: `app/(admin)/login/page.tsx` (Supabase calls)
-  → `components/auth/sign-in-form.tsx` (email and Turnstile, then the code); the email's link
+  user or a password session is signed out everywhere); no allowlist since issue 129.
+  Sign-in is email only: `app/(admin)/login/page.tsx` (Supabase calls) →
+  `components/auth/sign-in-form.tsx` (email and Turnstile, then the code); the email's link
   opens `app/auth/confirm/` (GET renders a Continue button; `actions.ts` verifies through
   `infrastructure/auth/verify-email-link.ts`). Error copy in `lib/sign-in-errors.ts`; every
   redirect taken from a query parameter or the link's `next` goes through
-  `lib/safe-redirect.ts`. Spec:
-  `docs/progress/plans/2026-11-14-host-signup-design.md`. `/join`, `/play/**` and `/api/quiz/**` stay outside it. The host
+  `lib/safe-redirect.ts`. The admin header's email and Logout are browser-side in
+  `app/(admin)/admin/layout.tsx` (display only, not a check). Spec:
+  `docs/progress/plans/2026-11-14-host-signup-design.md`. `/join`, `/play/**` and
+  `/api/quiz/**` stay outside it. The host
   actions under `api/quiz/**` check the user and the quiz owner inside each route
   (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
   GET on the same path doesn't. The host pages check again: `/host` lists `listQuizzesByOwner`,
@@ -176,7 +179,10 @@ the end of a session). Paths below are under `src/`.
 **Cross-cutting**
 - Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
   `auditService` are object literals there, with no service file of their own; env checks
-  `lib/env-validation.ts`; Prisma pool size `infrastructure/database/prisma/pool-size.ts`; seeds
+  `lib/env-validation.ts`, run by the root `app/layout.tsx`, so a variable marked required
+  fails `yarn build` wherever it is unset, CI included (CI's build env in
+  `.github/workflows/ci.yml` sets placeholders for the Supabase ones); Prisma pool size
+  `infrastructure/database/prisma/pool-size.ts`; seeds
   `infrastructure/database/prisma/seed*.ts` (owner from `SEED_QUIZ_OWNER_ID`); migrations in
   `infrastructure/database/prisma/migrations/`; one-off owner backfill
   `assign-quiz-owner.ts` (`yarn quiz:assign-owner`).
@@ -339,6 +345,9 @@ start (`# Workflow: …`); it is not repeated here.
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
    server in a git worktree needs its own `node_modules`, not a symlink (Turbopack rejects it).
+   Playwright reuses whatever already listens on port 3000, another project's dev server
+   included (`BASE_URL` is fixed in `e2e/support/paths.ts`): check the port is free first (seen
+   2026-11-14, the setup failed on another app's 404 page).
 
 ## Debugging order
 
@@ -368,5 +377,8 @@ Find the layer first: API 500 (application/infrastructure), stale UI (realtime o
 - Shared Claude settings live in `.claude/settings.json` and the workflow profile and facts in
   `.claude/workflow.json`; per-machine overrides go in `.claude/settings.local.json` and
   `.claude/workflow.local.json`, which are git-ignored.
+- A merge to `master` deploys to Vercel Production at once (Git integration). Work whose
+  rollout needs production settings first (Supabase, env vars) has them in place before the
+  merge (seen 2026-11-14, PR 171 went live ahead of its Supabase settings).
 - The Vercel CLI link (`.vercel/`, git-ignored) exists only in the main checkout, so run `vercel`
   commands such as `vercel env ls production` from there, not from a worktree (seen 2026-11-12).
