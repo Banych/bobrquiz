@@ -29,7 +29,7 @@ export const verifyEmailLink = async (
   // Supabase confirms the address while verifying; a user left unconfirmed means the project's
   // confirm-email setting is off, and that account must not get a session here
   if (!isConfirmedUser(data.user)) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     return { ok: false, code: 'email_not_confirmed' };
   }
 

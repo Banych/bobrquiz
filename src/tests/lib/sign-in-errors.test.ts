@@ -36,6 +36,15 @@ describe('signInErrorMessage', () => {
     }
   );
 
+  it.each(['__proto__', 'constructor', 'toString', 'hasOwnProperty'])(
+    'falls back for the inherited property name %s',
+    (code) => {
+      expect(signInErrorMessage('link', code)).toMatch(
+        /could not sign in with this link/i
+      );
+    }
+  );
+
   it('never shows a raw code from the query string', () => {
     expect(
       signInErrorMessage('link', '<script>alert(1)</script>')

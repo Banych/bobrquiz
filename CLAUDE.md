@@ -44,7 +44,8 @@ infrastructure to wire the services, and API routes and server-component pages c
 (`@infrastructure/realtime/broadcast-*`) directly (ADR-024). API routes, server-component
 pages and server actions may import the server-side auth session helpers: the current-user
 helper (`@infrastructure/auth/get-current-user`) to read the signed-in user id, and
-`@infrastructure/auth/verify-email-link` for the email link's sign-in. `src/app/providers.tsx` is the browser's composition root and may import
+`@infrastructure/auth/verify-email-link` for the email link's sign-in.
+`src/app/providers.tsx` is the browser's composition root and may import
 infrastructure.
 
 Owed, not exceptions (ruled 2026-10-15, architecture-check `FINDINGS.md`): the other
@@ -159,9 +160,10 @@ the end of a session). Paths below are under `src/`.
   also used by `getCurrentUserId`, so an unconfirmed user is signed out everywhere); no
   allowlist since issue 129. Sign-in is email only: `app/(admin)/login/page.tsx` (Supabase calls)
   → `components/auth/sign-in-form.tsx` (email and Turnstile, then the code); the email's link
-  opens `app/auth/confirm/` (GET renders a Continue button, its server action
-  `verify-email-link.ts` verifies). Error copy in `lib/sign-in-errors.ts`; every redirect taken
-  from a query parameter or the link's `next` goes through `lib/safe-redirect.ts`. Spec:
+  opens `app/auth/confirm/` (GET renders a Continue button; `actions.ts` verifies through
+  `infrastructure/auth/verify-email-link.ts`). Error copy in `lib/sign-in-errors.ts`; every
+  redirect taken from a query parameter or the link's `next` goes through
+  `lib/safe-redirect.ts`. Spec:
   `docs/progress/plans/2026-11-14-host-signup-design.md`. `/join`, `/play/**` and `/api/quiz/**` stay outside it. The host
   actions under `api/quiz/**` check the user and the quiz owner inside each route
   (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
@@ -188,8 +190,9 @@ the end of a session). Paths below are under `src/`.
   main admin account) and every spec reuses that session, except `e2e/signed-out.spec.ts`
   (host-page redirects, a player joining and answering with no session); quizzes come from
   `e2e/support/quiz-fixtures.ts`, players join through `e2e/support/player-join.ts`, and stale
-  quizzes and sign-up users are removed by `e2e/stale-quizzes.cleanup.ts`. No spec sends email:
-  hosts sign in with `generateLink` (service-role key) through `e2e/support/email-sign-in.ts`. The k6 load tests start and advance
+  quizzes and sign-up users (with their quizzes) are removed by `e2e/stale-quizzes.cleanup.ts`.
+  No spec sends email: hosts sign in with `generateLink` (service-role key) through
+  `e2e/support/email-sign-in.ts`. The k6 load tests start and advance
   quizzes as the owner through `HOST_COOKIE` (`tests/load/config.js`, README "Host session").
 
 ## Prisma v7 setup (non-standard)

@@ -1,3 +1,4 @@
+// No 'use client': it renders inside the client login page and takes its Supabase calls as props
 import { useEffect, useRef, useState } from 'react';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { signInErrorMessage } from '@/lib/sign-in-errors';
@@ -66,6 +67,8 @@ export function SignInForm({ sendEmail, verifyCode }: SignInFormProps) {
       } else {
         setError(signInErrorMessage('send', result.code));
       }
+    } catch {
+      setError(signInErrorMessage('send', null));
     } finally {
       // A Turnstile token is single-use, sent or refused
       setCaptchaToken(undefined);
@@ -84,12 +87,15 @@ export function SignInForm({ sendEmail, verifyCode }: SignInFormProps) {
     setIsBusy(true);
     try {
       const result = await verifyCode(email.trim(), token);
-      if (!result.ok) {
-        setError(signInErrorMessage('code', result.code));
+      if (result.ok) {
+        // Stay busy while the page navigates away: a second press would resend a used code
+        return;
       }
-    } finally {
-      setIsBusy(false);
+      setError(signInErrorMessage('code', result.code));
+    } catch {
+      setError(signInErrorMessage('code', null));
     }
+    setIsBusy(false);
   };
 
   const changeEmail = () => {

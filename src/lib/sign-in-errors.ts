@@ -33,7 +33,8 @@ export const signInErrorMessage = (
   if (code === 'otp_expired') {
     return EXPIRED[step];
   }
-  if (code && MESSAGES[code]) {
+  // Own keys only: the code can come from the query string (`?error=__proto__`)
+  if (code && Object.hasOwn(MESSAGES, code)) {
     return MESSAGES[code];
   }
   return step === 'send'

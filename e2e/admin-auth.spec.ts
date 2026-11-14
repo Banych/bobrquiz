@@ -99,6 +99,69 @@ authTest.describe('Host sign-in', () => {
     }
   );
 
+  authTest('explains a refused send in words', async ({ page }) => {
+    const refusals = [
+      { status: 429, error_code: 'over_email_send_rate_limit' },
+      { status: 400, error_code: 'captcha_failed' },
+    ];
+    await page.route('**/auth/v1/otp*', async (route) => {
+      const { status, error_code } = refusals.shift()!;
+      await route.fulfill({ status, json: { error_code, msg: 'refused' } });
+    });
+    await page.goto('/login');
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill('nobody@example.com');
+    const send = page.getByRole('button', { name: 'Email me a sign-in link' });
+
+    await send.click();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Wait a minute' })
+    ).toBeVisible();
+
+    // A refused send uses up the Turnstile token too; the button waits for a new one
+    await send.click();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'The bot check failed' })
+    ).toBeVisible();
+    await expect(page.getByText('Check your email')).toHaveCount(0);
+  });
+
+  authTest(
+    'unlocks Resend after 60 seconds and sends again with a new bot check',
+    async ({ page }) => {
+      await page.clock.install();
+      const caught = await interceptSignInEmail(page);
+      await page.goto('/login');
+      await page
+        .getByRole('textbox', { name: 'Email' })
+        .fill('nobody@example.com');
+      await page
+        .getByRole('button', { name: 'Email me a sign-in link' })
+        .click();
+      await expect(
+        page.getByRole('button', { name: /^Resend \(in \d+ s\)$/ })
+      ).toBeDisabled();
+
+      // One step at a time: the countdown schedules its next second after each render
+      for (let second = 0; second < 61; second += 1) {
+        await page.clock.runFor(1000);
+      }
+      await page.getByRole('button', { name: 'Resend email' }).click();
+
+      await expect.poll(() => caught.length).toBe(2);
+      const tokens = caught.map(
+        ({ body }) =>
+          (body.gotrue_meta_security as { captcha_token?: string })
+            ?.captcha_token
+      );
+      expect(tokens[1]).toEqual(expect.any(String));
+      await expect(
+        page.getByRole('button', { name: /^Resend \(in \d+ s\)$/ })
+      ).toBeDisabled();
+    }
+  );
+
   authTest('logs out and redirects to sign-in', async ({ page }) => {
     const email = requireHostEmail();
     await page.goto('/login');

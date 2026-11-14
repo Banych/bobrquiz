@@ -126,7 +126,7 @@ export function newSignupEmail(): string {
   return `${SIGNUP_EMAIL_PREFIX}${stamp}@example.com`;
 }
 
-/** Deletes the auth user with `email`, if there is one. */
+/** Deletes the auth user with `email` and the quizzes it owns, if there is one. */
 export async function deleteUserByEmail(email: string): Promise<void> {
   const user = (await listUsers()).find(
     (u) => u.email?.toLowerCase() === email.toLowerCase()
@@ -136,7 +136,10 @@ export async function deleteUserByEmail(email: string): Promise<void> {
   }
 }
 
-/** Deletes sign-up users older than 30 minutes, left by crashed runs. Returns how many. */
+/**
+ * Deletes sign-up users older than 30 minutes, left by crashed runs, with their quizzes (no other
+ * sweep can see those: the quiz list is per owner). Returns how many users.
+ */
 export async function sweepSignupUsers(): Promise<number> {
   const cutoff = Date.now() - STALE_SIGNUP_AGE_MS;
   const stale = (await listUsers()).filter(
@@ -171,6 +174,14 @@ async function listUsers(): Promise<AuthUser[]> {
 }
 
 async function deleteUser(id: string): Promise<void> {
+  // Questions, players and answers go with the quiz (onDelete: Cascade); a sign-up run uploads
+  // no media
+  const quizzes = await adminClient().from('Quiz').delete().eq('ownerId', id);
+  if (quizzes.error) {
+    throw new Error(
+      `deleting the user's quizzes failed: ${quizzes.error.message}`
+    );
+  }
   const { error } = await adminClient().auth.admin.deleteUser(id);
   if (error) {
     throw new Error(`deleteUser failed: ${error.message}`);

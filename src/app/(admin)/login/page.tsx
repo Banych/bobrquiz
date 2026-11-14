@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/infrastructure/auth/supabase-auth-client';
-import { isConfirmedUser } from '@/infrastructure/auth/confirmed-user';
 import { safeRedirectPath } from '@/lib/safe-redirect';
 import {
   SignInForm,
@@ -36,8 +35,7 @@ function SignIn() {
     email: string,
     token: string
   ): Promise<AuthStepResult> => {
-    const supabase = createBrowserClient();
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await createBrowserClient().auth.verifyOtp({
       email,
       token,
       type: 'email',
@@ -45,12 +43,7 @@ function SignIn() {
     if (error) {
       return { ok: false, code: error.code };
     }
-    // Verifying confirms the address; one left unconfirmed (the project's confirm-email setting
-    // off) gets no session here, as the proxy would refuse it anyway
-    if (!isConfirmedUser(data.user)) {
-      await supabase.auth.signOut();
-      return { ok: false, code: 'email_not_confirmed' };
-    }
+    // Verifying confirms the address; the proxy checks the session again on arrival
     router.push(redirectTo);
     router.refresh();
     return { ok: true };

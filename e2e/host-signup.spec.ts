@@ -50,8 +50,13 @@ test.describe('Host sign-up', () => {
       await page.goto(`/quiz/${quiz.id}/live`);
       await expect(page).toHaveURL(`${BASE_URL}/quiz/${quiz.id}/live`);
     } finally {
+      // The user goes even when the quiz delete fails, and that failure doesn't hide the test's
       if (quizId) {
-        await deleteTestQuiz(page.request, quizId);
+        await deleteTestQuiz(page.request, quizId).catch((error: unknown) =>
+          console.warn(
+            `[SIGNUP] deleting quiz ${quizId} failed: ${String(error)}`
+          )
+        );
       }
       await deleteUserByEmail(email);
     }

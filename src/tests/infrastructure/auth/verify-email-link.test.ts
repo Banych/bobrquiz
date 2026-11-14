@@ -77,6 +77,6 @@ describe('verifyEmailLink', () => {
       ok: false,
       code: 'email_not_confirmed',
     });
-    expect(mocks.signOut).toHaveBeenCalled();
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 });
