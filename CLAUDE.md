@@ -150,9 +150,12 @@ the end of a session). Paths below are under `src/`.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.
-- Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**` (admin check
-  `isAdminUser` in `infrastructure/auth/supabase-auth-client.ts`); login in
-  `app/(admin)/login/`. `/join`, `/play/**` and `/api/quiz/**` stay outside it. The host
+- Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**`: any signed-in user
+  with a confirmed email may host (`isConfirmedUser` in `infrastructure/auth/confirmed-user.ts`,
+  also used by `getCurrentUserId`, so an unconfirmed user is signed out everywhere); no
+  allowlist since issue 129. Login in `app/(admin)/login/`; every redirect taken from a query
+  parameter goes through `lib/safe-redirect.ts`. Spec:
+  `docs/progress/plans/2026-11-14-host-signup-design.md`. `/join`, `/play/**` and `/api/quiz/**` stay outside it. The host
   actions under `api/quiz/**` check the user and the quiz owner inside each route
   (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
   GET on the same path doesn't. The host pages check again: `/host` lists `listQuizzesByOwner`,

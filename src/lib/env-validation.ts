@@ -36,12 +36,6 @@ const ENV_VARS: EnvVarConfig[] = [
     description:
       'Supabase service role key (server-side realtime broadcasts; without it media uploads, media deletes and quiz deletes fail with 500)',
   },
-  {
-    key: 'ADMIN_EMAILS',
-    required: false,
-    description:
-      'Comma-separated admin email allowlist (required for /admin routes)',
-  },
 ];
 
 export const validateEnvironment = (): void => {

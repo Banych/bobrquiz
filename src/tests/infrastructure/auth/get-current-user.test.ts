@@ -26,12 +26,23 @@ describe('getCurrentUserId', () => {
 
   it('returns the user id of the signed-in user', async () => {
     mocks.getUser.mockResolvedValue({
-      data: { user: { id: 'user-1' } },
+      data: {
+        user: { id: 'user-1', email_confirmed_at: '2026-11-14T10:00:00Z' },
+      },
       error: null,
     });
 
     await expect(getCurrentUserId()).resolves.toBe('user-1');
     expect(mocks.createServerClient).toHaveBeenCalledWith(cookieStore);
+  });
+
+  it('returns null for a user whose email is not confirmed', async () => {
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email_confirmed_at: null } },
+      error: null,
+    });
+
+    await expect(getCurrentUserId()).resolves.toBeNull();
   });
 
   it('returns null when nobody is signed in', async () => {

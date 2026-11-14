@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { isAdminUser } from '@/infrastructure/auth/supabase-auth-client';
+import { isConfirmedUser } from '@/infrastructure/auth/confirmed-user';
 
 /**
  * Proxy (Next 16's name for middleware) to protect the admin area and the host pages
- * (`/host`, `/quiz/**`) with Supabase Auth. Checks for a valid session and verifies the
- * user is in the admin allowlist. The host API routes under `/api/quiz/**` check the
- * user and the quiz owner themselves, so player routes on the same paths stay anonymous.
+ * (`/host`, `/quiz/**`) with Supabase Auth. Any signed-in user with a confirmed email may host;
+ * an unconfirmed user is treated as signed out. Each route and page still checks the quiz owner.
+ * The host API routes under `/api/quiz/**` check the user and the quiz owner themselves, so
+ * player routes on the same paths stay anonymous.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -53,23 +54,13 @@ export async function proxy(request: NextRequest) {
 
     console.log('[MIDDLEWARE] User:', user?.email || 'none');
 
-    if (!user) {
+    if (!user || !isConfirmedUser(user)) {
       if (isAdminApi) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
-    }
-
-    if (!isAdminUser(user.email)) {
-      console.log('[MIDDLEWARE] User not in admin allowlist');
-      if (isAdminApi) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-      return new NextResponse('Forbidden: Admin access required', {
-        status: 403,
-      });
     }
 
     console.log('[MIDDLEWARE] User authorized');

@@ -1,20 +1,13 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createServerClientMock, getUserMock, isAdminUserMock } = vi.hoisted(
-  () => ({
-    createServerClientMock: vi.fn(),
-    getUserMock: vi.fn(),
-    isAdminUserMock: vi.fn(),
-  })
-);
+const { createServerClientMock, getUserMock } = vi.hoisted(() => ({
+  createServerClientMock: vi.fn(),
+  getUserMock: vi.fn(),
+}));
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: createServerClientMock,
-}));
-
-vi.mock('@/infrastructure/auth/supabase-auth-client', () => ({
-  isAdminUser: isAdminUserMock,
 }));
 
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server';
@@ -23,9 +16,16 @@ import { config, proxy } from '@/proxy';
 const makeRequest = (pathname: string) =>
   new NextRequest(`http://localhost:3000${pathname}`);
 
+const confirmedUser = {
+  email: 'host@example.com',
+  email_confirmed_at: '2026-11-14T10:00:00.000Z',
+};
+const unconfirmedUser = { email: 'new@example.com', email_confirmed_at: null };
+
 describe('proxy', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.unstubAllEnvs();
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     createServerClientMock.mockReturnValue({ auth: { getUser: getUserMock } });
@@ -60,37 +60,30 @@ describe('proxy', () => {
     expect(await response.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('returns 403 for a non-allowlisted user on an admin page', async () => {
-    getUserMock.mockResolvedValue({
-      data: { user: { email: 'x@example.com' } },
-    });
-    isAdminUserMock.mockReturnValue(false);
+  it('redirects an admin page to login for an unconfirmed user', async () => {
+    getUserMock.mockResolvedValue({ data: { user: unconfirmedUser } });
 
-    const response = await proxy(makeRequest('/admin'));
+    const response = await proxy(makeRequest('/admin/quizzes'));
 
-    expect(isAdminUserMock).toHaveBeenCalledWith('x@example.com');
-    expect(response.status).toBe(403);
-    expect(await response.text()).toBe('Forbidden: Admin access required');
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/login?redirect=%2Fadmin%2Fquizzes'
+    );
   });
 
-  it('returns 403 JSON for a non-allowlisted user on an admin API call', async () => {
-    getUserMock.mockResolvedValue({
-      data: { user: { email: 'x@example.com' } },
-    });
-    isAdminUserMock.mockReturnValue(false);
+  it('returns 401 JSON for an admin API call by an unconfirmed user', async () => {
+    getUserMock.mockResolvedValue({ data: { user: unconfirmedUser } });
 
     const response = await proxy(makeRequest('/api/admin/x'));
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(401);
     expect(response.headers.get('content-type')).toContain('application/json');
-    expect(await response.json()).toEqual({ error: 'Forbidden' });
+    expect(await response.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('lets an allowlisted user through', async () => {
-    getUserMock.mockResolvedValue({
-      data: { user: { email: 'admin@example.com' } },
-    });
-    isAdminUserMock.mockReturnValue(true);
+  it('lets any confirmed user through, with no allowlist set', async () => {
+    vi.stubEnv('ADMIN_EMAILS', '');
+    getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
 
     const response = await proxy(makeRequest('/admin/quizzes'));
 
@@ -120,12 +113,11 @@ describe('proxy', () => {
                 options: { path: '/' },
               },
             ]);
-            return { data: { user: { email: 'admin@example.com' } } };
+            return { data: { user: confirmedUser } };
           },
         },
       })
     );
-    isAdminUserMock.mockReturnValue(true);
     const request = makeRequest('/admin/quizzes');
     request.cookies.set('sb-session', 'stale');
 
@@ -175,11 +167,8 @@ describe('proxy', () => {
       }
     );
 
-    it.each(hostPages)('lets an allowlisted user open %s', async (pathname) => {
-      getUserMock.mockResolvedValue({
-        data: { user: { email: 'admin@example.com' } },
-      });
-      isAdminUserMock.mockReturnValue(true);
+    it.each(hostPages)('lets a confirmed user open %s', async (pathname) => {
+      getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
 
       const response = await proxy(makeRequest(pathname));
 
@@ -187,15 +176,15 @@ describe('proxy', () => {
       expect(response.headers.get('x-middleware-next')).toBe('1');
     });
 
-    it('returns 403 for a non-allowlisted user on a host page', async () => {
-      getUserMock.mockResolvedValue({
-        data: { user: { email: 'x@example.com' } },
-      });
-      isAdminUserMock.mockReturnValue(false);
+    it('redirects an unconfirmed user from a host page to login', async () => {
+      getUserMock.mockResolvedValue({ data: { user: unconfirmedUser } });
 
       const response = await proxy(makeRequest('/host'));
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe(
+        'http://localhost:3000/login?redirect=%2Fhost'
+      );
     });
 
     it.each([

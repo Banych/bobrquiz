@@ -15,16 +15,13 @@ Tests that require admin access (Quiz CRUD, Question CRUD) use a global authenti
 Add these to your `.env.local` file:
 
 ```bash
-# Test user credentials (must be in ADMIN_EMAILS allowlist)
+# Test user credentials (a confirmed Supabase user; any confirmed user can host)
 TEST_ADMIN_EMAIL="your-test-user@example.com"
 TEST_ADMIN_PASSWORD="your-test-password"
 
-# Second admin, used only by admin-auth.spec.ts (must also be in ADMIN_EMAILS)
+# Second user, used only by admin-auth.spec.ts
 TEST_AUTH_ADMIN_EMAIL="your-auth-test-user@example.com"
 TEST_AUTH_ADMIN_PASSWORD="your-auth-test-password"
-
-# Make sure both test users are in admin allowlist
-ADMIN_EMAILS="your-test-user@example.com,your-auth-test-user@example.com"
 ```
 
 `admin-auth.spec.ts` has its own account because its logout test signs out every session of
@@ -56,9 +53,9 @@ SESSION_JOIN_RATE_LIMIT=100
    - Use email/password auth
    - Set email to match `TEST_ADMIN_EMAIL`
    - Set password to match `TEST_ADMIN_PASSWORD`
-   - Turn on "Auto Confirm User"
+   - Turn on "Auto Confirm User": an account whose email is not confirmed is treated as
+     signed out and can't reach any host page
 3. Repeat for the auth-spec user (`TEST_AUTH_ADMIN_EMAIL`, `TEST_AUTH_ADMIN_PASSWORD`)
-4. Add both emails to `ADMIN_EMAILS` in `.env.local` and restart the dev server
 
 ## Running Tests
 

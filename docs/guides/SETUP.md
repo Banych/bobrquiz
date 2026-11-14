@@ -105,9 +105,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 
 # Supabase service role (SECRET - never commit)
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
-
-# Admin email allowlist (comma-separated)
-ADMIN_EMAILS="admin@example.com,host@example.com"
 ```
 
 **Never commit `.env.local`** – it's git-ignored and contains secrets.
@@ -151,7 +148,7 @@ yarn dev
 You should see:
 - Landing page (public)
 - `/admin` redirects to `/login` (no session)
-- Admin login works if `ADMIN_EMAILS` includes your test email
+- Admin login works for any Supabase user with a confirmed email
 
 ### Step 7: Verify Commands
 
@@ -190,7 +187,6 @@ yarn build && yarn start
 | Variable                    | Example             | Purpose                             |
 | --------------------------- | ------------------- | ----------------------------------- |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...`            | Supabase admin key (SECRET)         |
-| `ADMIN_EMAILS`              | `admin@example.com` | Email allowlist for `/admin` access |
 
 ### Optional (For Integration Tests)
 
@@ -213,16 +209,16 @@ To find your values, go to **Supabase Dashboard → Project Settings**:
 
 ### Admin Login Flow
 
-1. **Proxy** (`src/proxy.ts`) protects `/admin/*` routes
-2. **Check 1**: Must be authenticated (Supabase session cookie exists)
-3. **Check 2**: Email must be in `ADMIN_EMAILS` allowlist
-4. **Redirect**: Unauthenticated users → `/login`, non-admin → 403 Forbidden
+1. **Proxy** (`src/proxy.ts`) protects `/admin/*`, `/api/admin/*`, `/host` and `/quiz/*`
+2. **Check**: a Supabase session whose email is confirmed (`isConfirmedUser`); any such user
+   can host, and every route then checks the quiz owner
+3. **Redirect**: signed-out or unconfirmed users → `/login` (401 on `/api/admin/*`)
 
 ### Creating a Test Admin User
 
 1. Go to **Supabase Dashboard → Authentication → Users**
 2. Click **Add user** (or use email/password signup on `/login`)
-3. Create user with email in `ADMIN_EMAILS` (e.g., `admin@example.com`)
+3. Create the user with "Auto Confirm User" on (an unconfirmed email can't sign in to host)
 4. Set password in Supabase (or send invite link)
 5. Sign in at `http://localhost:3000/login`
 6. Access `/admin/quizzes` for quiz management
@@ -232,7 +228,7 @@ To find your values, go to **Supabase Dashboard → Project Settings**:
 - **Auth client**: `src/infrastructure/auth/supabase-auth-client.ts`
   - `createBrowserClient()` – Client-side login/logout
   - `createServerClient(cookies)` – Server-side session checks
-  - `isAdminUser(email)` – Email allowlist validation
+  - `isConfirmedUser(user)` in `confirmed-user.ts` – who may host (a confirmed email)
 
 - **Routes**:
   - `src/app/(admin)/login/page.tsx` – Sign in form
@@ -241,17 +237,16 @@ To find your values, go to **Supabase Dashboard → Project Settings**:
 
 ### Testing Auth Flow
 
-1. Set `ADMIN_EMAILS=test@example.com` in `.env.local`
-2. Create user `test@example.com` in Supabase
-3. Visit `http://localhost:3000/login`
-4. Sign in with test credentials
-5. Verify redirect to `/admin` dashboard
-6. Test logout (redirects to `/login`)
+1. Create user `test@example.com` in Supabase, with "Auto Confirm User" on
+2. Visit `http://localhost:3000/login`
+3. Sign in with test credentials
+4. Verify redirect to `/admin` dashboard
+5. Test logout (redirects to `/login`)
 
 ### Security Considerations (R4 MVP)
 
-- **Email allowlist in `.env`**: Simple MVP approach, not scalable
-- **Planned for R5+**: Migrate to Supabase RLS policies with custom JWT claims
+- **Who hosts**: any confirmed account (issue 129 removed the `ADMIN_EMAILS` allowlist);
+  every quiz belongs to its owner, checked in each route
 - **Never leak secrets**: `SUPABASE_SERVICE_ROLE_KEY` stays in `.env` (not committed)
 
 ---

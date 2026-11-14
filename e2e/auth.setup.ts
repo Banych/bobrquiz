@@ -19,7 +19,7 @@ setup('authenticate', async ({ page, context }) => {
         'Add them to .env.local:\n' +
         'TEST_ADMIN_EMAIL=test@example.com\n' +
         'TEST_ADMIN_PASSWORD=your-test-password\n\n' +
-        'Make sure this email is also in ADMIN_EMAILS allowlist.'
+        'The user must exist in Supabase with a confirmed email.'
     );
   }
 
