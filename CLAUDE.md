@@ -128,7 +128,10 @@ the end of a session). Paths below are under `src/`.
   none), lists through `list-quizzes-by-owner.use-case.ts` and runs
   `assert-quiz-owner.use-case.ts` (404, same as missing) before acting; list items are built by
   `application/mappers/quiz-list-item-mapper.ts`. Spec:
-  `docs/progress/plans/2026-11-10-quiz-owner-design.md`.
+  `docs/progress/plans/2026-11-10-quiz-owner-design.md`. Caps (issue 167): 100 quizzes per host
+  and 100 questions per quiz in `domain/value-objects/host-limits.ts`, checked in the create
+  use cases; their "Limit reached:" message is a 400. Option and answer strings are capped in
+  `application/dtos/question-admin.dto.ts`.
 - Questions: `app/(admin)/admin/quizzes/[quizId]/page.tsx` → `question-list.tsx` and the
   `*-question-dialog.tsx` files → `api/admin/quizzes/[quizId]/questions/**` (including
   `reorder`, which no UI calls yet) → the `create-`, `update-`, `delete-`, `reorder-` and
