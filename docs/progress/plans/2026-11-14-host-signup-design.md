@@ -313,6 +313,12 @@ with the always-pass test secret, secure email change on, phone off):
   captcha.
 - **Bypassed:** `generateLink` and both `verifyOtp` calls (code, token hash) need no captcha
   token. Full e2e passed 57/57 and `yarn media:check-non-owner` printed PASS under enforcement.
+- **Real email** (Vlad's address through the built-in mailer, from `/host`):
+  - The form's send went through with the widget's test-key token, and the email arrived.
+  - The link ends `&type=email&next=http%3a%2f%2flocalhost%3a3000%2fhost`, so `{{ .RedirectTo }}`
+    is URL-escaped and survives a query string.
+- **Not checkable on dev:** that a first-time address gets "Confirm signup". It needs a new
+  address that is also on the team, so it moves to part 3's rollout step 6.
 
 Builder rulings (part 2):
 - The sign-in form's behaviour is covered in Playwright, not unit tests: Vitest runs in Node with
