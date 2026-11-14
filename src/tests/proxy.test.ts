@@ -1,10 +1,13 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createServerClientMock, getUserMock } = vi.hoisted(() => ({
-  createServerClientMock: vi.fn(),
-  getUserMock: vi.fn(),
-}));
+const { createServerClientMock, getUserMock, getSessionMock } = vi.hoisted(
+  () => ({
+    createServerClientMock: vi.fn(),
+    getUserMock: vi.fn(),
+    getSessionMock: vi.fn(),
+  })
+);
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: createServerClientMock,
@@ -22,13 +25,30 @@ const confirmedUser = {
 };
 const unconfirmedUser = { email: 'new@example.com', email_confirmed_at: null };
 
+/** An unsigned access token with the given sign-in method in its `amr` claim. */
+const tokenSignedInBy = (method: string) =>
+  [
+    'header',
+    Buffer.from(
+      JSON.stringify({ amr: [{ method, timestamp: 1794674785 }] })
+    ).toString('base64url'),
+    'signature',
+  ].join('.');
+const sessionSignedInBy = (method: string) => ({
+  data: { session: { access_token: tokenSignedInBy(method) } },
+  error: null,
+});
+
 describe('proxy', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.unstubAllEnvs();
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    createServerClientMock.mockReturnValue({ auth: { getUser: getUserMock } });
+    createServerClientMock.mockReturnValue({
+      auth: { getUser: getUserMock, getSession: getSessionMock },
+    });
+    getSessionMock.mockResolvedValue(sessionSignedInBy('otp'));
   });
 
   it('passes non-admin paths through without creating a Supabase client', async () => {
@@ -81,8 +101,36 @@ describe('proxy', () => {
     expect(await response.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('lets any confirmed user through, with no allowlist set', async () => {
-    vi.stubEnv('ADMIN_EMAILS', '');
+  it('redirects a confirmed user signed in with a password to login', async () => {
+    getSessionMock.mockResolvedValue(sessionSignedInBy('password'));
+    getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
+
+    const response = await proxy(makeRequest('/host'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/login?redirect=%2Fhost'
+    );
+  });
+
+  it('returns 401 for an admin API call in a password session', async () => {
+    getSessionMock.mockResolvedValue(sessionSignedInBy('password'));
+    getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
+
+    const response = await proxy(makeRequest('/api/admin/quizzes'));
+
+    expect(response.status).toBe(401);
+  });
+
+  it('has the auth server verify the session token it checks', async () => {
+    getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
+
+    await proxy(makeRequest('/admin'));
+
+    expect(getUserMock).toHaveBeenCalledWith(tokenSignedInBy('otp'));
+  });
+
+  it('lets any confirmed user signed in by email through', async () => {
     getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
 
     const response = await proxy(makeRequest('/admin/quizzes'));
@@ -104,6 +152,7 @@ describe('proxy', () => {
     createServerClientMock.mockImplementation(
       (_url: string, _key: string, options: ClientOptions) => ({
         auth: {
+          getSession: async () => sessionSignedInBy('otp'),
           getUser: async () => {
             seenCookies = options.cookies.getAll();
             options.cookies.setAll([

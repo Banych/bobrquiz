@@ -1,6 +1,6 @@
 /**
  * Supabase Auth client utilities for browser and server contexts.
- * Who may host is decided by `isConfirmedUser` in `./confirmed-user`.
+ * Who may host is decided by `getHostUser` in `./confirmed-user`.
  */
 
 import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr';

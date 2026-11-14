@@ -207,41 +207,46 @@ To find your values, go to **Supabase Dashboard → Project Settings**:
 
 ## Authentication & Authorization (R4+)
 
-### Admin Login Flow
+### Host Sign-in Flow
+
+Hosts sign in by email only: `/login` sends a link and a code (Turnstile on the form), the code
+signs in the device that asked, and the link opens `/auth/confirm`, whose Continue button signs
+in the device it is opened on. A first-time address becomes a host with an empty quiz list.
 
 1. **Proxy** (`src/proxy.ts`) protects `/admin/*`, `/api/admin/*`, `/host` and `/quiz/*`
-2. **Check**: a Supabase session whose email is confirmed (`isConfirmedUser`); any such user
-   can host, and every route then checks the quiz owner
+2. **Check**: a Supabase session whose email is confirmed and that was signed in by the
+   emailed code or link, not a password (`getHostUser`); any such user can host, and every
+   route then checks the quiz owner
 3. **Redirect**: signed-out or unconfirmed users → `/login` (401 on `/api/admin/*`)
 
-### Creating a Test Admin User
+### Signing in locally
 
-1. Go to **Supabase Dashboard → Authentication → Users**
-2. Click **Add user** (or use email/password signup on `/login`)
-3. Create the user with "Auto Confirm User" on (an unconfirmed email can't sign in to host)
-4. Set password in Supabase (or send invite link)
-5. Sign in at `http://localhost:3000/login`
-6. Access `/admin/quizzes` for quiz management
+1. Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to Cloudflare's always-pass test key
+   (`1x00000000000000000000AA`) in `.env.local`
+2. Sign in at `http://localhost:3000/login` with your email. The dev project's built-in mailer
+   only reaches the Supabase team's addresses, two emails an hour; e2e sends none
+   (`e2e/README.md`)
+3. Access `/admin/quizzes` for quiz management
 
 ### Architecture
 
 - **Auth client**: `src/infrastructure/auth/supabase-auth-client.ts`
-  - `createBrowserClient()` – Client-side login/logout
+  - `createBrowserClient()` – Client-side sign-in (email, code) and logout
   - `createServerClient(cookies)` – Server-side session checks
-  - `isConfirmedUser(user)` in `confirmed-user.ts` – who may host (a confirmed email)
+  - `getHostUser(auth)` in `confirmed-user.ts` – who may host (a confirmed email, signed in by
+    email rather than a password)
+  - `verifyEmailLink(tokenHash)` in `verify-email-link.ts` – the email link's server-side sign-in
 
 - **Routes**:
-  - `src/app/(admin)/login/page.tsx` – Sign in form
+  - `src/app/(admin)/login/page.tsx` – Sign-in form (`components/auth/sign-in-form.tsx`)
+  - `src/app/auth/confirm/` – the email link's Continue page and its server action
   - `src/app/(admin)/admin/page.tsx` – Dashboard (protected)
   - `src/app/(admin)/admin/quizzes/page.tsx` – Quiz CRUD (protected)
 
 ### Testing Auth Flow
 
-1. Create user `test@example.com` in Supabase, with "Auto Confirm User" on
-2. Visit `http://localhost:3000/login`
-3. Sign in with test credentials
-4. Verify redirect to `/admin` dashboard
-5. Test logout (redirects to `/login`)
+`yarn test:e2e e2e/admin-auth.spec.ts e2e/host-signup.spec.ts` covers the code, the link, a
+sign-up and logout without sending email.
 
 ### Security Considerations (R4 MVP)
 

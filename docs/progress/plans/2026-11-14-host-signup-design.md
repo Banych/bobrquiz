@@ -1,6 +1,6 @@
 # Host sign-up: anyone with an email address can host (issue 129)
 
-Status: In progress (part 1 merged in PR #166; parts 2 and 3 to come)
+Status: In progress (part 1 merged in PR #166; part 2 on feat/host-signup-email; part 3 to come)
 
 ## Why
 
@@ -133,8 +133,9 @@ flooded with strangers' addresses, and Resend's 100-a-day cap still runs out in 
 
 ### Who is a host
 
-Any Supabase user whose email is confirmed (`email_confirmed_at` set). Proving the email by
-link or code confirms it. One shared check in `src/infrastructure/auth/` decides this, and both
+Any Supabase user whose email is confirmed (`email_confirmed_at` set), in a session signed in by
+the emailed link or code, not a password (added in part 2: "Password sessions refused" under To
+verify while building). Proving the email by link or code confirms it. One shared check in `src/infrastructure/auth/` decides this, and both
 the proxy and `getCurrentUserId` use it, so an unconfirmed user is treated exactly like a
 signed-out one: redirect to sign-in on pages, 401 on `/api/admin/**`, `null` user id in every
 route and page that calls `getCurrentUserId`. The 403 "not in the allowlist" branch is removed.
@@ -208,7 +209,8 @@ does now; it is already on the CLAUDE.md "owed" list and no new presentation fil
 
 Before the code merges (e2e on the branch needs them): sign-ups on (my call; one switch to
 undo), confirm-email on, the two new templates, the redirect allowlist above, and Turnstile on
-with Cloudflare's always-pass test secret. The built-in mailer stays. CLAUDE.md's "sign-ups stay
+with Cloudflare's always-pass test secret. Also, in both projects: "Secure email change" on and
+the Phone provider off (see "Password sessions refused": the host check depends on both). The built-in mailer stays. CLAUDE.md's "sign-ups stay
 disabled in both projects until issue 129 ships" pitfall is rewritten in the same change.
 
 ### Rollout order (production)
@@ -284,6 +286,81 @@ These came from reading, not running; each needs a run before the plan relies on
 - How long a session lasts on the Free plan (Supabase documents time-boxed and inactive
   session limits as paid settings; the default is believed to be no expiry).
 - That intercepting the send request in Playwright leaves `generateLink`'s code valid.
+
+Results so far (part 2, run on dev 2026-11-14 with a throwaway `@example.com` user, created by
+`generateLink` and deleted after; supabase-js 2.105.4):
+- `generateLink` with type `magiclink` creates a missing user, unconfirmed, and reports
+  `verification_type: "signup"` for it (`magiclink` once it exists). It returns a token hash and
+  a code (`email_otp`).
+- `verifyOtp({ token_hash, type: 'email' })` verifies both the signup and the magic-link hash and
+  confirms the user; `type: 'magiclink'` also works for the magic-link one. A used hash fails with
+  `otp_expired` ("Email link is invalid or has expired"). **Ruling:** both templates use
+  `type=email`, and the confirm action verifies with `email` whatever the link says.
+- `verifyOtp({ email, token, type: 'email' })` signs in with the code; a wrong code fails with
+  `otp_expired`, status 403.
+- **The dev project sends 8-digit codes**, not 6. The code field accepts 6 to 10 digits.
+- A newer link voids the older code, so the e2e send intercept must keep the form's request from
+  reaching Supabase before `generateLink` is asked for the code (it does: the route is answered
+  in the browser).
+- Still open: the captcha bypass (dev's Turnstile is not on yet), `{{ .RedirectTo }}` escaping
+  and the "Confirm signup" template for a first-time address (both need one real email), whether
+  a browser-sent (PKCE) token hash verifies on another device, and session length (not checked).
+
+With dev's settings applied (2026-11-14: sign-ups on, both templates, the redirect allowlist, Turnstile
+with the always-pass test secret, secure email change on, phone off):
+- **Enforced:** a password sign-in with no captcha token fails with `captcha_failed` ("no
+  captcha_token found"); with Cloudflare's dummy token `XXXX.DUMMY.TOKEN.XXXX` it gets past the
+  captcha.
+- **Bypassed:** `generateLink` and both `verifyOtp` calls (code, token hash) need no captcha
+  token. Full e2e passed 57/57 and `yarn media:check-non-owner` printed PASS under enforcement.
+- **Real email** (Vlad's address through the built-in mailer, from `/host`):
+  - The form's send went through with the widget's test-key token, and the email arrived.
+  - The link ends `&type=email&next=http%3a%2f%2flocalhost%3a3000%2fhost`, so `{{ .RedirectTo }}`
+    is URL-escaped and survives a query string.
+  - Opened in another browser, Continue landed on `/host` signed in. So a token hash from the
+    browser's own `signInWithOtp` (PKCE flow) verifies on a device that never asked for it.
+- **Not checkable on dev:** that a first-time address gets "Confirm signup". It needs a new
+  address that is also on the team, so it moves to part 3's rollout step 6.
+
+Builder rulings (part 2):
+- The sign-in form's behaviour is covered in Playwright, not unit tests: Vitest runs in Node with
+  no DOM. Its pure parts (error messages, the redirect helper, the confirm action) have unit tests.
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is optional in env validation, so CI's build needs no new
+  value; without it the form shows no widget and Supabase refuses the send where it enforces a
+  captcha.
+- An absolute `next` that is only the origin (what Supabase puts in place of a refused return
+  address) lands on `/admin`, not the home page.
+- A signed-in host who opens `/login` sees the form; not redirected (left to the builder).
+
+Password sessions refused (ruled by Vlad 2026-11-14, after part 2's security review):
+- **The hole:** with sign-ups open, anyone can sign an address up through Supabase's public
+  sign-up endpoint with a password. When the owner later signs in by email, that confirms the
+  address, and the attacker's password then signs in to the confirmed account. Reproduced on dev
+  2026-11-14 with a throwaway address: the password failed with `email_not_confirmed` before the
+  code was used, and signed in after.
+- **The fix:** "Who is a host" adds a second condition. The session must have been signed in by
+  the emailed code or link: the access token's `amr` claim contains `otp` (or `magiclink`).
+  `getHostUser` in `src/infrastructure/auth/confirmed-user.ts` reads the session, has the auth
+  server verify its token with `getUser(token)`, and checks that same token; the proxy and
+  `getCurrentUserId` both use it. A password session is treated as signed out.
+- **Observed on dev:** code and token-hash sign-ins both report `otp`, for a first-time address
+  too, and a token refresh keeps it.
+- **Cost:** a host still signed in with a password is sent to sign-in once after the deploy.
+- **Tested by:** `e2e/host-signup.spec.ts`, which builds a password session for a confirmed
+  account and checks that `/admin` redirects and `/api/admin` answers 401, while a code session
+  through the same cookies passes.
+- **Settings it depends on** (security re-review, 2026-11-14, reasoned from GoTrue's source and
+  not run):
+  - **The weakness:** the attacker's password still works against Supabase itself, and a
+    password session can change the account's email or phone (`PUT /auth/v1/user`).
+  - **Secure email change:** with it off, the attacker moves the account to their own address,
+    confirms the change from their own inbox, and signs in there by code. That code session
+    reports `otp` and carries the victim's user id. With it on (the hosted default), the old
+    address must confirm the change too.
+  - **Phone provider:** with it on, the same move works through a phone number and an SMS code.
+  - **Required in both projects:** "Secure email change" on and the Phone provider off.
+  - **The sturdier fix, not built:** remove the password on the first email sign-in, through the
+    service role.
 
 ## Carried into part 2 (from part 1's reviews)
 

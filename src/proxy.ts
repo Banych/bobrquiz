@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { isConfirmedUser } from '@/infrastructure/auth/confirmed-user';
+import { getHostUser } from '@/infrastructure/auth/confirmed-user';
 
 /**
  * Proxy (Next 16's name for middleware) to protect the admin area and the host pages
- * (`/host`, `/quiz/**`) with Supabase Auth. Any signed-in user with a confirmed email may host;
- * an unconfirmed user is treated as signed out. Each route and page still checks the quiz owner.
+ * (`/host`, `/quiz/**`) with Supabase Auth. Any user with a confirmed email may host, in a
+ * session signed in by the emailed code or link (`getHostUser`); an unconfirmed user or a
+ * password session is treated as signed out. Each route and page still checks the quiz owner.
  * The host API routes under `/api/quiz/**` check the user and the quiz owner themselves, so
  * player routes on the same paths stay anonymous.
  */
@@ -47,14 +48,12 @@ export async function proxy(request: NextRequest) {
       },
     });
 
-    // IMPORTANT: Use getUser() which reads from JWT, not getSession()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // The auth server verifies the session's token; nothing is trusted from the cookie alone
+    const user = await getHostUser(supabase.auth);
 
     console.log('[MIDDLEWARE] User:', user?.email || 'none');
 
-    if (!user || !isConfirmedUser(user)) {
+    if (!user) {
       if (isAdminApi) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
