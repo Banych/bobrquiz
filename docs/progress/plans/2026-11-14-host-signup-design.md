@@ -209,7 +209,8 @@ does now; it is already on the CLAUDE.md "owed" list and no new presentation fil
 
 Before the code merges (e2e on the branch needs them): sign-ups on (my call; one switch to
 undo), confirm-email on, the two new templates, the redirect allowlist above, and Turnstile on
-with Cloudflare's always-pass test secret. The built-in mailer stays. CLAUDE.md's "sign-ups stay
+with Cloudflare's always-pass test secret. Also, in both projects: "Secure email change" on and
+the Phone provider off (see "Password sessions refused": the host check depends on both). The built-in mailer stays. CLAUDE.md's "sign-ups stay
 disabled in both projects until issue 129 ships" pitfall is rewritten in the same change.
 
 ### Rollout order (production)
@@ -332,6 +333,18 @@ Password sessions refused (ruled by Vlad 2026-11-14, after part 2's security rev
 - **Tested by:** `e2e/host-signup.spec.ts`, which builds a password session for a confirmed
   account and checks that `/admin` redirects and `/api/admin` answers 401, while a code session
   through the same cookies passes.
+- **Settings it depends on** (security re-review, 2026-11-14, reasoned from GoTrue's source and
+  not run):
+  - **The weakness:** the attacker's password still works against Supabase itself, and a
+    password session can change the account's email or phone (`PUT /auth/v1/user`).
+  - **Secure email change:** with it off, the attacker moves the account to their own address,
+    confirms the change from their own inbox, and signs in there by code. That code session
+    reports `otp` and carries the victim's user id. With it on (the hosted default), the old
+    address must confirm the change too.
+  - **Phone provider:** with it on, the same move works through a phone number and an SMS code.
+  - **Required in both projects:** "Secure email change" on and the Phone provider off.
+  - **The sturdier fix, not built:** remove the password on the first email sign-in, through the
+    service role.
 
 ## Carried into part 2 (from part 1's reviews)
 

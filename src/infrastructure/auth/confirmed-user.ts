@@ -58,6 +58,11 @@ export const signInMethods = (
  * or link. A password session is refused: anyone can sign an address up with a password before
  * its owner does, and that password still signs in once the owner confirms the address (seen on
  * dev 2026-11-14). An unconfirmed user is treated exactly like a signed-out one.
+ *
+ * That password still works against Supabase itself, so this also relies on two project
+ * settings: "Secure email change" on (else a password session moves the account to the
+ * attacker's address, which then signs in by code) and the Phone provider off (the same move
+ * through an SMS code).
  */
 export const isHostSession = (
   user: EmailConfirmation | null | undefined,
