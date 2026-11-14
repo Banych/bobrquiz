@@ -4,6 +4,7 @@ import type { IAuditLogRepository } from '@domain/repositories/audit-log-reposit
 import { AuditEventType } from '@domain/entities/audit-log';
 import { CreateQuizUseCase } from '@application/use-cases/create-quiz.use-case';
 import { Quiz } from '@domain/entities/quiz';
+import { MAX_QUIZZES_PER_OWNER } from '@domain/value-objects/host-limits';
 
 describe('CreateQuizUseCase', () => {
   const mockQuizRepository = {
@@ -17,12 +18,50 @@ describe('CreateQuizUseCase', () => {
     delete: vi.fn(),
     listAll: vi.fn(),
     update: vi.fn(),
+    countByOwner: vi.fn(),
   } as unknown as IQuizRepository;
 
   const createQuizUseCase = new CreateQuizUseCase(mockQuizRepository);
 
+  const quizData = {
+    title: 'Test Quiz',
+    timePerQuestion: 30,
+    allowSkipping: false,
+    scoringAlgorithm: 'EXPONENTIAL_DECAY' as const,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(mockQuizRepository.countByOwner).mockResolvedValue(0);
+  });
+
+  describe('per-host quiz cap', () => {
+    it('accepts the last quiz below the cap', async () => {
+      vi.mocked(mockQuizRepository.countByOwner).mockResolvedValue(
+        MAX_QUIZZES_PER_OWNER - 1
+      );
+      vi.mocked(mockQuizRepository.create).mockResolvedValueOnce({
+        id: 'quiz-last',
+      } as Quiz);
+
+      await expect(
+        createQuizUseCase.execute(quizData, 'owner-1')
+      ).resolves.toBe('quiz-last');
+      expect(mockQuizRepository.countByOwner).toHaveBeenCalledWith('owner-1');
+    });
+
+    it('refuses a quiz once the host is at the cap', async () => {
+      vi.mocked(mockQuizRepository.countByOwner).mockResolvedValue(
+        MAX_QUIZZES_PER_OWNER
+      );
+
+      await expect(
+        createQuizUseCase.execute(quizData, 'owner-1')
+      ).rejects.toThrow(
+        `Limit reached: a host can have at most ${MAX_QUIZZES_PER_OWNER} quizzes. Delete one to create another.`
+      );
+      expect(mockQuizRepository.create).not.toHaveBeenCalled();
+    });
   });
 
   it('should create a quiz with a join code', async () => {

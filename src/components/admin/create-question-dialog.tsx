@@ -301,6 +301,12 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
           </div>
         </div>
 
+        {createMutation.isError && (
+          <p className="text-sm text-destructive">
+            {createMutation.error.message}
+          </p>
+        )}
+
         <DialogFooter>
           <Button
             variant="outline"

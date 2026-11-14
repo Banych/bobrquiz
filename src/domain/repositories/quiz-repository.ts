@@ -35,5 +35,7 @@ export interface IQuizRepository {
   update(quiz: Quiz): Promise<void>;
   findAll(): Promise<Quiz[]>;
   listByOwner(ownerId: string): Promise<Quiz[]>;
+  /** How many quizzes the owner has, without loading them. */
+  countByOwner(ownerId: string): Promise<number>;
   findEntityById(id: string): Promise<Quiz | null>;
 }

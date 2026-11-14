@@ -3,6 +3,10 @@ import type { IAuditLogRepository } from '@domain/repositories/audit-log-reposit
 import type { CreateQuizDTO } from '@application/dtos/quiz-admin.dto';
 import { Quiz, QuizSettings } from '@domain/entities/quiz';
 import { AuditLog, AuditEventType } from '@domain/entities/audit-log';
+import {
+  LIMIT_REACHED_PREFIX,
+  MAX_QUIZZES_PER_OWNER,
+} from '@domain/value-objects/host-limits';
 import { generateJoinCode } from '@lib/join-code';
 import { randomUUID } from 'crypto';
 
@@ -13,6 +17,15 @@ export class CreateQuizUseCase {
   ) {}
 
   async execute(data: CreateQuizDTO, ownerId: string): Promise<string> {
+    // Counted, then created: parallel requests can pass the cap by the number
+    // in flight, but once it is reached every later request is refused
+    const owned = await this.quizRepository.countByOwner(ownerId);
+    if (owned >= MAX_QUIZZES_PER_OWNER) {
+      throw new Error(
+        `${LIMIT_REACHED_PREFIX} a host can have at most ${MAX_QUIZZES_PER_OWNER} quizzes. Delete one to create another.`
+      );
+    }
+
     const settings: QuizSettings = {
       timePerQuestion: data.timePerQuestion,
       allowSkipping: data.allowSkipping,

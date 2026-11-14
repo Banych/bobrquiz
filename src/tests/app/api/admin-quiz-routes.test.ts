@@ -85,6 +85,26 @@ describe('Admin quiz routes ownership', () => {
       );
     });
 
+    it('answers the quiz cap with a 400 that carries its message', async () => {
+      const message =
+        'Limit reached: a host can have at most 100 quizzes. Delete one to create another.';
+      quizService.createQuiz.mockRejectedValue(new Error(message));
+
+      const response = await createQuiz(jsonRequest({ title: 'One more' }));
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: message });
+    });
+
+    it('keeps other create failures a 500 without their message', async () => {
+      quizService.createQuiz.mockRejectedValue(new Error('connection reset'));
+
+      const response = await createQuiz(jsonRequest({ title: 'One more' }));
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ error: 'Failed to create quiz' });
+    });
+
     it('reads, updates, deletes and resets their quiz', async () => {
       quizService.getQuizState.mockResolvedValue({ id: A_QUIZ });
 

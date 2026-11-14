@@ -55,6 +55,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // The per-host quiz cap (LIMIT_REACHED_PREFIX in @domain/value-objects/host-limits)
+    if (error instanceof Error && /^Limit reached:/.test(error.message)) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
       { error: 'Failed to create quiz' },
       { status: 500 }

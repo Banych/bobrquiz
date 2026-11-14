@@ -178,6 +178,20 @@ describe('Admin question routes ownership', () => {
       expect(response.status).toBeLessThan(300);
       expect(quizService.assertQuizOwner).toHaveBeenCalledWith(A_QUIZ, HOST_A);
     });
+
+    it('answers the question cap with a 400 that carries its message', async () => {
+      const message =
+        'Limit reached: a quiz can have at most 100 questions. Delete one to add another.';
+      questionService.createQuestion.mockRejectedValue(new Error(message));
+
+      const response = await createQuestion(
+        request(newQuestion),
+        quizCtx(A_QUIZ)
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: message });
+    });
   });
 
   describe("as another host (not the quiz's owner)", () => {
