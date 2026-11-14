@@ -129,8 +129,14 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
     }
   };
 
+  // A closed dialog drops the last error, so reopening starts clean
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) createMutation.reset();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
@@ -311,7 +317,7 @@ export function CreateQuestionDialog({ quizId }: CreateQuestionDialogProps) {
           <Button
             variant="outline"
             onClick={() => {
-              setOpen(false);
+              handleOpenChange(false);
               resetForm();
             }}
             disabled={createMutation.isPending}

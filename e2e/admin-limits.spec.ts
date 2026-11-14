@@ -44,6 +44,15 @@ test.describe('Per-host limits', () => {
 
     await expect(quizzesPage.createDialog).toContainText(QUIZ_CAP_MESSAGE);
     await expect(quizzesPage.createDialog).toBeVisible();
+
+    // Reopened after cancelling, the dialog starts without the old error
+    await quizzesPage.createDialog
+      .getByRole('button', { name: 'Cancel' })
+      .click();
+    await expect(quizzesPage.createDialog).not.toBeVisible();
+    await quizzesPage.createQuizButton.click();
+    await expect(quizzesPage.createDialog).toBeVisible();
+    await expect(quizzesPage.createDialog).not.toContainText(QUIZ_CAP_MESSAGE);
   });
 
   test('the create-question dialog shows the question cap message', async ({
@@ -72,5 +81,12 @@ test.describe('Per-host limits', () => {
 
     await expect(dialog).toContainText(QUESTION_CAP_MESSAGE);
     await expect(dialog).toBeVisible();
+
+    // Reopened after cancelling, the dialog starts without the old error
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).not.toBeVisible();
+    await detailPage.addQuestionButton.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toContainText(QUESTION_CAP_MESSAGE);
   });
 });

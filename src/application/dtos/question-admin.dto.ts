@@ -12,15 +12,25 @@ export const MAX_QUESTION_CORRECT_ANSWERS = 50;
 export const MAX_REORDER_QUESTIONS = 500;
 
 /**
+ * Longest option or correct answer. Without it the per-quiz question cap
+ * (issue 167) bounds rows, not bytes: 100 questions of 4 MB options each
+ * would fill the Free-plan database. With it a question stays under ~21 KB.
+ */
+export const MAX_QUESTION_ANSWER_LENGTH = 200;
+
+const optionText = z.string().max(MAX_QUESTION_ANSWER_LENGTH);
+const correctAnswerText = z.string().min(1).max(MAX_QUESTION_ANSWER_LENGTH);
+
+/**
  * DTO for creating a new question (admin)
  */
 export const CreateQuestionDTO = z.object({
   quizId: z.string().min(1, 'Quiz ID is required'),
   text: z.string().min(1, 'Question text is required').max(1000),
   type: z.enum(['multiple-choice', 'text', 'true/false']),
-  options: z.array(z.string()).max(MAX_QUESTION_OPTIONS).default([]),
+  options: z.array(optionText).max(MAX_QUESTION_OPTIONS).default([]),
   correctAnswers: z
-    .array(z.string().min(1))
+    .array(correctAnswerText)
     .min(1, 'At least one correct answer is required')
     .max(MAX_QUESTION_CORRECT_ANSWERS),
   points: z.number().int().positive().default(10),
@@ -43,9 +53,9 @@ export const CreateQuestionBodyDTO = CreateQuestionDTO.omit({ quizId: true });
 export const UpdateQuestionDTO = z.object({
   text: z.string().min(1).max(1000).optional(),
   type: z.enum(['multiple-choice', 'text', 'true/false']).optional(),
-  options: z.array(z.string()).max(MAX_QUESTION_OPTIONS).optional(),
+  options: z.array(optionText).max(MAX_QUESTION_OPTIONS).optional(),
   correctAnswers: z
-    .array(z.string().min(1))
+    .array(correctAnswerText)
     .min(1)
     .max(MAX_QUESTION_CORRECT_ANSWERS)
     .optional(),

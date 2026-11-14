@@ -42,6 +42,8 @@ export class CreateQuestionUseCase {
     const existingQuestions = await this.questionRepository.listByQuizId(
       dto.quizId
     );
+    // Counted, then saved: parallel requests can pass the cap by the number
+    // in flight, but once it is reached every later request is refused
     if (existingQuestions.length >= MAX_QUESTIONS_PER_QUIZ) {
       throw new Error(
         `${LIMIT_REACHED_PREFIX} a quiz can have at most ${MAX_QUESTIONS_PER_QUIZ} questions. Delete one to add another.`

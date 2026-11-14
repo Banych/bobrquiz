@@ -61,6 +61,12 @@ export function CreateQuizDialog({
     },
   });
 
+  // A closed dialog drops the last error, so reopening starts clean
+  const handleOpenChange = (next: boolean) => {
+    if (!next) createMutation.reset();
+    onOpenChange(next);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
@@ -73,7 +79,7 @@ export function CreateQuizDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Quiz</DialogTitle>
@@ -140,7 +146,7 @@ export function CreateQuizDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={createMutation.isPending}
             >
               Cancel

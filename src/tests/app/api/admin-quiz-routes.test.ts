@@ -19,6 +19,7 @@ import {
 import { POST as resetQuiz } from '@/app/api/admin/quizzes/[quizId]/reset/route';
 import * as servicesModule from '@application/services/factories';
 import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
+import { LIMIT_REACHED_PREFIX } from '@domain/value-objects/host-limits';
 
 type ServiceContainer = ReturnType<typeof servicesModule.getServices>;
 
@@ -86,8 +87,8 @@ describe('Admin quiz routes ownership', () => {
     });
 
     it('answers the quiz cap with a 400 that carries its message', async () => {
-      const message =
-        'Limit reached: a host can have at most 100 quizzes. Delete one to create another.';
+      // Built from the domain prefix, so the route's regex can't drift from it
+      const message = `${LIMIT_REACHED_PREFIX} a host can have at most 100 quizzes.`;
       quizService.createQuiz.mockRejectedValue(new Error(message));
 
       const response = await createQuiz(jsonRequest({ title: 'One more' }));
