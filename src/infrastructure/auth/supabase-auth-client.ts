@@ -1,6 +1,6 @@
 /**
  * Supabase Auth client utilities for browser and server contexts.
- * Provides authentication helpers and admin role validation.
+ * Who may host is decided by `isConfirmedUser` in `./confirmed-user`.
  */
 
 import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr';
@@ -59,32 +59,4 @@ export const createServerClient = async (
       },
     },
   });
-};
-
-/**
- * Checks if an email is in the admin allowlist.
- * Reads from ADMIN_EMAILS environment variable (comma-separated list).
- *
- * @param email - The email address to check
- * @returns true if the email is an admin, false otherwise
- */
-export const isAdminUser = (email: string | undefined): boolean => {
-  if (!email) {
-    return false;
-  }
-
-  const adminEmails = process.env.ADMIN_EMAILS;
-  if (!adminEmails) {
-    console.warn(
-      'ADMIN_EMAILS environment variable not set. No users will have admin access.'
-    );
-    return false;
-  }
-
-  const allowlist = adminEmails
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  return allowlist.includes(email.toLowerCase());
 };
