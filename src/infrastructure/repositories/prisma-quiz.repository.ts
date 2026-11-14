@@ -287,6 +287,10 @@ export class PrismaQuizRepository implements IQuizRepository {
     return this.findManyEntities({ ownerId });
   }
 
+  async countByOwner(ownerId: string): Promise<number> {
+    return prisma.quiz.count({ where: { ownerId } });
+  }
+
   private async findManyEntities(
     where?: Prisma.QuizWhereInput
   ): Promise<Quiz[]> {

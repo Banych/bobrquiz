@@ -12,6 +12,7 @@ vi.mock('node:crypto', () => ({
 const quizMocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findMany: vi.fn(),
+  count: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
@@ -432,6 +433,18 @@ describe('PrismaQuizRepository', () => {
       quizMocks.findMany.mockResolvedValue([]);
 
       await expect(repository.listByOwner('owner-2')).resolves.toEqual([]);
+    });
+  });
+
+  describe('countByOwner', () => {
+    it("counts the owner's quizzes without loading them", async () => {
+      quizMocks.count.mockResolvedValue(7);
+
+      await expect(repository.countByOwner('owner-1')).resolves.toBe(7);
+      expect(prisma.quiz.count).toHaveBeenCalledWith({
+        where: { ownerId: 'owner-1' },
+      });
+      expect(prisma.quiz.findMany).not.toHaveBeenCalled();
     });
   });
 

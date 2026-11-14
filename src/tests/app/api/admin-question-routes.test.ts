@@ -22,6 +22,7 @@ import * as servicesModule from '@application/services/factories';
 import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
 import type { IQuestionRepository } from '@domain/repositories/question-repository';
 import { Question } from '@domain/entities/question';
+import { LIMIT_REACHED_PREFIX } from '@domain/value-objects/host-limits';
 import { GetQuizQuestionUseCase } from '@application/use-cases/get-quiz-question.use-case';
 import { UpdateQuestionUseCase } from '@application/use-cases/update-question.use-case';
 import { DeleteQuestionUseCase } from '@application/use-cases/delete-question.use-case';
@@ -177,6 +178,19 @@ describe('Admin question routes ownership', () => {
 
       expect(response.status).toBeLessThan(300);
       expect(quizService.assertQuizOwner).toHaveBeenCalledWith(A_QUIZ, HOST_A);
+    });
+
+    it('answers the question cap with a 400 that carries its message', async () => {
+      const message = `${LIMIT_REACHED_PREFIX} a quiz can have at most 100 questions.`;
+      questionService.createQuestion.mockRejectedValue(new Error(message));
+
+      const response = await createQuestion(
+        request(newQuestion),
+        quizCtx(A_QUIZ)
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: message });
     });
   });
 

@@ -1,5 +1,6 @@
 import {
   CreateQuestionDTO,
+  MAX_QUESTION_ANSWER_LENGTH,
   MAX_QUESTION_CORRECT_ANSWERS,
   MAX_QUESTION_OPTIONS,
   MAX_REORDER_QUESTIONS,
@@ -86,6 +87,33 @@ describe('question-admin DTO array caps', () => {
 
       expectSingleTooBig(result);
       expect(result.error?.issues[0].path).toEqual(['correctAnswers']);
+    });
+  });
+
+  describe('option and answer length (issue 167)', () => {
+    const atCap = 'x'.repeat(MAX_QUESTION_ANSWER_LENGTH);
+    const pastCap = 'x'.repeat(MAX_QUESTION_ANSWER_LENGTH + 1);
+
+    it('accepts options and correctAnswers at the length cap', () => {
+      const body = { options: [atCap, 'B'], correctAnswers: [atCap] };
+
+      expect(
+        CreateQuestionDTO.safeParse({ ...validCreate, ...body }).success
+      ).toBe(true);
+      expect(UpdateQuestionDTO.safeParse(body).success).toBe(true);
+    });
+
+    it.each([
+      ['options', { options: [pastCap, 'B'] }],
+      ['correctAnswers', { correctAnswers: [pastCap] }],
+    ] as const)('rejects a too-long element of %s', (field, body) => {
+      for (const result of [
+        CreateQuestionDTO.safeParse({ ...validCreate, ...body }),
+        UpdateQuestionDTO.safeParse(body),
+      ]) {
+        expectSingleTooBig(result);
+        expect(result.error?.issues[0].path).toEqual([field, 0]);
+      }
     });
   });
 

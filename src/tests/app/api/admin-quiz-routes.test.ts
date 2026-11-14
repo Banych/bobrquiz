@@ -19,6 +19,7 @@ import {
 import { POST as resetQuiz } from '@/app/api/admin/quizzes/[quizId]/reset/route';
 import * as servicesModule from '@application/services/factories';
 import { getCurrentUserId } from '@infrastructure/auth/get-current-user';
+import { LIMIT_REACHED_PREFIX } from '@domain/value-objects/host-limits';
 
 type ServiceContainer = ReturnType<typeof servicesModule.getServices>;
 
@@ -83,6 +84,26 @@ describe('Admin quiz routes ownership', () => {
         expect.objectContaining({ title: 'My quiz' }),
         HOST_A
       );
+    });
+
+    it('answers the quiz cap with a 400 that carries its message', async () => {
+      // Built from the domain prefix, so the route's regex can't drift from it
+      const message = `${LIMIT_REACHED_PREFIX} a host can have at most 100 quizzes.`;
+      quizService.createQuiz.mockRejectedValue(new Error(message));
+
+      const response = await createQuiz(jsonRequest({ title: 'One more' }));
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: message });
+    });
+
+    it('keeps other create failures a 500 without their message', async () => {
+      quizService.createQuiz.mockRejectedValue(new Error('connection reset'));
+
+      const response = await createQuiz(jsonRequest({ title: 'One more' }));
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ error: 'Failed to create quiz' });
     });
 
     it('reads, updates, deletes and resets their quiz', async () => {

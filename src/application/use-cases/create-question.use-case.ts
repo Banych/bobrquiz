@@ -3,6 +3,10 @@ import type { IQuizRepository } from '@domain/repositories/quiz-repository';
 import type { IMediaStorage } from '@domain/repositories/media-storage';
 import { Question } from '@domain/entities/question';
 import type { CreateQuestionDTO } from '@application/dtos/question-admin.dto';
+import {
+  LIMIT_REACHED_PREFIX,
+  MAX_QUESTIONS_PER_QUIZ,
+} from '@domain/value-objects/host-limits';
 import { assertQuizMediaUrl } from '@application/use-cases/quiz-media/assert-quiz-media-url';
 import { randomUUID } from 'crypto';
 
@@ -38,6 +42,13 @@ export class CreateQuestionUseCase {
     const existingQuestions = await this.questionRepository.listByQuizId(
       dto.quizId
     );
+    // Counted, then saved: parallel requests can pass the cap by the number
+    // in flight, but once it is reached every later request is refused
+    if (existingQuestions.length >= MAX_QUESTIONS_PER_QUIZ) {
+      throw new Error(
+        `${LIMIT_REACHED_PREFIX} a quiz can have at most ${MAX_QUESTIONS_PER_QUIZ} questions. Delete one to add another.`
+      );
+    }
     const maxOrderIndex = existingQuestions.reduce(
       (max, q) => Math.max(max, q.orderIndex ?? 0),
       -1
