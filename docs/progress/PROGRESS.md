@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-14: Per-host Caps ✅
+- **2026-11-14** — a host can own at most 100 quizzes and a quiz hold at most 100 questions (`host-limits.ts`); past either cap the create route answers 400 "Limit reached: …" and both create dialogs show it. Option and correct-answer strings are capped at 200 characters, so the question cap bounds bytes too. Growth the caps don't cover (player names, answers, audit logs, snapshots) is in the parking lot. Closes issue 167, which had to land before part 3 of host sign-up opens sign-ups — [PR #169](https://github.com/Banych/bobrquiz/pull/169) — [issue](https://github.com/Banych/bobrquiz/issues/167)
+
 ### 2026-11-14: Host Sign-up, Part 1 ✅
 - **2026-11-14** — any signed-in account with a confirmed email can host: the `ADMIN_EMAILS` allowlist and its 403 are gone, and an unconfirmed account is treated as signed out in the proxy and in `getCurrentUserId` (ADR-005 superseded). The login page's `redirect` only leads to a page on this site, including dot-segment tricks the reviews found (closes issue 108). Sign-ups stay off in both Supabase projects; email sign-in on dev is part 2, the production rollout part 3. Per-host quiz and question caps went to issue 167 — [PR #166](https://github.com/Banych/bobrquiz/pull/166) — [spec](plans/2026-11-14-host-signup-design.md)
 
