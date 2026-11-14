@@ -1,6 +1,6 @@
 # Host sign-up: anyone with an email address can host (issue 129)
 
-Status: In progress (part 1 merged in PR #166; parts 2 and 3 to come)
+Status: In progress (part 1 merged in PR #166; part 2 on feat/host-signup-email; part 3 to come)
 
 ## Why
 
@@ -284,6 +284,35 @@ These came from reading, not running; each needs a run before the plan relies on
 - How long a session lasts on the Free plan (Supabase documents time-boxed and inactive
   session limits as paid settings; the default is believed to be no expiry).
 - That intercepting the send request in Playwright leaves `generateLink`'s code valid.
+
+Results so far (part 2, run on dev 2026-11-14 with a throwaway `@example.com` user, created by
+`generateLink` and deleted after; supabase-js 2.105.4):
+- `generateLink` with type `magiclink` creates a missing user, unconfirmed, and reports
+  `verification_type: "signup"` for it (`magiclink` once it exists). It returns a token hash and
+  a code (`email_otp`).
+- `verifyOtp({ token_hash, type: 'email' })` verifies both the signup and the magic-link hash and
+  confirms the user; `type: 'magiclink'` also works for the magic-link one. A used hash fails with
+  `otp_expired` ("Email link is invalid or has expired"). **Ruling:** both templates use
+  `type=email`, and the confirm action verifies with `email` whatever the link says.
+- `verifyOtp({ email, token, type: 'email' })` signs in with the code; a wrong code fails with
+  `otp_expired`, status 403.
+- **The dev project sends 8-digit codes**, not 6. The code field accepts 6 to 10 digits.
+- A newer link voids the older code, so the e2e send intercept must keep the form's request from
+  reaching Supabase before `generateLink` is asked for the code (it does: the route is answered
+  in the browser).
+- Still open: the captcha bypass (dev's Turnstile is not on yet), `{{ .RedirectTo }}` escaping
+  and the "Confirm signup" template for a first-time address (both need one real email), whether
+  a browser-sent (PKCE) token hash verifies on another device, and session length (not checked).
+
+Builder rulings (part 2):
+- The sign-in form's behaviour is covered in Playwright, not unit tests: Vitest runs in Node with
+  no DOM. Its pure parts (error messages, the redirect helper, the confirm action) have unit tests.
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is optional in env validation, so CI's build needs no new
+  value; without it the form shows no widget and Supabase refuses the send where it enforces a
+  captcha.
+- An absolute `next` that is only the origin (what Supabase puts in place of a refused return
+  address) lands on `/admin`, not the home page.
+- A signed-in host who opens `/login` sees the form; not redirected (left to the builder).
 
 ## Carried into part 2 (from part 1's reviews)
 
