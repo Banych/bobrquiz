@@ -1,88 +1,62 @@
 import { test, expect } from '@playwright/test';
+import { BASE_URL } from './support/paths';
+import {
+  confirmPageUrl,
+  generateSignInLink,
+  interceptSignInEmail,
+  signInThroughEmailLink,
+  signInWithCode,
+} from './support/email-sign-in';
 
 // Use unauthenticated context for auth tests to avoid interfering with other tests
 const authTest = test.extend({
   storageState: { cookies: [], origins: [] },
 });
 
-// A separate admin account: the logout test signs out every session of the user it
-// logs in as (supabase signOut defaults to scope 'global'), which would revoke the
-// session auth.setup.ts saves for the other admin tests if both used one account.
-const adminEmail = process.env.TEST_AUTH_ADMIN_EMAIL;
-const adminPassword = process.env.TEST_AUTH_ADMIN_PASSWORD;
-const hasCredentials = !!(adminEmail && adminPassword);
+// A separate host account: the logout test signs out every session of the user it signs in
+// as (supabase signOut defaults to scope 'global'), which would revoke the session
+// auth.setup.ts saves for the other specs if both used one account.
+const hostEmail = process.env.TEST_AUTH_ADMIN_EMAIL;
 
 if (
-  adminEmail &&
-  adminEmail.toLowerCase() === process.env.TEST_ADMIN_EMAIL?.toLowerCase()
+  hostEmail &&
+  hostEmail.toLowerCase() === process.env.TEST_ADMIN_EMAIL?.toLowerCase()
 ) {
   throw new Error(
     'TEST_AUTH_ADMIN_EMAIL must differ from TEST_ADMIN_EMAIL: the logout test would revoke the shared admin session.'
   );
 }
 
+const requireHostEmail = (): string => {
+  authTest.skip(!hostEmail, 'TEST_AUTH_ADMIN_EMAIL env var required');
+  return hostEmail!;
+};
+
+// Serial: every test signs the same account in, and a newer code voids the older one
 authTest.describe.configure({ mode: 'serial' });
 
-authTest.describe('Admin Authentication', () => {
-  authTest(
-    'should redirect unauthenticated users to login',
-    async ({ page }) => {
-      // Try to access admin dashboard without being logged in
-      await page.goto('http://localhost:3000/admin');
+authTest.describe('Host sign-in', () => {
+  authTest('redirects signed-out visitors to sign-in', async ({ page }) => {
+    await page.goto('/admin');
 
-      // Should redirect to login with redirect parameter
-      await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin/);
-      await expect(page.getByText('Admin Login')).toBeVisible();
-    }
-  );
-
-  authTest('should show error for invalid credentials', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
-
-    // Fill in invalid credentials
-    await page
-      .getByRole('textbox', { name: 'Email' })
-      .fill('wrong@example.com');
-    await page.getByRole('textbox', { name: 'Password' }).fill('wrongpassword');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Should show error message
-    // Scoped to the form: Next's dev overlay repeats the message
-    await expect(
-      page.locator('form').getByText(/invalid login credentials/i)
-    ).toBeVisible();
-
-    // Should still be on login page
-    await expect(page).toHaveURL('http://localhost:3000/login');
+    await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin$/);
+    await expect(page.getByText('Sign in', { exact: true })).toBeVisible();
+    await expect(page.getByLabel(/password/i)).toHaveCount(0);
   });
 
   authTest(
-    'should login with valid admin credentials and access dashboard',
+    'signs in with the emailed code and opens the dashboard',
     async ({ page }) => {
-      authTest.skip(
-        !hasCredentials,
-        'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
-      );
+      const email = requireHostEmail();
+      await page.goto('/login');
 
-      await page.goto('http://localhost:3000/login');
+      await signInWithCode(page, email);
 
-      // Fill in valid admin credentials
-      await page.getByRole('textbox', { name: 'Email' }).fill(adminEmail!);
-      await page
-        .getByRole('textbox', { name: 'Password' })
-        .fill(adminPassword!);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-
-      // Should redirect to admin dashboard
-      await expect(page).toHaveURL('http://localhost:3000/admin');
+      await expect(page).toHaveURL(`${BASE_URL}/admin`);
       await expect(
         page.getByRole('heading', { name: 'Admin Dashboard' })
       ).toBeVisible();
-
-      // Should show user email in header
-      await expect(page.getByText(adminEmail!)).toBeVisible();
-
-      // Should show navigation links in header
+      await expect(page.getByText(email)).toBeVisible();
       await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
       await expect(
         page.getByRole('banner').getByRole('link', { name: 'Quizzes' })
@@ -90,79 +64,125 @@ authTest.describe('Admin Authentication', () => {
     }
   );
 
-  authTest('should logout and redirect to login page', async ({ page }) => {
-    authTest.skip(
-      !hasCredentials,
-      'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
-    );
-
-    // Login first
-    await page.goto('http://localhost:3000/login');
-    await page.getByRole('textbox', { name: 'Email' }).fill(adminEmail!);
-    await page.getByRole('textbox', { name: 'Password' }).fill(adminPassword!);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for dashboard to load
-    await expect(page).toHaveURL('http://localhost:3000/admin');
-
-    // Click logout button
-    await page.getByRole('button', { name: 'Logout' }).click();
-
-    // Should redirect to login page
-    await expect(page).toHaveURL('http://localhost:3000/login');
-    await expect(page.getByText('Admin Login')).toBeVisible();
-  });
-
   authTest(
-    'should redirect to originally requested page after login',
+    'shows the waiting screen, refuses a wrong code and goes back to the email step',
     async ({ page }) => {
-      authTest.skip(
-        !hasCredentials,
-        'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
-      );
+      const email = requireHostEmail();
+      await interceptSignInEmail(page);
+      await page.goto('/login');
 
-      // Try to access /admin/quizzes without being logged in
-      await page.goto('http://localhost:3000/admin/quizzes');
-
-      // Should redirect to login with redirect parameter
-      await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin%2Fquizzes/);
-
-      // Login
-      await page.getByRole('textbox', { name: 'Email' }).fill(adminEmail!);
+      await page.getByRole('textbox', { name: 'Email' }).fill(email);
       await page
-        .getByRole('textbox', { name: 'Password' })
-        .fill(adminPassword!);
-      await page.getByRole('button', { name: 'Sign In' }).click();
+        .getByRole('button', { name: 'Email me a sign-in link' })
+        .click();
 
-      // Should redirect to originally requested page
-      await expect(page).toHaveURL('http://localhost:3000/admin/quizzes');
+      await expect(page.getByText('Check your email')).toBeVisible();
+      await expect(page.getByText(email)).toBeVisible();
       await expect(
-        page.getByRole('heading', { name: 'Quizzes' })
+        page.getByRole('button', { name: /^Resend \(in \d+ s\)$/ })
+      ).toBeDisabled();
+
+      await page.getByRole('textbox', { name: 'Code' }).fill('00000000');
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      // Next's route announcer is a role=alert too; match the message
+      await expect(
+        page
+          .getByRole('alert')
+          .filter({ hasText: 'That code is wrong or has expired' })
       ).toBeVisible();
+      await expect(page).toHaveURL(/\/login$/);
+
+      await page.getByRole('button', { name: 'Use another email' }).click();
+      await expect(page.getByRole('textbox', { name: 'Email' })).toHaveValue(
+        email
+      );
     }
   );
 
-  authTest('should persist session across page reloads', async ({ page }) => {
-    authTest.skip(
-      !hasCredentials,
-      'TEST_AUTH_ADMIN_EMAIL and TEST_AUTH_ADMIN_PASSWORD env vars required'
-    );
+  authTest('logs out and redirects to sign-in', async ({ page }) => {
+    const email = requireHostEmail();
+    await page.goto('/login');
+    await signInWithCode(page, email);
+    await expect(page).toHaveURL(`${BASE_URL}/admin`);
 
-    // Login
-    await page.goto('http://localhost:3000/login');
-    await page.getByRole('textbox', { name: 'Email' }).fill(adminEmail!);
-    await page.getByRole('textbox', { name: 'Password' }).fill(adminPassword!);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL('http://localhost:3000/admin');
+    await page.getByRole('button', { name: 'Logout' }).click();
 
-    // Wait for cookies to settle and session to be fully established
-    await page.waitForTimeout(2000);
+    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await expect(page.getByText('Sign in', { exact: true })).toBeVisible();
+  });
 
-    // Reload page
+  authTest(
+    'returns to the originally requested page after the code',
+    async ({ page }) => {
+      const email = requireHostEmail();
+      await page.goto('/admin/quizzes');
+      await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin%2Fquizzes$/);
+
+      const [sent] = await signInWithCode(page, email);
+
+      await expect(page).toHaveURL(`${BASE_URL}/admin/quizzes`);
+      await expect(
+        page.getByRole('heading', { name: 'Quizzes' })
+      ).toBeVisible();
+      // The email link carries the same return address
+      expect(sent.url.searchParams.get('redirect_to')).toBe(
+        `${BASE_URL}/admin/quizzes`
+      );
+    }
+  );
+
+  authTest(
+    'signs in through the email link only after Continue, and the link works once',
+    async ({ page }) => {
+      const email = requireHostEmail();
+      const { tokenHash } = await generateSignInLink(email);
+      const url = confirmPageUrl(tokenHash, '/admin/quizzes');
+
+      // Opening the link verifies nothing: a mail scanner cannot use it up
+      await page.goto(url);
+      await page.goto(url);
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await expect(page).toHaveURL(`${BASE_URL}/admin/quizzes`);
+
+      await page.context().clearCookies();
+      await page.goto(url);
+      await page.getByRole('button', { name: 'Continue' }).click();
+      // Next's route announcer is a role=alert too; match the message
+      await expect(
+        page
+          .getByRole('alert')
+          .filter({ hasText: 'already used or has expired' })
+      ).toBeVisible();
+      await page.getByRole('link', { name: 'Back to sign in' }).click();
+      await expect(page).toHaveURL(`${BASE_URL}/login`);
+    }
+  );
+
+  authTest(
+    'lands on /admin when the link points at another site',
+    async ({ page }) => {
+      const email = requireHostEmail();
+      const { tokenHash } = await generateSignInLink(email);
+      const params = new URLSearchParams({
+        token_hash: tokenHash,
+        type: 'email',
+        next: 'https://evil.example/admin/quizzes',
+      });
+
+      await page.goto(`/auth/confirm?${params}`);
+      await page.getByRole('button', { name: 'Continue' }).click();
+
+      await expect(page).toHaveURL(`${BASE_URL}/admin`);
+    }
+  );
+
+  authTest('keeps the session across page reloads', async ({ page }) => {
+    const email = requireHostEmail();
+    await signInThroughEmailLink(page, email, '/admin');
+
     await page.reload();
 
-    // Should still be on admin dashboard (session persisted)
-    await expect(page).toHaveURL('http://localhost:3000/admin');
+    await expect(page).toHaveURL(`${BASE_URL}/admin`);
     await expect(page.getByText('Admin Dashboard')).toBeVisible();
   });
 });

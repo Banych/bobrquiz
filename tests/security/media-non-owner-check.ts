@@ -6,8 +6,10 @@
  *
  * 1. Plants a file in a quiz folder owned by the main admin (TEST_ADMIN_EMAIL),
  *    with the service-role key.
- * 2. Signs in as the second test admin (TEST_AUTH_ADMIN_*) with the anon key,
- *    confirms the session is that user, and tries to upload next to the
+ * 2. Signs in as the second test admin (TEST_AUTH_ADMIN_EMAIL) with the anon key,
+ *    using a code from the service-role key's generateLink (hosts have no
+ *    password, and generateLink skips the sign-in form's bot check), confirms
+ *    the session is that user, and tries to upload next to the
  *    planted file, overwrite it, move it and remove it.
  * 3. Checks with the service-role key that the planted file is still there with
  *    its original bytes and that neither the upload nor the moved copy landed,
@@ -93,7 +95,6 @@ async function main(): Promise<number> {
   const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const ownerEmail = requireEnv('TEST_ADMIN_EMAIL');
   const otherEmail = requireEnv('TEST_AUTH_ADMIN_EMAIL');
-  const otherPassword = requireEnv('TEST_AUTH_ADMIN_PASSWORD');
   if (ownerEmail.toLowerCase() === otherEmail.toLowerCase()) {
     throw new Error('TEST_ADMIN_EMAIL and TEST_AUTH_ADMIN_EMAIL must differ');
   }
@@ -133,9 +134,19 @@ async function main(): Promise<number> {
 
   try {
     try {
-      const signIn = await other.auth.signInWithPassword({
+      const link = await admin.auth.admin.generateLink({
+        type: 'magiclink',
         email: otherEmail,
-        password: otherPassword,
+      });
+      if (link.error) {
+        throw new Error(
+          `second admin sign-in link failed: ${link.error.message}`
+        );
+      }
+      const signIn = await other.auth.verifyOtp({
+        email: otherEmail,
+        token: link.data.properties.email_otp,
+        type: 'email',
       });
       if (signIn.error) {
         throw new Error(`second admin sign-in failed: ${signIn.error.message}`);

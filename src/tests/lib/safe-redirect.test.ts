@@ -42,4 +42,48 @@ describe('safeRedirectPath', () => {
   ])('falls back for %s', (_label, value) => {
     expect(safeRedirectPath(value)).toBe(DEFAULT_REDIRECT);
   });
+
+  describe("with this site's origin", () => {
+    const origin = 'http://localhost:3000';
+
+    it.each([
+      ['http://localhost:3000/host', '/host'],
+      ['http://localhost:3000/quiz/q-1/live?tab=x#y', '/quiz/q-1/live?tab=x#y'],
+      ['http://localhost:3000/admin/../host', '/host'],
+      ['/admin/quizzes', '/admin/quizzes'],
+    ])('keeps %s as a path', (value, expected) => {
+      expect(safeRedirectPath(value, origin)).toBe(expected);
+    });
+
+    it.each([
+      ['another host', 'https://evil.example/host'],
+      ['another port', 'http://localhost:3001/host'],
+      ['another scheme', 'https://localhost:3000/host'],
+      ['a lookalike host', 'http://localhost:3000.evil.example/host'],
+      [
+        'credentials before another host',
+        'http://localhost:3000@evil.example/host',
+      ],
+      ['the bare origin Supabase falls back to', 'http://localhost:3000'],
+      ['the bare origin with a slash', 'http://localhost:3000/'],
+      [
+        'a protocol-relative path after the origin',
+        'http://localhost:3000//evil.example',
+      ],
+      [
+        'a dot segment after the origin',
+        'http://localhost:3000/.//evil.example',
+      ],
+      [
+        'an encoded parent segment after the origin',
+        'http://localhost:3000/%2E%2E//evil.example',
+      ],
+      ['a backslash after the origin', 'http://localhost:3000/\\evil.example'],
+      ['a javascript: URL', 'javascript:alert(1)'],
+      ['a relative path without a slash', 'host'],
+      ['a protocol-relative URL', '//evil.example/host'],
+    ])('falls back for %s', (_label, value) => {
+      expect(safeRedirectPath(value, origin)).toBe(DEFAULT_REDIRECT);
+    });
+  });
 });

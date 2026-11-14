@@ -36,6 +36,12 @@ const ENV_VARS: EnvVarConfig[] = [
     description:
       'Supabase service role key (server-side realtime broadcasts; without it media uploads, media deletes and quiz deletes fail with 500)',
   },
+  {
+    key: 'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
+    required: false,
+    description:
+      'Cloudflare Turnstile site key for the sign-in form; without it no bot check is shown, and sign-in fails where the Supabase project enforces one',
+  },
 ];
 
 export const validateEnvironment = (): void => {

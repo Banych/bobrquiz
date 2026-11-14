@@ -81,8 +81,7 @@ describe('proxy', () => {
     expect(await response.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('lets any confirmed user through, with no allowlist set', async () => {
-    vi.stubEnv('ADMIN_EMAILS', '');
+  it('lets any confirmed user through', async () => {
     getUserMock.mockResolvedValue({ data: { user: confirmedUser } });
 
     const response = await proxy(makeRequest('/admin/quizzes'));

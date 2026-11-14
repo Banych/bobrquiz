@@ -744,6 +744,11 @@
     "@solid-primitives/refs" "^1.0.5"
     "@solid-primitives/utils" "^6.2.1"
 
+"@marsidev/react-turnstile@1.6.3":
+  version "1.6.3"
+  resolved "https://registry.yarnpkg.com/@marsidev/react-turnstile/-/react-turnstile-1.6.3.tgz#dcf01472af4cac58247d4abc4820f36ff2e1231b"
+  integrity sha512-JdMMArjEVDMs5jnGMBeXl3y6dkMuIXPG4Tu88Uo2Rkf8ujEw/iJ2Yp/3n4kDF3BjJ+bJB9WC19LPWc5a7/4srA==
+
 "@napi-rs/wasm-runtime@^1.1.4":
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.4.tgz#a46bbfedc29751b7170c5d23bc1d8ee8c7e3c1e1"
