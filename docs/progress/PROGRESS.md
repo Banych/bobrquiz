@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-14: Host Sign-in by Email ✅
+- **2026-11-14** — hosts sign in by email only: `/login` sends a link and a code with a Turnstile check, the code signs in the device that asked, and the link opens `/auth/confirm`, which verifies only when Continue is pressed. A host session must be signed in by that code or link: a password session is refused, since a password set before the owner signed up kept working after they confirmed (reproduced on dev). e2e signs in through `generateLink` and sends no email. Dev Supabase is set up (sign-ups, templates, captcha); production waits for part 3. The merge went live on production before its Supabase settings, which left production sign-in broken until the rollout or a rollback — [PR #171](https://github.com/Banych/bobrquiz/pull/171) — [spec](plans/2026-11-14-host-signup-design.md)
+
 ### 2026-11-14: Per-host Caps ✅
 - **2026-11-14** — a host can own at most 100 quizzes and a quiz hold at most 100 questions (`host-limits.ts`); past either cap the create route answers 400 "Limit reached: …" and both create dialogs show it. Option and correct-answer strings are capped at 200 characters, so the question cap bounds bytes too. Growth the caps don't cover (player names, answers, audit logs, snapshots) is in the parking lot. Closes issue 167, which had to land before part 3 of host sign-up opens sign-ups — [PR #169](https://github.com/Banych/bobrquiz/pull/169) — [issue](https://github.com/Banych/bobrquiz/issues/167)
 
