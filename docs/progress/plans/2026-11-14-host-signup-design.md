@@ -317,6 +317,8 @@ with the always-pass test secret, secure email change on, phone off):
   - The form's send went through with the widget's test-key token, and the email arrived.
   - The link ends `&type=email&next=http%3a%2f%2flocalhost%3a3000%2fhost`, so `{{ .RedirectTo }}`
     is URL-escaped and survives a query string.
+  - Opened in another browser, Continue landed on `/host` signed in. So a token hash from the
+    browser's own `signInWithOtp` (PKCE flow) verifies on a device that never asked for it.
 - **Not checkable on dev:** that a first-time address gets "Confirm signup". It needs a new
   address that is also on the team, so it moves to part 3's rollout step 6.
 
