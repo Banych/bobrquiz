@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { BASE_URL } from './support/paths';
 import {
+  createConfirmedUserWithPassword,
   deleteUserByEmail,
   newSignupEmail,
+  sessionCookies,
   signInWithCode,
 } from './support/email-sign-in';
 import {
@@ -58,6 +60,34 @@ test.describe('Host sign-up', () => {
           )
         );
       }
+      await deleteUserByEmail(email);
+    }
+  });
+
+  // Anyone can sign an address up with a password before its owner signs in by email, and that
+  // password still works once the owner confirms the address; the app must refuse such a session
+  test('a password session of a confirmed account is not a host session', async ({
+    page,
+    context,
+  }) => {
+    const email = newSignupEmail();
+    const password = `Pw-${Date.now()}-${Math.random().toString(36).slice(2)}!`;
+
+    try {
+      await createConfirmedUserWithPassword(email, password);
+
+      await context.addCookies(await sessionCookies(email, { password }));
+      await page.goto('/admin');
+      await expect(page).toHaveURL(/\/login\?redirect=%2Fadmin$/);
+      expect((await page.request.get('/api/admin/quizzes')).status()).toBe(401);
+
+      // The same cookies from an emailed code pass, so the refusal is about the password
+      await context.clearCookies();
+      await context.addCookies(await sessionCookies(email, 'code'));
+      await page.goto('/admin');
+      await expect(page).toHaveURL(`${BASE_URL}/admin`);
+      expect((await page.request.get('/api/admin/quizzes')).status()).toBe(200);
+    } finally {
       await deleteUserByEmail(email);
     }
   });

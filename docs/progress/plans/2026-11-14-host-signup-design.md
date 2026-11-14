@@ -133,8 +133,9 @@ flooded with strangers' addresses, and Resend's 100-a-day cap still runs out in 
 
 ### Who is a host
 
-Any Supabase user whose email is confirmed (`email_confirmed_at` set). Proving the email by
-link or code confirms it. One shared check in `src/infrastructure/auth/` decides this, and both
+Any Supabase user whose email is confirmed (`email_confirmed_at` set), in a session signed in by
+the emailed link or code, not a password (added in part 2: "Password sessions refused" under To
+verify while building). Proving the email by link or code confirms it. One shared check in `src/infrastructure/auth/` decides this, and both
 the proxy and `getCurrentUserId` use it, so an unconfirmed user is treated exactly like a
 signed-out one: redirect to sign-in on pages, 401 on `/api/admin/**`, `null` user id in every
 route and page that calls `getCurrentUserId`. The 403 "not in the allowlist" branch is removed.
@@ -313,6 +314,24 @@ Builder rulings (part 2):
 - An absolute `next` that is only the origin (what Supabase puts in place of a refused return
   address) lands on `/admin`, not the home page.
 - A signed-in host who opens `/login` sees the form; not redirected (left to the builder).
+
+Password sessions refused (ruled by Vlad 2026-11-14, after part 2's security review):
+- **The hole:** with sign-ups open, anyone can sign an address up through Supabase's public
+  sign-up endpoint with a password. When the owner later signs in by email, that confirms the
+  address, and the attacker's password then signs in to the confirmed account. Reproduced on dev
+  2026-11-14 with a throwaway address: the password failed with `email_not_confirmed` before the
+  code was used, and signed in after.
+- **The fix:** "Who is a host" adds a second condition. The session must have been signed in by
+  the emailed code or link: the access token's `amr` claim contains `otp` (or `magiclink`).
+  `getHostUser` in `src/infrastructure/auth/confirmed-user.ts` reads the session, has the auth
+  server verify its token with `getUser(token)`, and checks that same token; the proxy and
+  `getCurrentUserId` both use it. A password session is treated as signed out.
+- **Observed on dev:** code and token-hash sign-ins both report `otp`, for a first-time address
+  too, and a token refresh keeps it.
+- **Cost:** a host still signed in with a password is sent to sign-in once after the deploy.
+- **Tested by:** `e2e/host-signup.spec.ts`, which builds a password session for a confirmed
+  account and checks that `/admin` redirects and `/api/admin` answers 401, while a code session
+  through the same cookies passes.
 
 ## Carried into part 2 (from part 1's reviews)
 

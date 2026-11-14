@@ -85,7 +85,7 @@ yarn playwright show-report
 
 - **`auth.setup.ts`** - Global authentication setup (runs first)
 - **`admin-auth.spec.ts`** - Sign-in by code and by email link, wrong code, used link, logout and redirect tests (own account, `TEST_AUTH_ADMIN_EMAIL`)
-- **`host-signup.spec.ts`** - A new address signs up through the form, sees no quizzes, creates and starts one; the user is deleted afterwards
+- **`host-signup.spec.ts`** - A new address signs up through the form, sees no quizzes, creates and starts one; and a password session of a confirmed account is refused (the users are deleted afterwards)
 - **`support/email-sign-in.ts`** - `generateLink` sign-in helpers, the send intercept, and sign-up user cleanup
 - **`support/quiz-fixtures.ts`** - `createQuiz` fixture: each test that needs a quiz gets its own, created through the admin API and deleted after the test (titles start with `E2E fixture `)
 - **`stale-quizzes.cleanup.ts`** - `cleanup` project: deletes fixture quizzes and `e2e-signup-` users older than 30 minutes, left by crashed runs

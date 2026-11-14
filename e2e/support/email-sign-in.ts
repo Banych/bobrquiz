@@ -8,6 +8,7 @@
 
 import { expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { BASE_URL } from './paths';
 
 /** Addresses the sign-up spec creates; the cleanup project deletes stale ones. */
@@ -118,6 +119,78 @@ export async function signInWithCode(
   await page.getByRole('textbox', { name: 'Code' }).fill(code);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   return caught;
+}
+
+// Cloudflare's dummy response, accepted by the always-pass test secret when a captcha is enforced
+const TEST_CAPTCHA_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
+
+export type BrowserCookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+};
+
+/**
+ * Session cookies for `email`, signed in outside the browser either with `password` or with a
+ * `generateLink` code, in the same cookie format the app's Supabase clients write. For checking
+ * what the app does with a session it would never create itself (a password one).
+ */
+export async function sessionCookies(
+  email: string,
+  signIn: { password: string } | 'code'
+): Promise<BrowserCookie[]> {
+  const jar = new Map<string, string>();
+  const supabase = createServerClient(
+    requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    {
+      cookies: {
+        getAll: () => [...jar].map(([name, value]) => ({ name, value })),
+        setAll: (cookies) =>
+          cookies.forEach(({ name, value }) =>
+            value ? jar.set(name, value) : jar.delete(name)
+          ),
+      },
+    }
+  );
+  const { error } =
+    signIn === 'code'
+      ? await supabase.auth.verifyOtp({
+          email,
+          token: (await generateSignInLink(email)).code,
+          type: 'email',
+        })
+      : await supabase.auth.signInWithPassword({
+          email,
+          password: signIn.password,
+          options: { captchaToken: TEST_CAPTCHA_TOKEN },
+        });
+  if (error) {
+    throw new Error(`session sign-in failed: ${error.message}`);
+  }
+  const { hostname } = new URL(BASE_URL);
+  return [...jar].map(([name, value]) => ({
+    name,
+    value,
+    domain: hostname,
+    path: '/',
+  }));
+}
+
+/** Creates a confirmed user with a password, as Supabase's public sign-up plus a later email proof leaves one. */
+export async function createConfirmedUserWithPassword(
+  email: string,
+  password: string
+): Promise<void> {
+  const { error } = await adminClient().auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error) {
+    throw new Error(`createUser failed: ${error.message}`);
+  }
 }
 
 /** A fresh address for one sign-up run. */

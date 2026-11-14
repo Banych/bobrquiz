@@ -155,10 +155,10 @@ the end of a session). Paths below are under `src/`.
 - Audit: `app/(admin)/admin/audit` → `audit-log-table.tsx` → `api/admin/audit` →
   `application/use-cases/audit/` → `findForOwner` in `prisma-audit-log.repository.ts`, which
   filters through the quiz relation, so logs with no quiz never show.
-- Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**`: any signed-in user
-  with a confirmed email may host (`isConfirmedUser` in `infrastructure/auth/confirmed-user.ts`,
-  also used by `getCurrentUserId`, so an unconfirmed user is signed out everywhere); no
-  allowlist since issue 129. Sign-in is email only: `app/(admin)/login/page.tsx` (Supabase calls)
+- Auth: `proxy.ts` guards `/admin`, `/api/admin`, `/host` and `/quiz/**`: any user with a
+  confirmed email may host, in a session signed in by the emailed code or link (`getHostUser` in
+  `infrastructure/auth/confirmed-user.ts`, also used by `getCurrentUserId`, so an unconfirmed
+  user or a password session is signed out everywhere); no allowlist since issue 129. Sign-in is email only: `app/(admin)/login/page.tsx` (Supabase calls)
   → `components/auth/sign-in-form.tsx` (email and Turnstile, then the code); the email's link
   opens `app/auth/confirm/` (GET renders a Continue button; `actions.ts` verifies through
   `infrastructure/auth/verify-email-link.ts`). Error copy in `lib/sign-in-errors.ts`; every

@@ -214,8 +214,9 @@ signs in the device that asked, and the link opens `/auth/confirm`, whose Contin
 in the device it is opened on. A first-time address becomes a host with an empty quiz list.
 
 1. **Proxy** (`src/proxy.ts`) protects `/admin/*`, `/api/admin/*`, `/host` and `/quiz/*`
-2. **Check**: a Supabase session whose email is confirmed (`isConfirmedUser`); any such user
-   can host, and every route then checks the quiz owner
+2. **Check**: a Supabase session whose email is confirmed and that was signed in by the
+   emailed code or link, not a password (`getHostUser`); any such user can host, and every
+   route then checks the quiz owner
 3. **Redirect**: signed-out or unconfirmed users → `/login` (401 on `/api/admin/*`)
 
 ### Signing in locally
@@ -232,7 +233,8 @@ in the device it is opened on. A first-time address becomes a host with an empty
 - **Auth client**: `src/infrastructure/auth/supabase-auth-client.ts`
   - `createBrowserClient()` – Client-side sign-in (email, code) and logout
   - `createServerClient(cookies)` – Server-side session checks
-  - `isConfirmedUser(user)` in `confirmed-user.ts` – who may host (a confirmed email)
+  - `getHostUser(auth)` in `confirmed-user.ts` – who may host (a confirmed email, signed in by
+    email rather than a password)
   - `verifyEmailLink(tokenHash)` in `verify-email-link.ts` – the email link's server-side sign-in
 
 - **Routes**:
