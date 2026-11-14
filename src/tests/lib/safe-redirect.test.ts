@@ -30,6 +30,15 @@ describe('safeRedirectPath', () => {
     ['a data: URL', 'data:text/html,hi'],
     ['a relative path without a slash', 'admin'],
     ['a scheme with leading spaces', '  https://evil.example'],
+    // Dot segments collapse during parsing and can leave a protocol-relative path behind
+    ['a dot segment before the host', '/.//evil.example'],
+    ['a parent segment before the host', '/..//evil.example'],
+    ['a parent segment after a path', '/admin/..//evil.example'],
+    ['two parent segments', '/a/../..//evil.example'],
+    ['an encoded dot segment', '/%2e//evil.example'],
+    ['an encoded parent segment', '/%2E%2E//evil.example'],
+    ['a dot segment and a backslash', '/./\\evil.example'],
+    ['a dot segment with a path and query', '/.//evil.example/x?y#z'],
   ])('falls back for %s', (_label, value) => {
     expect(safeRedirectPath(value)).toBe(DEFAULT_REDIRECT);
   });
