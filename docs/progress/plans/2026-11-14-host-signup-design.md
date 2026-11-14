@@ -1,6 +1,6 @@
 # Host sign-up: anyone with an email address can host (issue 129)
 
-Status: Draft, awaiting approval
+Status: Approved design, pending implementation plan
 
 ## Why
 
