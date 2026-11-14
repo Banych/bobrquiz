@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/infrastructure/auth/supabase-auth-client';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +18,7 @@ import {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/admin';
+  const redirectTo = safeRedirectPath(searchParams.get('redirect'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,8 +46,8 @@ function LoginForm() {
         throw new Error('No user returned from sign in');
       }
 
-      // Redirect to admin dashboard or originally requested page
-      // Middleware will verify admin access
+      // Back to the page that sent the user here (same site only), or the admin dashboard;
+      // the proxy checks the session again on arrival
       router.push(redirectTo);
       router.refresh();
     } catch (err) {
