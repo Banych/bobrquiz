@@ -150,7 +150,9 @@ realtime.subscribe('quiz:state', (data: QuizDTO) => {
 
 ## ADR-005: Email Allowlist for Admin (R4), Migrate to RLS (R5+)
 
-**Status**: 🟡 **ACTIVE / PLANNED** (R4 live, R5 planned)
+**Status**: ⚪ **SUPERSEDED** (2026-11-14): issue 129 removed the `ADMIN_EMAILS` allowlist; any
+account with a confirmed email hosts, and quiz ownership (ADR-027) scopes what each host sees.
+Spec: `docs/progress/plans/2026-11-14-host-signup-design.md`.
 **Date**: 2025-12-20 (R4 implementation)
 **Target Migration**: R5
 **Supersedes**: N/A (first-class auth)

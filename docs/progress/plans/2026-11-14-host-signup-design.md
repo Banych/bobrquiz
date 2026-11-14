@@ -138,8 +138,10 @@ link or code confirms it. One shared check in `src/infrastructure/auth/` decides
 the proxy and `getCurrentUserId` use it, so an unconfirmed user is treated exactly like a
 signed-out one: redirect to sign-in on pages, 401 on `/api/admin/**`, `null` user id in every
 route and page that calls `getCurrentUserId`. The 403 "not in the allowlist" branch is removed.
-Confirm-email stays on in Supabase; the code check is the second line, for the case where that
-setting is ever turned off or a user is made by hand. (My call.)
+Confirm-email must stay on in Supabase: with it off, Supabase stamps `email_confirmed_at` at
+sign-up, so the code check would pass every new account (security review of part 1). The check
+still refuses accounts that never proved their email, such as one made by hand without
+confirming. (My call.)
 
 ### Sign-in mechanics
 
@@ -282,6 +284,14 @@ These came from reading, not running; each needs a run before the plan relies on
 - How long a session lasts on the Free plan (Supabase documents time-boxed and inactive
   session limits as paid settings; the default is believed to be no expiry).
 - That intercepting the send request in Playwright leaves `generateLink`'s code valid.
+
+## Carried into part 2 (from part 1's reviews)
+
+- `safeRedirectPath` (part 1) takes paths only. The confirm action's `next` is an absolute URL
+  (`{{ .RedirectTo }}`), so part 2 either adds an origin parameter to the helper or strips the
+  origin before calling it; either way the dot-segment cases stay in its tests.
+- The new sign-in page shows a message when Supabase refuses an unconfirmed account, instead of
+  sending it back to sign-in with no word.
 
 ## Left to the builder
 

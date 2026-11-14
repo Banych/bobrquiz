@@ -11,13 +11,17 @@ components in full, see [PRESENTATION-LAYER.md](PRESENTATION-LAYER.md).
 
 ### Session management
 
-- The proxy verifies the JWT and protects the admin routes (`/admin` pages and `/api/admin` endpoints)
-- Redirect unauthenticated users to login; check the admin allowlist for route access
+- The proxy verifies the JWT and protects the admin and host pages (`/admin`, `/host`, `/quiz/**`)
+  and the `/api/admin` endpoints
+- Redirect signed-out or unconfirmed users to login: any user with a confirmed email may host
+  (`isConfirmedUser`); there is no allowlist (issue 129)
 
 ### Auth patterns
 
-- API routes should call `getUser()` from the Supabase client to verify the session
-- Return 401 if the session is invalid; return 403 if the role is insufficient
+- API routes and server pages read the user with `getCurrentUserId()`, which returns null for a
+  signed-out or unconfirmed user
+- Return 401 when it is null; then check the quiz owner (`assertQuizOwner`), which answers a
+  quiz that isn't yours with the same 404 as a missing one
 - Use Supabase RLS (Row-Level Security) policies to restrict database access by user ID and role
 - Never store auth tokens in localStorage; rely on Supabase session cookies
 

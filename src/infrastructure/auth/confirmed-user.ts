@@ -6,8 +6,10 @@ export type EmailConfirmation = { email_confirmed_at?: string | null };
 
 /**
  * Any signed-in user with a confirmed email may host. An unconfirmed user is treated exactly like
- * a signed-out one, in the proxy and in every route that reads the current user, so turning off
- * Supabase's confirm-email setting can never open the host area to unproved addresses.
+ * a signed-out one, in the proxy and in every route that reads the current user.
+ *
+ * This does not replace Supabase's confirm-email setting, which must stay on: with it off,
+ * Supabase stamps `email_confirmed_at` at sign-up, so every new account would pass this check.
  */
 export const isConfirmedUser = (
   user: EmailConfirmation | null | undefined

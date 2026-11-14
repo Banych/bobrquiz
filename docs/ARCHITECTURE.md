@@ -30,7 +30,7 @@ This document captures the DDD-lite architecture, tech stack decisions, and laye
 | **State**           | TanStack Query + Supabase Realtime                | Server state cache + WebSocket events for <300ms latency               |
 | **ORM**             | Prisma v7 + driver adapter (`@prisma/adapter-pg`) | Type safety, migrations, adapter pattern for Vercel Edge compatibility |
 | **Database**        | Supabase Postgres                                 | Managed PostgreSQL, RLS for auth, Storage for media                    |
-| **Auth**            | Supabase Auth + email allowlist (R4), RLS (R5)    | Cookie-based sessions, simple MVP auth, scales to enterprise RLS       |
+| **Auth**            | Supabase Auth, any confirmed account hosts        | Cookie-based sessions; each quiz scoped to its owner in every route    |
 | **Hosting**         | Vercel (Next.js) + Supabase Cloud                 | Serverless, auto-scaling, built-in GitHub integration                  |
 | **Testing**         | Vitest (unit) + Playwright (E2E)                  | Fast feedback, component/flow coverage, MCP-assisted manual testing    |
 | **Package Manager** | Yarn                                              | Workspaces, lock determinism, faster install                           |
@@ -222,7 +222,7 @@ Components watching query re-render with new data
 - **Auth** (`auth/`):
   - Supabase Auth client for browser/server contexts
   - Cookie management via `@supabase/ssr`
-  - Admin email allowlist check
+  - Confirmed-email check for hosts (`confirmed-user.ts`)
 
 - **Storage** (`storage/`):
   - `IStorageService` interface (cloud-agnostic)
@@ -424,6 +424,9 @@ export const prisma = new PrismaClient({ adapter });
 **Adapter Pattern**: `RealtimeClient` interface allows swapping Supabase for Socket.IO or tRPC WebSockets later.
 
 ### 3. Email Allowlist + Supabase RLS (Auth Strategy)
+
+> Superseded (2026-11-14, issue 129): the allowlist is gone; any confirmed account hosts and
+> every route checks the quiz owner. See `docs/progress/plans/2026-11-14-host-signup-design.md`.
 
 **Decision**:
 - **R4**: Simple email allowlist in `.env` for admin access
