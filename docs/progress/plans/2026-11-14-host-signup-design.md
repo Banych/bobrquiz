@@ -306,6 +306,14 @@ Results so far (part 2, run on dev 2026-11-14 with a throwaway `@example.com` us
   and the "Confirm signup" template for a first-time address (both need one real email), whether
   a browser-sent (PKCE) token hash verifies on another device, and session length (not checked).
 
+With dev's settings applied (2026-11-14: sign-ups on, both templates, the redirect allowlist, Turnstile
+with the always-pass test secret, secure email change on, phone off):
+- **Enforced:** a password sign-in with no captcha token fails with `captcha_failed` ("no
+  captcha_token found"); with Cloudflare's dummy token `XXXX.DUMMY.TOKEN.XXXX` it gets past the
+  captcha.
+- **Bypassed:** `generateLink` and both `verifyOtp` calls (code, token hash) need no captcha
+  token. Full e2e passed 57/57 and `yarn media:check-non-owner` printed PASS under enforcement.
+
 Builder rulings (part 2):
 - The sign-in form's behaviour is covered in Playwright, not unit tests: Vitest runs in Node with
   no DOM. Its pure parts (error messages, the redirect helper, the confirm action) have unit tests.
