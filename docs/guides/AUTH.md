@@ -21,9 +21,11 @@ in `docs/guides/SETUP.md` ("Authentication & Authorization").
 | Captcha (Attack Protection) | Turnstile, Cloudflare's always-pass test secret | Turnstile, the `bobrquiz.com` widget's secret |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `1x00000000000000000000AA` (test key, `.env.local`) | the `bobrquiz.com` widget's site key (Vercel Production only) |
 
-Vercel's Preview and Development environments point at the dev project, so they get no real
-Turnstile key: preview deployments sign in with the code, which works on any host, and their
-email link opens on the dev Site URL.
+Vercel's Preview and Development environments point at the dev project, so they get the
+always-pass test site key, not the real one (set 2026-11-15; until then only Production had a
+key, and a preview build showed no widget and its sends failed the dev project's captcha).
+Preview deployments sign in with the code, which works on any host; their email link opens on
+the dev Site URL.
 
 Confirm email, Secure email change and the Phone provider are not preferences: the host check
 (`src/infrastructure/auth/confirmed-user.ts`) relies on all three. With Confirm email off,
@@ -108,6 +110,10 @@ Rollback: turn sign-ups off in Supabase. Existing hosts keep signing in.
   visitor is signed out and keeps the redirect to `/login` it got; `router.push` replayed it and
   left a new host on the sign-in page (production, 2026-11-15). Dev servers don't prefetch, so
   only a production build (`yarn build && yarn start`) shows it; the e2e case "a visitor from the
-  home page signs up…" fails there without the fix.
+  home page signs up…" fails there without the fix and skips on a dev server.
+- Suspected, not reproduced: a second tab that opened the home page before the host signed in
+  elsewhere still holds the prefetched redirect, so its Host link can land on `/login` until that
+  tab reloads; and Back from `/host` may restore the sign-in form still busy if the browser keeps
+  `/login` in its back/forward cache. Both leave the host signed in.
 - Session cookies don't move between domains: hosts signed in on `bobrquiz.vercel.app` sign in
   again on `bobrquiz.com`.

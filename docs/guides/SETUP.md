@@ -250,8 +250,8 @@ the order to turn them on are in `docs/guides/AUTH.md`.
 
 `yarn test:e2e e2e/admin-auth.spec.ts e2e/host-signup.spec.ts` covers the code, the link, a
 sign-up and logout without sending email. The case that signs up from the home page's Host link
-only catches its bug against a production build (`yarn build && yarn start`), since a dev server
-doesn't prefetch links.
+runs only against a production build (`yarn build && yarn start`) and skips on a dev server,
+which doesn't prefetch links.
 
 ### Security Considerations (R4 MVP)
 

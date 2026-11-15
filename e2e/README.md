@@ -82,9 +82,9 @@ yarn playwright show-report
 ```
 
 Some behaviour exists only in a production build: Next prefetches links there and never on a dev
-server. The host sign-up case that starts from the home page's Host link passes on a dev server
-either way; to check sign-in navigation, run the suite against `yarn build && yarn start` (it
-uses whatever listens on port 3000).
+server. The host sign-up case that starts from the home page's Host link skips when no prefetch
+happens, so on a dev server it reports "skipped"; to check sign-in navigation, run the suite
+against `yarn build && yarn start` (it uses whatever listens on port 3000).
 
 ## Test Structure
 
