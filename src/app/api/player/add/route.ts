@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { PlayerNameSchema } from '@application/dtos/player.dto';
 import { getServices } from '@application/services/factories';
 import { enforceRateLimit } from '@lib/rate-limit';
 
 const AddPlayerBodySchema = z.object({
   quizId: z.string().min(1),
-  playerName: z.string().min(1),
+  playerName: PlayerNameSchema,
   playerId: z.string().uuid().optional(),
 });
 

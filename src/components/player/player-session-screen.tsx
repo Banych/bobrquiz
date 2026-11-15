@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { PLAYER_ANSWER_MAX_LENGTH } from '@application/dtos/player-input-limits';
 import type { PlayerSessionDTO } from '@application/dtos/player-session.dto';
 import { usePlayerSession } from '@hooks/use-player-session';
 import { useCountdownTimer } from '@hooks/use-countdown-timer';
@@ -375,6 +376,7 @@ export function PlayerSessionScreen({
                 <Input
                   type="text"
                   value={answerValue}
+                  maxLength={PLAYER_ANSWER_MAX_LENGTH}
                   disabled={
                     isSubmittingAnswer ||
                     session.quiz.status !== 'Active' ||
