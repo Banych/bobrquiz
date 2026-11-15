@@ -165,8 +165,11 @@ the end of a session). Paths below are under `src/`.
   `infrastructure/auth/verify-email-link.ts`). Error copy in `lib/sign-in-errors.ts`; every
   redirect taken from a query parameter or the link's `next` goes through
   `lib/safe-redirect.ts`. The admin header's email and Logout are browser-side in
-  `app/(admin)/admin/layout.tsx` (display only, not a check). Spec:
-  `docs/progress/plans/2026-11-14-host-signup-design.md`. `/join`, `/play/**` and
+  `app/(admin)/admin/layout.tsx` (display only, not a check). Sign-in and Logout leave through
+  `lib/full-page-navigation.ts`, never `router.push` (a prefetched redirect to `/login` kept a
+  new host on the sign-in page in production). Spec:
+  `docs/progress/plans/2026-11-14-host-signup-design.md`; per-project Supabase, Resend,
+  Turnstile and Vercel settings and the email templates: `docs/guides/AUTH.md`. `/join`, `/play/**` and
   `/api/quiz/**` stay outside it. The host
   actions under `api/quiz/**` check the user and the quiz owner inside each route
   (`getCurrentUserId`, then `assertQuizOwner`: 401 / 404); the kick DELETE does, the player
@@ -177,6 +180,8 @@ the end of a session). Paths below are under `src/`.
   whose matcher cases ask Next's `unstable_doesMiddlewareMatch`.
 
 **Cross-cutting**
+- Production URL `https://bobrquiz.com` in `lib/site-url.ts` (metadata, robots, sitemap; the
+  `vercel.app` names redirect to it).
 - Composition root `application/services/factories.ts` (`getServices()`); `questionService` and
   `auditService` are object literals there, with no service file of their own; env checks
   `lib/env-validation.ts`, run by the root `app/layout.tsx`, so a variable marked required
@@ -339,8 +344,8 @@ start (`# Workflow: …`); it is not repeated here.
    just its public read policy. Never add an INSERT, UPDATE or DELETE policy for `authenticated`;
    with sign-ups open, any account could write into any quiz's folder. The `pg_policies` query in
    `docs/guides/MEDIA-UPLOADS.md` is the full check; `yarn media:check-non-owner` probes upload,
-   overwrite, move and delete as a non-owner on dev. Sign-ups are on in the dev project (issue 129
-   part 2) and turn on in production only in that issue's rollout.
+   overwrite, move and delete as a non-owner on dev. Sign-ups are on in both projects (production
+   since 2026-11-15, issue 129).
 3. `yarn test:e2e` against a dev server with the default pool (2) or join limit (10/min) fails
    under load or on repeated runs within a minute (a pass on retry fails the run too): set
    `DATABASE_POOL_MAX=10` and `SESSION_JOIN_RATE_LIMIT=100` for local dev (`e2e/README.md`). A dev
