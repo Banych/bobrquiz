@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/infrastructure/auth/supabase-auth-client';
+import { navigateWithFullLoad } from '@/lib/full-page-navigation';
 import { Button } from '@/components/ui/button';
 import { BeaverMascot } from '@components/brand/beaver-mascot';
 import { useEffect, useState } from 'react';
@@ -11,7 +11,6 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,8 +27,7 @@ export default function AdminLayout({
   const handleLogout = async () => {
     const supabase = createBrowserClient();
     await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    navigateWithFullLoad('/login');
   };
 
   return (

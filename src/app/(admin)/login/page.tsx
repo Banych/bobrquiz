@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/infrastructure/auth/supabase-auth-client';
+import { navigateWithFullLoad } from '@/lib/full-page-navigation';
 import { safeRedirectPath } from '@/lib/safe-redirect';
 import {
   SignInForm,
@@ -10,7 +11,6 @@ import {
 } from '@/components/auth/sign-in-form';
 
 function SignIn() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   // Back to the page that sent the host here (same site only), or the admin dashboard; the
   // proxy checks the session again on arrival
@@ -44,8 +44,7 @@ function SignIn() {
       return { ok: false, code: error.code };
     }
     // Verifying confirms the address; the proxy checks the session again on arrival
-    router.push(redirectTo);
-    router.refresh();
+    navigateWithFullLoad(redirectTo);
     return { ok: true };
   };
 

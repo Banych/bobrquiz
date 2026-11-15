@@ -64,6 +64,33 @@ test.describe('Host sign-up', () => {
     }
   });
 
+  // A production build prefetches the home page's Host link while the visitor is signed out and
+  // keeps the redirect to /login it got back; signing in must not replay it (production,
+  // 2026-11-15: the new host stayed on the sign-in page). A dev server never prefetches, so this
+  // catches that only against `yarn build && yarn start` (e2e/README.md).
+  test('a visitor from the home page signs up with the code and lands on the host page', async ({
+    page,
+  }) => {
+    const email = newSignupEmail();
+
+    try {
+      await page.goto('/');
+      const hostLink = page.getByRole('link', { name: 'Host Game' });
+      await hostLink.scrollIntoViewIfNeeded();
+      await hostLink.hover();
+      await page.waitForLoadState('networkidle');
+      await hostLink.click();
+      await expect(page).toHaveURL(/\/login\?redirect=%2Fhost$/);
+
+      await signInWithCode(page, email);
+
+      await expect(page).toHaveURL(`${BASE_URL}/host`);
+      await expect(page.getByText('No quizzes found')).toBeVisible();
+    } finally {
+      await deleteUserByEmail(email);
+    }
+  });
+
   // Anyone can sign an address up with a password before its owner signs in by email, and that
   // password still works once the owner confirms the address; the app must refuse such a session
   test('a password session of a confirmed account is not a host session', async ({
