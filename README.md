@@ -7,7 +7,7 @@ required to play. Answers score based on speed and correctness, with a live
 leaderboard updating after every question.
 
 Want to see it in action? Join a live demo session with code `TRYBOBR` once
-one is running, or head to the [production site](https://bobrquiz.vercel.app)
+one is running, or head to the [production site](https://bobrquiz.com)
 to host your own.
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
