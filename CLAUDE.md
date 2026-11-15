@@ -100,6 +100,11 @@ the end of a session). Paths below are under `src/`.
   `api/session/join` (rate-limited by `lib/rate-limit.ts`) → `join-session.use-case.ts` (looks
   the code up; codes are generated at quiz creation by `lib/join-code.ts`), then
   `player-service.ts` adds the player.
+- Input caps (issue 157): the name (40, trimmed) and the answer (200) are `PlayerNameSchema` and
+  `PlayerAnswerSchema` in `application/dtos/player.dto.ts`, used by `api/session/join`,
+  `api/player/add` and `api/player/answer`; the numbers are in the zod-free
+  `application/dtos/player-input-limits.ts`, which the join form and answer field import for
+  `maxLength`. Route tests: `tests/app/api/player-input-routes.test.ts`.
 - Play: `app/(player)/play/[quizId]/[playerId]/page.tsx` →
   `components/player/player-session-screen.tsx` → `hooks/use-player-session.ts` (reads
   `api/quiz/[quizId]/player/[playerId]`; answers go to POST `api/player/answer` →
