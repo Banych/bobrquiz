@@ -99,14 +99,15 @@ the end of a session). Paths below are under `src/`.
 - Join: `app/(player)/join/page.tsx` → `components/player/player-join-form.tsx` → POST
   `api/session/join` (rate-limited by `lib/rate-limit.ts`) → `join-session.use-case.ts` (looks
   the code up; codes are generated at quiz creation by `lib/join-code.ts`), then
-  `player-service.ts` adds the player through `add-player.use-case.ts` (quiz must exist, name
-  unique per quiz, case-insensitive). The response's `players` list comes from
-  `list-quiz-players.use-case.ts` and `player-mapper.ts` and carries every player's `id`.
-  `api/player/add` has no UI caller; only the k6 scripts in `tests/load/` post to it.
+  `player-service.ts` adds the player through `add-player.use-case.ts`: the quiz must exist, and
+  the name must not match (case-insensitive) a non-removed player's in that quiz, a check in the
+  use case with no database constraint behind it. The response's `players` list comes from
+  `list-quiz-players.use-case.ts` and `player-mapper.ts` and gives every joiner the `id` of each
+  non-removed player, the only thing the play and answer routes check. `api/player/add` has no
+  UI caller; the k6 scripts in `tests/load/` and the route test below use it.
 - Input caps (issue 157): the name (40) and the answer (200), both trimmed, are
   `PlayerNameSchema` and `PlayerAnswerSchema` in `application/dtos/player.dto.ts`, used by
-  `api/session/join`,
-  `api/player/add` and `api/player/answer`; the numbers are in the zod-free
+  `api/session/join`, `api/player/add` and `api/player/answer`; the numbers are in the zod-free
   `application/dtos/player-input-limits.ts`, which the join form and answer field import for
   `maxLength`. Route tests: `tests/app/api/player-input-routes.test.ts`.
 - Play: `app/(player)/play/[quizId]/[playerId]/page.tsx` →
