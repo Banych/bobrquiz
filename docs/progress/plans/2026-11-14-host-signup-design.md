@@ -1,7 +1,7 @@
 # Host sign-up: anyone with an email address can host (issue 129)
 
 Status: Done (part 1 PR #166, part 2 PR #171, part 3: production rollout 2026-11-15, PRs #173
-and the one closing issue 129; settings and templates in `docs/guides/AUTH.md`)
+and #174; settings and templates in `docs/guides/AUTH.md`)
 
 ## Why
 
