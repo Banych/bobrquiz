@@ -11,9 +11,13 @@ export const PlayerNameSchema = z
   .min(1)
   .max(PLAYER_NAME_MAX_LENGTH);
 
-/** A submitted answer: not empty, capped. */
+/**
+ * A submitted answer: trimmed (scoring compares trimmed answers), not blank,
+ * capped.
+ */
 export const PlayerAnswerSchema = z
   .string()
+  .trim()
   .min(1)
   .max(PLAYER_ANSWER_MAX_LENGTH);
 

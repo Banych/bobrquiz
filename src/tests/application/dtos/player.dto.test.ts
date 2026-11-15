@@ -45,8 +45,14 @@ describe('PlayerAnswerSchema', () => {
     ).toBe(false);
   });
 
-  it('rejects an empty answer', () => {
+  it('trims before checking, so padding does not count toward the cap', () => {
+    const answer = 'a'.repeat(PLAYER_ANSWER_MAX_LENGTH);
+    expect(PlayerAnswerSchema.parse(`  ${answer}  `)).toBe(answer);
+  });
+
+  it('rejects a blank answer', () => {
     expect(PlayerAnswerSchema.safeParse('').success).toBe(false);
+    expect(PlayerAnswerSchema.safeParse('   ').success).toBe(false);
   });
 
   it('caps answers at the same length as correct answers', () => {
