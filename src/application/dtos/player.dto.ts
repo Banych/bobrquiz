@@ -1,4 +1,21 @@
 import { z } from 'zod';
+import {
+  PLAYER_ANSWER_MAX_LENGTH,
+  PLAYER_NAME_MAX_LENGTH,
+} from './player-input-limits';
+
+/** A player name from a join request: trimmed, not blank, capped. */
+export const PlayerNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(PLAYER_NAME_MAX_LENGTH);
+
+/** A submitted answer: not empty, capped. */
+export const PlayerAnswerSchema = z
+  .string()
+  .min(1)
+  .max(PLAYER_ANSWER_MAX_LENGTH);
 
 export const PlayerStatusDTO = z.enum([
   'Active',

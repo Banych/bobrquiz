@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { PlayerAnswerSchema } from '@application/dtos/player.dto';
 import { getServices } from '@application/services/factories';
 import { broadcastAnswerAck } from '@infrastructure/realtime/broadcast-player-events';
 import { broadcastLeaderboard } from '@infrastructure/realtime/broadcast-leaderboard';
@@ -10,7 +11,7 @@ const SubmitAnswerBodySchema = z.object({
   quizId: z.string().min(1),
   playerId: z.string().min(1),
   questionId: z.string().min(1),
-  answer: z.string().min(1),
+  answer: PlayerAnswerSchema,
 });
 
 type ErrorResponse = {

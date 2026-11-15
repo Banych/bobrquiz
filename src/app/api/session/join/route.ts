@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { PlayerNameSchema } from '@application/dtos/player.dto';
 import { getServices } from '@application/services/factories';
 import { enforceRateLimit, resolveRateLimit } from '@lib/rate-limit';
 
 const JoinSessionBodySchema = z.object({
   joinCode: z.string().min(4),
-  playerName: z.string().min(1),
+  playerName: PlayerNameSchema,
 });
 
 const SESSION_JOIN_LIMIT = resolveRateLimit(

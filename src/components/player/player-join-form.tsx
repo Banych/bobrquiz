@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { PLAYER_NAME_MAX_LENGTH } from '@application/dtos/player-input-limits';
 import { Button } from '@/components/ui/button';
 import { ScoringInfoBadge } from './scoring-info-badge';
 import { BeaverMascot } from '@components/brand/beaver-mascot';
@@ -206,6 +207,7 @@ export function PlayerJoinForm() {
               <input
                 type="text"
                 value={playerName}
+                maxLength={PLAYER_NAME_MAX_LENGTH}
                 onChange={(event) => setPlayerName(event.target.value)}
                 placeholder="Alex"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-lg text-white placeholder:text-white/40 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
