@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-15: Player Input Caps ✅
+- **2026-11-15** — the public player routes cap what a player sends (closes issue 157): the name is trimmed, not blank and at most 40 characters in `api/session/join` and `api/player/add`, and the answer is trimmed, not blank and at most 200 in `api/player/answer`, the cap on a question's correct answers; the join form and answer field stop at the same lengths. The security review found that any player can answer as another player in the same quiz (the join response lists every player's id); it is parked as blocking the first payment. Dev has no question with an option over 200 characters; production was not checked — [PR #175](https://github.com/Banych/bobrquiz/pull/175)
+
 ### 2026-11-15: Host Sign-up Live on Production ✅
 - **2026-11-15** — anyone can sign up as a host on production (closes issue 129). `bobrquiz.com` is the production domain (the `vercel.app` names redirect to it), auth email goes through Resend as `login@bobrquiz.com`, Turnstile is enforced, sign-ups are on and `ADMIN_EMAILS` is gone from Vercel. A new address signed up, created a quiz and ran a game on production. That run found a bug no dev server shows: the home page's prefetched Host link kept a redirect to `/login`, so a new host stayed on the sign-in page after the code; sign-in and logout now leave with a full page load. Settings, templates and the rollout order are in the new auth guide — [PR #173](https://github.com/Banych/bobrquiz/pull/173) (domain) and [PR #174](https://github.com/Banych/bobrquiz/pull/174) (fix and records) — [spec](plans/2026-11-14-host-signup-design.md) — [guide](../guides/AUTH.md)
 
