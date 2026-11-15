@@ -22,6 +22,9 @@ here. Entries before 2026-10-11 are the older, longer format and are kept as wri
 
 Find work by date:
 
+### 2026-11-15: Host Sign-up Live on Production ✅
+- **2026-11-15** — anyone can sign up as a host on production (closes issue 129). `bobrquiz.com` is the production domain (the `vercel.app` names redirect to it), auth email goes through Resend as `login@bobrquiz.com`, Turnstile is enforced, sign-ups are on and `ADMIN_EMAILS` is gone from Vercel. A new address signed up, created a quiz and ran a game on production. That run found a bug no dev server shows: the home page's prefetched Host link kept a redirect to `/login`, so a new host stayed on the sign-in page after the code; sign-in and logout now leave with a full page load. Settings, templates and the rollout order are in the new auth guide — [PR #173](https://github.com/Banych/bobrquiz/pull/173) — [spec](plans/2026-11-14-host-signup-design.md) — [guide](../guides/AUTH.md)
+
 ### 2026-11-14: Host Sign-in by Email ✅
 - **2026-11-14** — hosts sign in by email only: `/login` sends a link and a code with a Turnstile check, the code signs in the device that asked, and the link opens `/auth/confirm`, which verifies only when Continue is pressed. A host session must be signed in by that code or link: a password session is refused, since a password set before the owner signed up kept working after they confirmed (reproduced on dev). e2e signs in through `generateLink` and sends no email. Dev Supabase is set up (sign-ups, templates, captcha); production waits for part 3. The merge went live on production before its Supabase settings, which left production sign-in broken until the rollout or a rollback — [PR #171](https://github.com/Banych/bobrquiz/pull/171) — [spec](plans/2026-11-14-host-signup-design.md)
 

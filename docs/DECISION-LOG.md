@@ -925,6 +925,42 @@ plan; the migration is a row in `docs/parking-lot.md`.
 
 ---
 
+## ADR-029: Hosts Sign In by Emailed Code or Link, on bobrquiz.com (2026-11-15)
+
+**Status**: ✅ **ACTIVE**
+**Date**: 2026-11-15 (production rollout); designed 2026-11-14
+**Decided by**: Vlad (spec: `docs/progress/plans/2026-11-14-host-signup-design.md`, issue 129)
+**Supersedes**: ADR-005 (already marked superseded by issue 129 part 1)
+
+### Decision
+- Anyone with a confirmed email address may host. Sign-in is email only: the form sends one
+  email with a code and a link, and a host session must come from that code or link. A password
+  session is refused even for a confirmed account.
+- Cloudflare Turnstile guards the sign-in form; Supabase verifies its token, so the app holds no
+  Turnstile secret.
+- Auth email goes out through Resend (Free plan) as `login@bobrquiz.com`, over Supabase's custom
+  SMTP.
+- `bobrquiz.com` is the production domain; `www.bobrquiz.com` and both `vercel.app` names
+  redirect to it with a 308.
+
+### Rationale
+- A stranger must be able to become a host without an operator creating the account.
+- Email only: no password store to protect, and a password set by someone else before the owner
+  signs up can't be used (reproduced on dev 2026-11-14).
+- Supabase's built-in mailer delivers only to the project team, two an hour; production needs
+  its own sender, and Resend Free (100 a day) is enough until hosts sign in that often.
+- A product domain keeps its email reputation to itself and goes with the product if it is sold.
+
+### Consequences
+- Sign-in depends on Resend, Turnstile and Supabase together; `docs/guides/AUTH.md` holds every
+  setting per project and the rollout order.
+- Supabase's email templates can't be edited until custom SMTP is set, so a new project needs
+  its sender before its templates.
+- Past about 100 sign-ins a day, move to Resend Pro or another sender (a Supabase setting).
+- Rollback is one switch: sign-ups off in production Supabase.
+
+---
+
 ## Open ideas (not decisions)
 
 ### TBD: PostHog Analytics (R6)

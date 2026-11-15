@@ -243,10 +243,15 @@ in the device it is opened on. A first-time address becomes a host with an empty
   - `src/app/(admin)/admin/page.tsx` – Dashboard (protected)
   - `src/app/(admin)/admin/quizzes/page.tsx` – Quiz CRUD (protected)
 
+The Supabase, Resend, Turnstile and Vercel settings each project needs, the email templates and
+the order to turn them on are in `docs/guides/AUTH.md`.
+
 ### Testing Auth Flow
 
 `yarn test:e2e e2e/admin-auth.spec.ts e2e/host-signup.spec.ts` covers the code, the link, a
-sign-up and logout without sending email.
+sign-up and logout without sending email. The case that signs up from the home page's Host link
+only catches its bug against a production build (`yarn build && yarn start`), since a dev server
+doesn't prefetch links.
 
 ### Security Considerations (R4 MVP)
 
